@@ -56,11 +56,11 @@ All sizes are pre-populated from the existing codebase. No new type styles are i
 | Role | Size | Weight | Line Height | Usage in this phase |
 |------|------|--------|-------------|---------------------|
 | Body | 14px (`text-sm`) | 400 regular | 1.6 (`leading-relaxed`) | Check-in field descriptions; weekly report body copy; behavior win chip labels; focus suggestion paragraph |
-| Label | 12px (`text-xs`) | 600 semibold (`font-semibold`) | 1.4 | Section sub-headings ("پیروی این هفته"), metric unit suffixes (kg, ساعت), tab labels, empty-state supporting text |
+| Label | 12px (`text-xs`) | 700 bold (`font-bold`) | 1.4 | Section sub-headings ("پیروی این هفته"), metric unit suffixes (kg, ساعت), tab labels, empty-state supporting text |
 | Heading | 20px (`text-xl`) | 700 bold (`font-bold`) | 1.3 | Weekly report section heading; progress page title |
 | Display | 24px (`text-2xl`) | 700 bold (`font-bold`) | 1.2 | Latest weight number displayed prominently; greeting line on progress page |
 
-**Font weight rule:** Only 2 weights are used — 400 (regular, body copy) and semibold/bold (600/700, labels and headings). Never use 300, 500, or 800.
+**Font weight rule:** Only 2 weights are used: 400 (regular) and 700 (bold). Never use 300, 500, 600, or 800.
 
 **Numeric display note:** Weight values (e.g. `72.5` kg) display at 24px bold. Delta values (e.g. `−1.2 kg`) display at 14px with color coding (`text-success` for loss toward goal, `text-warm` for gain, `text-ink-2` for neutral).
 
@@ -104,11 +104,11 @@ New components for this phase only. All inherit the existing visual pattern (rou
 ### 1. `CheckInForm.tsx`
 - Full-width card (`rounded-2xl bg-elevated p-5 shadow-sm`)
 - Fields: weight (number input), hunger 1–5 (segmented tap row), sleep (number input), stress 1–5 (segmented tap row), activity (number input), adherence notes (textarea)
-- Each field: `<label>` at 12px semibold + input at 14px regular
+- Each field: `<label>` at 12px bold + input at 14px regular
 - Input style: `w-full px-4 py-3 rounded-2xl bg-surface border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors` (matches `MealAnalysisForm.tsx` exactly)
-- 1–5 scale selectors: horizontal row of 5 buttons, each `w-10 h-11 rounded-xl text-sm font-medium border transition-colors`; selected state: `bg-brand text-elevated border-brand`; unselected: `bg-surface border-line text-ink-2`
-- Submit button: `w-full py-4 rounded-2xl bg-brand text-elevated font-semibold text-sm disabled:opacity-60 transition-opacity` (matches established CTA pattern)
-- Success feedback: inline green confirmation text (`text-success text-sm font-medium`) replaces error slot — no modal, no toast
+- 1–5 scale selectors: horizontal row of 5 buttons, each `w-10 h-11 rounded-xl text-sm font-bold border transition-colors`; selected state: `bg-brand text-elevated border-brand`; unselected: `bg-surface border-line text-ink-2`
+- Submit button: `w-full py-4 rounded-2xl bg-brand text-elevated font-bold text-sm disabled:opacity-60 transition-opacity` (matches established CTA pattern)
+- Success feedback: inline green confirmation text (`text-success text-sm font-bold`) replaces error slot — no modal, no toast
 
 ### 2. `WeightSparkline.tsx`
 - Inline SVG only — zero external dependencies
@@ -121,21 +121,21 @@ New components for this phase only. All inherit the existing visual pattern (rou
 ### 3. `ProgressSummary.tsx`
 - Outer scroll container: `px-5 pt-6 pb-28 space-y-6` (matches NutritionDashboard)
 - Weight card: `rounded-2xl bg-elevated p-5 shadow-sm` containing latest weight (24px bold) + `WeightSparkline` side-by-side + delta indicator
-- Behavior wins section: heading at 14px semibold + horizontal `flex-wrap gap-2` row of achievement chips
-- Achievement chip: `px-3 py-1.5 rounded-full text-xs font-medium` — achieved: `bg-brand-muted text-brand`; not achieved: `bg-surface border border-line text-ink-3`
+- Behavior wins section: heading at 14px bold + horizontal `flex-wrap gap-2` row of achievement chips
+- Achievement chip: `px-3 py-1.5 rounded-full text-xs font-bold` — achieved: `bg-brand-muted text-brand`; not achieved: `bg-surface border border-line text-ink-3`
 - Logging streak: small badge inline with a `ClipboardList` icon (16px) + "X روز متوالی" text at 12px
 
 ### 4. `WeeklyReport.tsx`
 - Card container: `rounded-2xl bg-elevated p-5 shadow-sm space-y-4`
-- Metric rows: two-column layout (`flex items-center justify-between`) — label at 12px `text-ink-3` + value at 14px `text-ink font-medium`
+- Metric rows: two-column layout (`flex items-center justify-between`) — label at 12px `text-ink-3` + value at 14px `text-ink font-bold`
 - Sleep/stress note: amber tint banner (`rounded-xl bg-warm-muted p-4 text-sm text-ink-2`) — only rendered when `sleep_stress_note` is non-null
-- Focus suggestion card: `rounded-xl bg-brand-muted p-4` — heading "پیشنهاد هفته بعد" at 12px semibold `text-brand` + body at 14px `text-ink-2 leading-relaxed`
+- Focus suggestion card: `rounded-xl bg-brand-muted p-4` — heading "پیشنهاد هفته بعد" at 12px bold `text-brand` + body at 14px `text-ink-2 leading-relaxed`
 - Adherence percentage: `text-2xl font-bold text-brand` displayed prominently inside a centered metric cell
 
 ### 5. Tab Bar (inline in `ProgressScreen.tsx`)
 - Two tabs: "خلاصه" (summary) and "گزارش هفتگی" (weekly)
 - Tab bar style: `flex border-b border-line mb-5`
-- Each tab: `flex-1 py-3 text-sm font-medium text-center transition-colors`; active: `text-brand border-b-2 border-brand`; inactive: `text-ink-3`
+- Each tab: `flex-1 py-3 text-sm font-bold text-center transition-colors`; active: `text-brand border-b-2 border-brand`; inactive: `text-ink-3`
 - Not a router-level tab — client-side state toggle (`useState<'summary' | 'weekly'>`)
 
 ---
@@ -146,6 +146,8 @@ New components for this phase only. All inherit the existing visual pattern (rou
 **Container:** `.app-container` (max-width 430px, centered on desktop)
 **Scroll:** full-height scroll container (`flex-1 overflow-y-auto`) above fixed bottom nav
 **Bottom nav:** `AppBottomNav` with progress tab enabled (`disabled: false`, `active: isActive('progress')`)
+
+**Primary visual focal point:** the weight card at the top of the summary tab, anchored by the latest weight value at 24px bold.
 
 **Screen sections top-to-bottom:**
 1. Page header: 24px bold title + 14px `text-ink-2` subtitle — `px-5 pt-6`
@@ -240,7 +242,7 @@ All copy is dictionary-sourced. Persian strings are canonical; English and Arabi
 | Weekly empty heading | هنوز داده کافی ندارید | `progress.emptyWeeklyTitle` |
 | Weekly empty body | پس از ۳ روز ثبت، گزارش هفتگی آماده می‌شود | `progress.emptyWeeklyDesc` |
 | **Error: submit failed** | ثبت ناموفق بود — دوباره تلاش کنید | `progress.errSubmitFailed` |
-| **Error: load failed** | بارگذاری داده‌ها با مشکل مواجه شد | `progress.errLoadFailed` |
+| **Error: load failed** | بارگذاری داده‌ها با مشکل مواجه شد — دوباره تلاش کنید | `progress.errLoadFailed` |
 | Unit: kg | کیلوگرم | `progress.unitKg` |
 | Unit: hours | ساعت | `progress.unitHours` |
 | Unit: minutes | دقیقه | `progress.unitMinutes` |
