@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.9.0] - 2026-06-04
+
+### Added — Phase 9: Progress & Reports
+- **Backend:** `POST /api/v1/progress/check-in` — daily check-in with upsert semantics (PROG-01)
+- **Backend:** `GET /api/v1/progress/summary` — progress summary with weight series, behavior wins (8 chips), logging streak (PROG-02, PROG-04)
+- **Backend:** `GET /api/v1/progress/weekly-report` — current-week aggregated report with adherence %, averages, focus suggestion (PROG-03)
+- **Backend:** Rule-based behavior wins (sleep ≥7h, activity ≥30min, streak ≥3, stress ≤2.5, hunger ≤2.5) + 3 untracked informational chips
+- **Backend:** `pytest` test suite — 7/7 tests passing, `StaticPool` for reliable in-memory SQLite tests
+- **Frontend:** `/[lang]/progress` authenticated screen (UI-12)
+- **Frontend:** `WeightSparkline` — inline SVG sparkline, no external charting library (PROG-05)
+- **Frontend:** `CheckInForm` — daily check-in with scale pickers for hunger/stress
+- **Frontend:** `ProgressSummary` — weight card with sparkline + behavior win chips + streak
+- **Frontend:** `WeeklyReport` — adherence headline, metric rows, sleep/stress note, suggested focus
+- **Frontend:** Progress tab enabled in bottom nav (previously disabled)
+- **Frontend:** `progress` dictionary namespace (49 keys each in fa/en/ar)
+- **Frontend:** `src/types/progress.ts`, `src/lib/progress.ts` — typed API client
+
 ## [0.8.0] - 2026-06-03
 
 ### Added — Phase 8: Nutrition Frontend & Chat

@@ -1,36 +1,37 @@
 # Next Steps — Diet Coach Agent
 
-**Updated:** 2026-06-03
-**Current status:** Phase 8 COMPLETE. Phase 9 (Progress & Reports) ready to start.
+**Updated:** 2026-06-04
+**Current status:** Phase 9 COMPLETE. Phase 10 (Settings, Polish & Remaining UI) ready to start.
 
 ## Immediate Next Action
 
-**Start Phase 9: Progress & Reports**
+Run Phase 10 planning:
+```
+/gsd:plan-phase
+```
 
-Command: `/gsd:plan-phase 9` (then `/gsd:execute-phase 9`)
+Phase 10 covers: settings screen, profile editing, notification preferences, polish/animations, PWA install prompt, offline fallback, and any remaining UI gaps.
 
-## What Phase 9 Builds
+## Manual Visual Verification (Phase 9 — still required)
 
-- Weekly progress summary screen
-- Meal log history view (past MealEntry records)
-- Weight tracking input + trend chart
-- Goal progress indicator (calories/macros vs. target)
-- AI-generated weekly insight summary via NutritionAgentService
+The automated tests pass but visual verification of the progress screen is pending:
 
-## Known Limitations from Phase 8
+```
+# Terminal 1
+cd backend && uvicorn app.main:app --reload --port 8000
 
-- Progress/reports not implemented (Phase 9)
-- Settings/polish not implemented (Phase 10)
-- Image meal analysis not implemented (out of scope)
-- STT transcription not implemented (out of scope)
-- Splash page redirect for authenticated users is link-based (not server-side redirect)
-- Plan/meal-analysis/what-to-eat pages load dictionary client-side (acceptable for now)
+# Terminal 2
+cd frontend && npm run dev
+```
 
-## Phase Order Reminder
+Navigate to http://localhost:3000/fa/login → OTP 123456 → dashboard → tap پیشرفت tab.
 
-1-8: ✅ COMPLETE
-9: → Progress & Reports (NEXT)
-10: Settings, Polish & Remaining UI
+Verify the 7 checks from `.planning/phases/09-progress-reports/09-03-PLAN.md` Task 3.
 
----
-*Last updated: 2026-06-03*
+## Phase 10 Scope (from ROADMAP)
+- Settings screen `/[lang]/settings` (currently disabled in bottom nav)
+- Profile editing (weight goal, dietary restrictions update)
+- Notification preferences
+- PWA install prompt + service worker + offline fallback
+- App-wide polish: animations, loading states, error boundaries
+- Any ROADMAP requirements not covered by phases 1-9

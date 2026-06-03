@@ -242,4 +242,24 @@
 **Rationale:** Tables already exist; no migration needed. One session per user is correct for Phase 8 (conversation persists across visits). Multi-session support can be added in Phase 9/10.
 
 ---
-*Last updated: 2026-06-03*
+
+## 2026-06-04 — Phase 9 Implementation Decisions
+
+### D-043: SQLite in-memory test DB requires StaticPool
+**Decision:** Test engine uses `poolclass=StaticPool` to prevent connection pooling from opening fresh empty in-memory databases on each query.
+**Rationale:** Default SQLAlchemy pool returns the connection after `commit()`, causing the next query (e.g. `db.refresh()`) to open a new connection with an empty in-memory DB — "no such table" errors. `StaticPool` reuses the same underlying connection for all requests.
+
+### D-044: Progress service is pure aggregation — no AI calls
+**Decision:** `progress_service.py` computes behavior wins and suggested focus via rule-based logic, no LLM call.
+**Rationale:** Progress metrics are deterministic aggregations (averages, thresholds, streaks). LLM adds latency and cost with no accuracy benefit for quantitative summaries. AI-powered insights can be added in a future phase.
+
+### D-045: Weekly report window = Monday–Sunday of current week
+**Decision:** Weekly report always covers the current calendar week (Monday = week start, computed from `today.weekday()`).
+**Rationale:** Consistent, predictable window for users; avoids "rolling 7 days" complexity that leads to confusing mid-week re-computation.
+
+### D-046: Behavior wins — 5 tracked + 3 untracked chips
+**Decision:** Summary returns 8 behavior win chips: sleep, activity, logging, low_stress, low_hunger (tracked v1), protein, fiber, hydration (not tracked in v1, shown as informational).
+**Rationale:** Users see the full picture of what matters; untracked chips communicate future roadmap and set expectations without hiding data gaps.
+
+---
+*Last updated: 2026-06-04*
