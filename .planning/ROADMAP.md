@@ -147,7 +147,7 @@ Plans:
   5. The progress screen handles the empty state (no check-ins yet) with a helpful prompt, not a blank or broken layout
 **Plans**: 3 plans
 Plans:
-- [ ] 09-01-PLAN.md — Backend: pytest scaffold, schemas, repository, service, endpoints, router registration (PROG-01, PROG-02, PROG-03)
+- [x] 09-01-PLAN.md — Backend: pytest scaffold, schemas, repository, service, endpoints, router registration (PROG-01, PROG-02, PROG-03)
 - [x] 09-02-PLAN.md — Frontend contract: types, lib client, fa/en/ar dictionary additions
 - [ ] 09-03-PLAN.md — Frontend implementation: sparkline, check-in form, summary view, weekly report, progress screen, bottom-nav enable (PROG-04, PROG-05, UI-12)
 **UI hint**: yes
@@ -180,5 +180,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Voice & Audio | 0/TBD | Not started | - |
 | 7. Nutrition Backend & AI Layer | 0/TBD | Not started | - |
 | 8. Nutrition Frontend & Chat | 0/TBD | Not started | - |
-| 9. Progress & Reports | 1/3 | In Progress|  |
+| 9. Progress & Reports | 2/3 | In Progress|  |
 | 10. Settings, Polish & Remaining UI | 0/TBD | Not started | - |
