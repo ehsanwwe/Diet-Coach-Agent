@@ -21,6 +21,7 @@ frontend/.env
 backend/uploads/
 backend/audio/
 backend/media/
+backend/storage/
 
 # Python caches and build artifacts
 __pycache__/
@@ -91,3 +92,6 @@ Thumbs.db
 
 # Alembic SQLite artifact
 backend/app.db
+
+# Loose archive file
+backend.zip

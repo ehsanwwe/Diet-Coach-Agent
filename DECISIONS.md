@@ -173,4 +173,28 @@
 **Alternatives rejected:** Block completion for clinical users (paternalistic, blocks flow for users who need the service most); separate "pending clinical review" status (extra state machine complexity).
 
 ---
+
+## 2026-06-03 — Phase 6 Implementation Decisions
+
+### D-031: Audio files stored locally under backend/storage/audio/ (not object storage)
+**Decision:** Uploaded audio files are stored on the local filesystem under `AUDIO_STORAGE_PATH` (default `./storage/audio`). The storage directory is gitignored.
+**Rationale:** Phase constraint is local/SQLite-only. S3/GCS integration would require cloud credentials and adds complexity. The `storage_key` (filename) is stored in the DB, keeping paths relative so the storage root can be changed via env var.
+**Alternatives rejected:** Store audio as base64 in SQLite (not scalable, corrupts large blobs); use `/tmp` (data lost on restart); commit to git (binary files, privacy risk).
+
+### D-032: transcription_status = "not_configured" for all Phase 6 uploads
+**Decision:** All AudioMessage records created in Phase 6 receive `transcription_status = "not_configured"`.
+**Rationale:** No STT provider is integrated in Phase 6. "not_configured" clearly signals to the frontend and future developers that transcription is architecturally supported but not yet wired. Frontend displays "صدا ذخیره شد" (audio saved) for this status.
+**Alternatives rejected:** "pending" (implies STT is coming soon but just queued, which is misleading); "not_available" (implies a temporary failure rather than a config choice).
+
+### D-033: Placeholder assistant response in Phase 6 text chat
+**Decision:** POST /onboarding/chat/text always returns a hardcoded Persian placeholder as the assistant message.
+**Rationale:** Phase 06 scope explicitly excludes AI/OpenClaw. The placeholder lets the frontend show a real chat bubble and prove the round-trip works, without misleading users that AI is active.
+**Alternatives rejected:** Return no assistant message (frontend would need special-case null handling); return English placeholder (breaks Persian-first design).
+
+### D-034: Separate `audio` dictionary namespace for Phase 6 UI strings
+**Decision:** All audio/chat UI strings live in a dedicated `audio` section of the Dictionary interface (fa/en/ar), parallel to `onboarding`.
+**Rationale:** The audio component tree is used in the onboarding final step and will reuse in Phase 8 (Nutrition Chat). A separate namespace makes the strings reusable without duplication. The `onboarding` dict grows large enough without adding 23 more keys.
+**Alternatives rejected:** Add audio keys directly to `onboarding` dict (pollutes a large namespace); hardcode strings (violates no-hardcoded-text rule).
+
+---
 *Last updated: 2026-06-03*

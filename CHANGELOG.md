@@ -5,6 +5,40 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.6.0] - 2026-06-03
+
+### Added — Phase 6: Voice & Audio
+
+**Backend**
+- `backend/app/schemas/onboarding_chat.py` — Pydantic v2 schemas: TextMessageRequest, ChatMessageOut, TextMessageResponse, AudioUploadResponse, ChatHistoryItem, ChatHistoryResponse
+- `backend/app/repositories/onboarding_chat_repository.py` — DB access (get_or_create_onboarding_session, create_text_message, create_audio_message, get_text_messages, get_audio_messages)
+- `backend/app/services/audio_storage_service.py` — local file storage with MIME/size validation, UUID-based filenames, storage_key abstraction (no absolute paths to clients)
+- `backend/app/services/onboarding_chat_service.py` — send_text_message (placeholder assistant response), upload_audio, get_history
+- `backend/app/api/v1/endpoints/onboarding_chat.py` — 3 authenticated endpoints: POST /onboarding/chat/text, POST /onboarding/chat/audio, GET /onboarding/chat/history
+- `backend/app/api/v1/router.py` — registered onboarding_chat_router under /onboarding prefix
+- `backend/app/core/config.py` — added AUDIO_STORAGE_PATH, MAX_AUDIO_UPLOAD_MB, ALLOWED_AUDIO_MIME_TYPES settings
+- `backend/.env.example` — documented 3 new audio env vars
+- `.gitignore` — added backend/storage/ to ignored paths
+
+**Frontend**
+- `src/types/onboardingChat.ts` — TypeScript types for all 3 chat API endpoints
+- `src/lib/onboardingChat.ts` — API client (sendTextMessage, uploadAudio, getChatHistory)
+- `src/lib/media.ts` — MIME type detection via MediaRecorder.isTypeSupported, support/availability checks, formatDuration
+- `src/hooks/useAudioRecorder.ts` — MediaRecorder hook: state machine (idle/requesting/recording/stopped/error), Web Audio AnalyserNode for waveform, elapsed timer, stream cleanup on unmount
+- `src/components/audio/AudioWaveform.tsx` — canvas-based real-time waveform using AnalyserNode.getByteTimeDomainData
+- `src/components/audio/AudioPreview.tsx` — audio playback preview with progress bar, play/pause/reset, object URL lifecycle management
+- `src/components/audio/AudioRecorder.tsx` — full recorder UI: unsupported/error/idle/recording/stopped states, waveform + timer, cancel/stop/send controls
+- `src/components/onboarding/OnboardingHabitChat.tsx` — chat UI: text textarea + send, AudioRecorder integration, history display (text bubbles + audio metadata), loads history on enable
+- `src/components/onboarding/steps/FinalVideoStep.tsx` — updated: integrates OnboardingHabitChat enabled after video watched, accepts audioDict prop
+- `src/components/onboarding/OnboardingWizard.tsx` — passes dict.audio to FinalVideoStep
+- `src/dictionaries/fa.ts` — added audio section (23 keys, Persian)
+- `src/dictionaries/en.ts` — added audio section (23 keys, English)
+- `src/dictionaries/ar.ts` — added audio section (23 keys, Arabic)
+
+**No new Alembic migration** — ChatSession, ChatMessage, AudioMessage tables already existed from Phase 1 schema
+
+---
+
 ## [0.4.0] - 2026-06-03
 
 ### Added — Phase 4: Onboarding Backend
