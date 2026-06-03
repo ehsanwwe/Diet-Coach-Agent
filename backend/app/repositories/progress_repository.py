@@ -30,6 +30,7 @@ def upsert_checkin(
     if checkin is None:
         checkin = DailyCheckIn(user_id=user_id, check_date=check_date)
         db.add(checkin)
+    # Always set — None overwrites prior value. This matches PUT semantics on a single resource per day.
     checkin.weight_kg = weight_kg
     checkin.hunger_level = hunger_level
     checkin.sleep_hours = sleep_hours

@@ -86,10 +86,12 @@ def test_progress_summary(client, auth_headers, test_user, db_session):
     assert data["has_data"] is True
     assert len(data["weight_series"]) == 3
     assert data["latest_weight_kg"] == 73.0
+    # 8 wins total: sleep, activity, logging, low_stress, low_hunger, protein, fiber, hydration
     assert len(data["behavior_wins"]) == 8
     keys = {w["key"] for w in data["behavior_wins"]}
     assert {"sleep", "activity", "logging", "low_stress", "low_hunger", "protein", "fiber", "hydration"} == keys
     assert data["logging_streak"] >= 1
+    # Tracked vs untracked
     untracked = [w for w in data["behavior_wins"] if w["tracked"] is False]
     assert len(untracked) == 3
 
@@ -110,6 +112,7 @@ def test_progress_summary_empty(client, auth_headers, test_user):
 def test_weekly_report(client, auth_headers, test_user, db_session):
     """PROG-03: 7 check-ins for the current week → full weekly report."""
     today = date.today()
+    # Generate 7 daily check-ins for the current week (Monday..Sunday)
     week_start = today - timedelta(days=today.weekday())
     for i in range(7):
         d = (week_start + timedelta(days=i)).isoformat()
@@ -149,5 +152,6 @@ def test_weekly_report_empty(client, auth_headers, test_user):
     assert data["has_report"] is False
     assert isinstance(data["empty_state_message"], str)
     assert len(data["empty_state_message"]) > 0
+    # week boundaries are still computed even on empty
     assert data["week_start"] is not None
     assert data["week_end"] is not None

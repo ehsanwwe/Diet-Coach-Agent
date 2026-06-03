@@ -28,11 +28,11 @@ class CheckInResponse(BaseModel):
 
 
 class BehaviorWin(BaseModel):
-    key: str
-    label_key: str
+    key: str            # stable id: "sleep" | "activity" | "logging" | "low_stress" | "low_hunger" | "hydration" | "protein" | "fiber"
+    label_key: str      # dictionary key, e.g. "winSleep"
     achieved: bool
-    value: str | None = None
-    tracked: bool = True
+    value: str | None = None   # e.g. "7.2"
+    tracked: bool = True        # false for protein/fiber/hydration in v1
 
 
 class WeightTrend(BaseModel):

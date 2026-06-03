@@ -83,6 +83,7 @@ def get_summary(db: Session, user: User) -> ProgressSummaryResponse:
 
 def get_weekly_report(db: Session, user: User) -> WeeklyReportResponse:
     today = date.today()
+    # Monday of the current week
     week_start = today - timedelta(days=today.weekday())
     week_end = week_start + timedelta(days=6)
 
@@ -96,6 +97,7 @@ def get_weekly_report(db: Session, user: User) -> WeeklyReportResponse:
         )
 
     data = _compute_weekly_report(checkins)
+    # Persist (overwrite if already exists for this week)
     progress_repository.save_weekly_report(
         db,
         user.id,
@@ -122,6 +124,7 @@ def _compute_logging_streak(checkins_newest_first: list[DailyCheckIn]) -> int:
         return 0
     today = date.today()
     dates = {c.check_date for c in checkins_newest_first}
+    # Allow streak to start from today or yesterday (user may not have checked in yet today)
     cursor = today if today in dates else (today - timedelta(days=1))
     streak = 0
     while cursor in dates:
@@ -173,6 +176,7 @@ def _compute_behavior_wins(checkins_recent_7: list[DailyCheckIn], streak: int) -
         value=f"{avg_hunger:.1f}" if avg_hunger is not None else None,
         tracked=True,
     ))
+    # Not-yet-tracked in v1 — surface as informational chips
     wins.append(BehaviorWin(key="protein", label_key="winProtein", achieved=False, value=None, tracked=False))
     wins.append(BehaviorWin(key="fiber", label_key="winFiber", achieved=False, value=None, tracked=False))
     wins.append(BehaviorWin(key="hydration", label_key="winHydration", achieved=False, value=None, tracked=False))
