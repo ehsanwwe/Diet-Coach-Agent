@@ -145,7 +145,11 @@ Plans:
   3. After 7 days of check-ins, GET /api/v1/progress/weekly-report returns a report with weight trend, adherence trend, and a suggested next-week focus
   4. Weight trend is displayed as a sparkline or mini-chart (not just a raw number) on the progress screen
   5. The progress screen handles the empty state (no check-ins yet) with a helpful prompt, not a blank or broken layout
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 09-01-PLAN.md — Backend: pytest scaffold, schemas, repository, service, endpoints, router registration (PROG-01, PROG-02, PROG-03)
+- [ ] 09-02-PLAN.md — Frontend contract: types, lib client, fa/en/ar dictionary additions
+- [ ] 09-03-PLAN.md — Frontend implementation: sparkline, check-in form, summary view, weekly report, progress screen, bottom-nav enable (PROG-04, PROG-05, UI-12)
 **UI hint**: yes
 
 ### Phase 10: Settings, Polish & Remaining UI
