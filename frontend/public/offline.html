@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مربی تغذیه — آفلاین</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+        "Noto Sans Arabic", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
+      background: #F7FAF7;
+      color: #181C18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 320px;
+      width: 100%;
+    }
+
+    .icon {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: #E8F0E8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #181C18;
+      margin: 0 0 12px;
+      line-height: 1.3;
+    }
+
+    p {
+      font-size: 0.9375rem;
+      color: #485848;
+      line-height: 1.6;
+      margin: 0 0 32px;
+    }
+
+    button {
+      background: #567A58;
+      color: white;
+      border: none;
+      border-radius: 9999px;
+      padding: 14px 32px;
+      font-size: 0.9375rem;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    button:hover { opacity: 0.88; }
+    button:active { opacity: 0.76; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+        <line x1="18" y1="32" x2="18" y2="18" stroke="#567A58" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M18 18 C18 18 30 15 30 7 C30 7 20 6 18 18" fill="#567A58" opacity="0.9"/>
+        <path d="M18 24 C18 24 8 21 8 13 C8 13 16 14 18 24" fill="#567A58" opacity="0.65"/>
+      </svg>
+    </div>
+
+    <h1>مربی تغذیه</h1>
+    <p>اتصال اینترنت برقرار نیست.<br/>لطفاً اتصال خود را بررسی کرده و دوباره تلاش کنید.</p>
+
+    <button onclick="window.location.reload()">تلاش مجدد</button>
+  </div>
+</body>
+</html>

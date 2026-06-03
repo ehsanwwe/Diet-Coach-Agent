@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <!-- Background rounded square -->
+  <rect width="192" height="192" rx="40" fill="#567A58"/>
+  <!-- Stem -->
+  <line x1="96" y1="158" x2="96" y2="90" stroke="white" stroke-width="10" stroke-linecap="round"/>
+  <!-- Right leaf -->
+  <path d="M96 90 C96 90 148 72 148 36 C148 36 106 34 96 90" fill="white" opacity="0.92"/>
+  <!-- Left leaf -->
+  <path d="M96 118 C96 118 46 104 46 66 C46 66 84 70 96 118" fill="white" opacity="0.68"/>
+</svg>

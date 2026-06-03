@@ -1,23 +1,113 @@
-/**
- * Skeleton home page for [lang] route.
- *
- * Phase 1: Renders a plain coming-soon shell with no features.
- * Phase 2: Replaced with proper i18n-aware landing page.
- * Phase 3: Replaced with auth-gated home or redirect to login.
- */
-type Props = {
-  params: Promise<{ lang: string }>;
-};
+import { notFound } from 'next/navigation'
+import { isValidLocale, getDictionary, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
 
-export default async function HomePage({ params }: Props) {
-  const { lang } = await params;
+type Props = {
+  params: Promise<{ lang: string }>
+}
+
+/** Leaf/sprout icon — inline SVG, uses currentColor for the brand color. */
+function AppIcon() {
+  return (
+    <svg
+      width="44"
+      height="44"
+      viewBox="0 0 44 44"
+      fill="none"
+      aria-hidden="true"
+      role="img"
+    >
+      {/* Stem */}
+      <line
+        x1="22"
+        y1="40"
+        x2="22"
+        y2="22"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      {/* Right leaf */}
+      <path
+        d="M22 22 C22 22 36 18 36 8 C36 8 24 7 22 22"
+        fill="currentColor"
+        opacity="0.9"
+      />
+      {/* Left leaf */}
+      <path
+        d="M22 30 C22 30 10 27 10 17 C10 17 20 18 22 30"
+        fill="currentColor"
+        opacity="0.65"
+      />
+    </svg>
+  )
+}
+
+/**
+ * Splash / landing page for each locale.
+ * App-like layout: centered on mobile, max 430px on desktop.
+ * No auth, no features — establishes i18n, direction, and visual style.
+ */
+export default async function SplashPage({ params }: Props) {
+  const { lang } = await params
+
+  if (!isValidLocale(lang)) notFound()
+
+  const locale = lang as Locale
+  const dict = await getDictionary(locale)
 
   return (
-    <main className="min-h-dvh flex items-center justify-center">
-      <div className="text-center p-8">
-        <h1 className="text-2xl font-semibold mb-4">Diet Coach Agent</h1>
-        <p className="text-sm text-gray-500">Phase 1 skeleton - lang: {lang}</p>
+    <div className="min-h-dvh bg-surface flex flex-col">
+      {/* Mobile app container — centered on desktop */}
+      <div className="app-container flex-1 flex flex-col items-center justify-center px-8 py-16 text-center">
+
+        {/* App icon */}
+        <div className="w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center mb-8 text-brand">
+          <AppIcon />
+        </div>
+
+        {/* App name */}
+        <h1 className="text-3xl font-bold text-ink mb-3 leading-tight">
+          {dict.common.appName}
+        </h1>
+
+        {/* Tagline */}
+        <p className="text-base font-medium text-brand mb-4">
+          {dict.splash.tagline}
+        </p>
+
+        {/* Description */}
+        <p className="text-sm text-ink-2 leading-relaxed max-w-[300px] mb-12">
+          {dict.splash.description}
+        </p>
+
+        {/* Coming-soon badge — no auth implemented yet */}
+        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-muted">
+          <span className="w-2 h-2 rounded-full bg-brand opacity-70" />
+          <span className="text-sm font-medium text-brand">
+            {dict.splash.comingSoon}
+          </span>
+        </div>
       </div>
-    </main>
-  );
+
+      {/* Language switcher — bottom of screen */}
+      <div className="app-container pb-safe pb-8 flex justify-center items-center gap-6">
+        {SUPPORTED_LOCALES.map((loc) => (
+          <a
+            key={loc}
+            href={`/${loc}`}
+            className={[
+              'text-sm transition-colors',
+              loc === locale
+                ? 'text-brand font-semibold'
+                : 'text-ink-3 hover:text-ink-2',
+            ].join(' ')}
+            aria-current={loc === locale ? 'page' : undefined}
+            aria-label={dict.language[loc]}
+          >
+            {dict.language[loc]}
+          </a>
+        ))}
+      </div>
+    </div>
+  )
 }

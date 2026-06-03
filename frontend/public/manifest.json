@@ -1,0 +1,36 @@
+{
+  "name": "مربی تغذیه | Diet Coach",
+  "short_name": "مربی تغذیه",
+  "description": "مربی هوشمند تغذیه شما — راهنمای روزانه سلامت و تغذیه",
+  "start_url": "/fa",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7FAF7",
+  "theme_color": "#567A58",
+  "orientation": "portrait-primary",
+  "lang": "fa",
+  "dir": "rtl",
+  "categories": ["health", "food", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "گفتگو با مربی",
+      "short_name": "گفتگو",
+      "url": "/fa",
+      "description": "شروع گفتگو با مربی تغذیه"
+    }
+  ]
+}

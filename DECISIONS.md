@@ -91,4 +91,28 @@
 **Alternatives rejected:** Lifespan event validation (later failure, harder to catch in tests); manual check in each route (error-prone, could be missed).
 
 ---
+
+## 2026-06-03 — Phase 2 Implementation Decisions
+
+### D-017: middleware.ts kept (not renamed to proxy.ts despite Next.js 16 deprecation)
+**Decision:** Keep `src/middleware.ts` filename for Phase 2. Rename to `proxy.ts` in Phase 10 (Polish).
+**Rationale:** Next.js 16 deprecates `middleware.ts` in favor of `proxy.ts`, but the old name still works and is more widely documented. Renaming is safe but low priority.
+**Alternatives rejected:** Rename now (extra noise in Phase 2 commit, not functionally required).
+
+### D-018: Locale cookie is not httpOnly (readable by JavaScript)
+**Decision:** Set `NEXT_LOCALE` cookie with `httpOnly: false` so client components can read the current locale if needed for live language switching.
+**Rationale:** The locale cookie contains no sensitive data. Client-side readability enables future Zustand locale store to sync from cookie without a server round-trip.
+**Alternatives rejected:** httpOnly=true (would require an API route for JS to learn the current locale).
+
+### D-019: PWA icon uses SVG for Phase 2; PNGs deferred to Phase 10
+**Decision:** `public/icons/icon.svg` is the only icon format for Phase 2. The manifest references it with `"sizes": "any"` and `"type": "image/svg+xml"`.
+**Rationale:** Binary PNG files cannot be created by the code generation process. SVG icons are widely supported in modern browsers for PWA manifests. iOS Apple Touch Icon (PNG) is needed for Phase 10 Polish.
+**Alternatives rejected:** Placeholder 1×1 PNG (misleading); skipping icons entirely (breaks manifest validation).
+
+### D-020: Direction set server-side via NEXT_LOCALE cookie in root layout
+**Decision:** Root `app/layout.tsx` reads the `NEXT_LOCALE` cookie (set by middleware) and applies `lang` and `dir` to `<html>`. The `[lang]` layout does not re-render `<html>`.
+**Rationale:** Cookie is available at server-render time so `dir="rtl"` is in the initial HTML — zero client-side direction flicker. The alternative (script tag / useEffect) causes a visible layout shift.
+**Alternatives rejected:** `dir` set via client script (causes flicker); `dir` only in body/div (breaks CSS logical properties on scrollbar and root fonts).
+
+---
 *Last updated: 2026-06-03*

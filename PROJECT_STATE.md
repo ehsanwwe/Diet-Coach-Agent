@@ -1,65 +1,61 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-03
-**Current phase:** Phase 1 COMPLETE → Phase 2 next
-**Overall progress:** Phase 1 of 10 complete (10%)
+**Current phase:** Phase 2 COMPLETE → Phase 3 next
+**Overall progress:** Phase 2 of 10 complete (20%)
 
 ## What Exists Now
 
-### Backend (`backend/`)
-- `pyproject.toml` — all dependencies declared (FastAPI, SQLAlchemy 2.x, Alembic, PyJWT, pydantic-settings)
-- `app/core/config.py` — pydantic-settings BaseSettings, SECRET_KEY validation, all 10 OPENCLAW_* vars
-- `app/core/database.py` — SQLAlchemy 2.x sync engine, get_session(), DeclarativeBase
-- `app/core/errors.py` — consistent error response helpers (AppError, error_response, raise_http_error)
-- `app/models/` — ALL 22 ORM models defined with lazy="raise" on all relationships
-  - Group 1: User, AuthOTP, TokenBlocklist, AuditLog, UserLanguagePreference
-  - Group 2: UserProfile, MedicalCondition, UserMedicalFlag, Medication, Allergy
-  - Group 3: LifestyleProfile, FoodPreference, BehaviorProfile
-  - Group 4: NutritionGoal, NutritionRiskAssessment, NutritionPlan, NutritionPlanMeal
-  - Group 5: ChatSession, ChatMessage, AudioMessage, MealEntry
-  - Group 6: DailyCheckIn, ProgressEntry, WeeklyReport
-- `alembic/` — Alembic configured with render_as_batch=True + compare_type=True
-- `alembic/versions/0001_initial_schema.py` — initial migration for all 22 tables
-- `app/main.py` — FastAPI app factory, CORS from env, global error handlers
-- `app/api/v1/router.py` — v1 router, health endpoint at /api/v1/health
-- `app/schemas/common.py` — ErrorResponse, SuccessResponse, PaginatedResponse (Pydantic v2)
-- `backend/.env.example` — all env vars documented including all 10 OPENCLAW_* vars
-- `backend/README.md` — setup guide with migration commands and technology notes
+### Backend (`backend/`) — Phase 1
+- `pyproject.toml`, all dependencies, all 22 ORM models, Alembic migrations
+- `app/core/config.py` — SECRET_KEY validation, all 10 OPENCLAW_* vars
+- `app/main.py`, `/api/v1/health`, `backend/.env.example`, `backend/README.md`
 
-### Frontend (`frontend/`)
-- Next.js 16 skeleton with App Router `src/app/[lang]/` structure
-- Tailwind CSS v4 with `@tailwindcss/postcss` PostCSS plugin
-- TypeScript strict mode enabled
-- `frontend/.env.example` — frontend env vars documented
-- `frontend/README.md` — setup guide
+### Frontend (`frontend/`) — Phase 2 COMPLETE
+- **i18n infrastructure**
+  - `src/dictionaries/fa.ts` — Persian dictionary (defines Dictionary interface)
+  - `src/dictionaries/en.ts` — English dictionary
+  - `src/dictionaries/ar.ts` — Arabic dictionary
+  - `src/lib/i18n.ts` — Locale types, SUPPORTED_LOCALES, getDictionary()
+  - `src/lib/direction.ts` — getDirection(), isRTL(), getSlideX(), getIconFlipClass()
+- **Middleware** — `src/middleware.ts` — locale detection from cookie/Accept-Language, redirect to /[lang], sets NEXT_LOCALE cookie
+- **Root layout** — `src/app/layout.tsx` — reads NEXT_LOCALE cookie, sets `<html lang dir>` server-side (zero RTL flicker)
+- **[lang] layout** — validates locale, 404s on unknown lang
+- **Splash page** — `src/app/[lang]/page.tsx` — app-like mobile shell, dictionary strings, language switcher
+- **Globals CSS** — muted/pale brand palette via Tailwind v4 `@theme {}`, logical spacing, .app-container
+- **PWA** — `public/manifest.json`, `public/sw.js`, `public/offline.html`, `public/icons/icon.svg`
+- **Service worker registration** — `src/components/service-worker.tsx` (client component)
+- **next.config.ts** — Cache-Control headers for sw.js and manifest.json
+- **frontend/.env.example** — NEXT_PUBLIC_APP_NAME, NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_DEFAULT_LOCALE, NEXT_PUBLIC_SUPPORTED_LOCALES, NEXT_PUBLIC_ENABLE_DEV_VIDEO_BYPASS
 
 ### Root
-- `.gitignore` — SQLite, env files, uploads, caches all excluded
-- `.env.example` — cross-service env vars, links to service examples
-- `backend/README.md`, `frontend/README.md` — setup guides
+- `.env.example`, `.gitignore`, `backend/README.md`, `frontend/README.md`
 
 ## Critical Safeguards Verified
-- `lazy="raise"` on ALL ORM relationships (no silent N+1 possible)
-- `render_as_batch=True` in BOTH alembic/env.py context.configure() calls
-- `SECRET_KEY` validation at startup — server refuses to start without it
-- No hard-coded CORS origins — loaded from `CORS_ORIGINS` env var
+- `lazy="raise"` on ALL ORM relationships
+- `render_as_batch=True` in both Alembic env.py calls
+- `SECRET_KEY` validation at startup
+- No hard-coded CORS origins
+- No pl-/pr-/ml-/mr- Tailwind classes used (logical properties only)
+- Direction set server-side via cookie — no RTL flicker
 
-## Known Issues / Blockers
-- Phase 7 AI Layer: Persian food nutrition accuracy needs validation
-- Phase 6 Voice: iOS Safari MediaRecorder behavior needs real-device testing
+## Known Issues / Notes
+- `middleware.ts` naming is deprecated in Next.js 16 (prefer `proxy.ts`) — rename in Phase 10 polish
+- PWA icon uses SVG (browser-supported); Phase 10 should add 192×192 and 512×512 PNGs for iOS
+- Frontend does not yet call the backend (no auth, no API calls)
 
 ## How to Resume (Cold Start)
 1. Read this file + NEXT_STEPS.md
-2. `cd backend && SECRET_KEY=... alembic upgrade head` to verify DB
-3. `cd backend && SECRET_KEY=... uvicorn app.main:app` to verify server
-4. Start Phase 2: `/gsd:plan-phase 2` or `/gsd:execute-phase 2`
+2. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`
+3. Frontend: `cd frontend && npm run dev` → open http://localhost:3000 → redirects to /fa
+4. Start Phase 3: `/gsd:plan-phase 3`
 
 ## Phase Progress
 
 | Phase | Status |
 |-------|--------|
 | 1 — Infra & Backend Foundation | **COMPLETE** |
-| 2 — i18n & Frontend Shell | Not started |
+| 2 — i18n & Frontend Shell | **COMPLETE** |
 | 3 — Authentication | Not started |
 | 4 — Onboarding Backend | Not started |
 | 5 — Onboarding Frontend | Not started |

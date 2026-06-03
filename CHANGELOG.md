@@ -5,6 +5,45 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.2.0] - 2026-06-03
+
+### Added — Phase 2: i18n & Frontend Shell
+
+**i18n infrastructure**
+- `frontend/src/dictionaries/fa.ts` — Persian dictionary (defines the `Dictionary` interface as source of truth)
+- `frontend/src/dictionaries/en.ts` — English dictionary
+- `frontend/src/dictionaries/ar.ts` — Arabic dictionary
+- `frontend/src/lib/i18n.ts` — `Locale` type, `SUPPORTED_LOCALES`, `isValidLocale()`, `getDictionary()`, `RTL_LOCALES`
+- `frontend/src/lib/direction.ts` — `getDirection()`, `isRTL()`, `getSlideX()`, `getIconFlipClass()`, `getIconFlipStyle()`
+
+**Routing & direction**
+- `frontend/src/middleware.ts` — locale detection from cookie + Accept-Language; redirects to `/{locale}/`; sets `NEXT_LOCALE` cookie
+- `frontend/src/app/layout.tsx` — reads cookie, sets `<html lang dir>` server-side (zero RTL flicker)
+- `frontend/src/app/[lang]/layout.tsx` — validates locale param, 404s on unknown locales, generates static params
+- `frontend/src/app/[lang]/page.tsx` — app-like mobile splash: icon, app name, tagline, description, coming-soon badge, language switcher
+
+**Style system**
+- `frontend/src/app/globals.css` — muted/pale brand palette via Tailwind v4 `@theme {}`, `.app-container` (mobile max-width centered), `.pb-safe`, `.pt-safe`, logical property defaults
+
+**PWA**
+- `frontend/public/manifest.json` — name, description, icons (SVG), start_url `/fa`, display standalone
+- `frontend/public/sw.js` — install/activate/fetch lifecycle; offline fallback via `/offline.html`
+- `frontend/public/offline.html` — standalone offline page with brand styles (no external deps)
+- `frontend/public/icons/icon.svg` — leaf/sprout icon, scalable SVG placeholder (PNGs in Phase 10)
+- `frontend/src/components/service-worker.tsx` — client component that registers SW on first load
+
+**Config**
+- `frontend/next.config.ts` — Cache-Control headers for `sw.js` and `manifest.json`
+- `frontend/.env.example` — added `NEXT_PUBLIC_APP_NAME`, `NEXT_PUBLIC_API_BASE_URL`, `NEXT_PUBLIC_DEFAULT_LOCALE`, `NEXT_PUBLIC_SUPPORTED_LOCALES`, `NEXT_PUBLIC_ENABLE_DEV_VIDEO_BYPASS`
+
+### Notes
+- No physical Tailwind classes used (no `pl-`, `pr-`, `ml-`, `mr-`) — all spacing via logical properties (`ps-`, `pe-`, `ms-`, `me-`)
+- All i18n strings served from server-side dictionary; zero client bundle impact
+- TypeScript strict mode: no `any` types, all components fully typed
+- Build: `npm run build` passes with zero TypeScript errors; one deprecation warning (middleware.ts → proxy.ts in Next.js 16, deferred to Phase 10)
+
+---
+
 ## [0.1.0] - 2026-06-03
 
 ### Added — Phase 1: Infra & Backend Foundation

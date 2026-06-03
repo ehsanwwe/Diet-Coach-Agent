@@ -1,23 +1,44 @@
 @import "tailwindcss";
 
 /*
-  Diet Coach Agent - Global Styles
+  Diet Coach Agent — Global Styles
+  Phase 2: muted/pale health-app aesthetic, RTL-aware typography, safe-area support.
 
-  Tailwind v4: CSS-first configuration via @theme {} block.
-  No tailwind.config.js required.
-
-  Key constraints:
-  - Use logical inline spacing utilities instead of physical side utilities
-  - Use Tailwind v4 logical property utilities throughout
-  - CSS custom properties defined in @theme {} are available as Tailwind utilities
-
-  Phase 2 will add: color palette, font stack, RTL-specific overrides
+  Tailwind v4 CSS-first configuration:
+  - Colors defined in @theme {} become bg-*, text-*, border-* utilities.
+  - Font defined here is applied via --font-family-sans utility.
+  - Logical properties are the default for spacing (ps-, pe-, ms-, me-).
+  - Physical pl-/pr-/ml-/mr- classes are NOT used anywhere in this project.
 */
 
 @theme {
-  /* Font stack updated in Phase 2 with Persian font. */
-  --font-family-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* ── Brand palette (muted, pale, health-focused) ──────────────── */
+  --color-surface: #F7FAF7;          /* page background */
+  --color-elevated: #FFFFFF;         /* card / sheet background */
+  --color-brand: #567A58;            /* primary sage green */
+  --color-brand-light: #7A9C7C;      /* lighter green for hover states */
+  --color-brand-muted: #E8F0E8;      /* very light green tint */
+  --color-ink: #181C18;              /* primary text */
+  --color-ink-2: #485848;            /* secondary text */
+  --color-ink-3: #8A9A8A;            /* muted / placeholder text */
+  --color-line: #E0EAE0;             /* dividers and borders */
+  --color-warm: #C89458;             /* accent amber */
+  --color-warm-muted: #FAF0DC;       /* light amber tint */
+  --color-error: #A33A2A;
+  --color-success: #2E7D4F;
+
+  /* ── Typography ───────────────────────────────────────────────── */
+  /* Arabic/Persian-aware font stack. Noto Sans Arabic covers Persian
+     on Android; Tahoma is the Windows fallback. */
+  --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Noto Sans Arabic", "Noto Naskh Arabic", Tahoma, Arial, sans-serif;
+
+  /* ── Layout ───────────────────────────────────────────────────── */
+  /* Maximum width of the mobile app container centered on desktop */
+  --app-max-width: 430px;
 }
+
+/* ── Reset & base ─────────────────────────────────────────────────── */
 
 *,
 *::before,
@@ -26,14 +47,51 @@
 }
 
 html {
-  /* Direction set server-side via [lang] layout in Phase 2. */
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-surface);
+  color: var(--color-ink);
+  /* Direction is set per-request via lang/dir attributes on <html>
+     in app/layout.tsx. Never hard-code ltr or rtl here. */
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100dvh;
+  background-color: var(--color-surface);
+}
+
+/* ── App shell ────────────────────────────────────────────────────── */
+
+/* Centers the mobile-width app on desktop.
+   Every top-level route wraps its content in .app-container. */
+.app-container {
+  width: 100%;
+  max-width: var(--app-max-width);
+  margin-inline: auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* ── Safe-area utilities ──────────────────────────────────────────── */
+/* Used for bottom nav and content that must respect notches/home bars. */
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+/* ── Smooth focus ring (keyboard accessibility) ───────────────────── */
+
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
