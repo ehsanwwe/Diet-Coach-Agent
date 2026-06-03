@@ -56,8 +56,12 @@ export default function OtpVerifyForm({ dict, locale, phone }: Props) {
 
     setIsLoading(true)
     try {
-      await verifyOtp(phone, code)
-      router.push(`/${locale}`)
+      const tokenData = await verifyOtp(phone, code)
+      router.push(
+        tokenData.user.is_onboarded
+          ? `/${locale}/dashboard`
+          : `/${locale}/onboarding`,
+      )
     } catch (err) {
       if (err instanceof ApiRequestError) {
         setError(err.status === 400 ? dict.invalidOtp : err.message)

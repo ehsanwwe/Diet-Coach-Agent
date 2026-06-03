@@ -52,7 +52,11 @@ async function request<T>(
     } catch {
       // non-JSON error body
     }
-    throw new ApiRequestError(res.status, errorBody.message, errorBody.detail)
+    const message =
+      typeof errorBody.message === 'string' && errorBody.message
+        ? errorBody.message
+        : 'Request failed'
+    throw new ApiRequestError(res.status, message, errorBody.detail ?? {})
   }
 
   return res.json() as Promise<T>

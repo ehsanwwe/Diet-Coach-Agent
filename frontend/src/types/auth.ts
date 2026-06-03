@@ -2,6 +2,7 @@ export interface AuthUser {
   id: string
   phone: string
   is_active: boolean
+  is_onboarded: boolean
   created_at: string
 }
 

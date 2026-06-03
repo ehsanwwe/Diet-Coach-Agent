@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getDictionary, isValidLocale, type Locale } from '@/lib/i18n'
 import OtpVerifyForm from '@/components/auth/OtpVerifyForm'
 
@@ -11,10 +11,10 @@ export default async function OtpVerifyPage({ params, searchParams }: Props) {
   const { lang } = await params
   if (!isValidLocale(lang)) notFound()
 
-  const { phone } = await searchParams
-  if (!phone) notFound()
-
   const locale = lang as Locale
+  const { phone } = await searchParams
+  if (!phone) redirect(`/${locale}/login`)
+
   const dict = await getDictionary(locale)
 
   const decodedPhone = decodeURIComponent(phone)
