@@ -144,4 +144,33 @@
 **Alternatives rejected:** Let old OTPs expire naturally (allows concurrent valid codes); delete old OTPs (loses audit trail).
 
 ---
+
+## 2026-06-03 — Phase 4 Implementation Decisions
+
+### D-026: is_onboarded flag on User model (not separate OnboardingSession table)
+**Decision:** Add `is_onboarded: bool = False` directly to the `User` model.
+**Rationale:** Single boolean flag is the simplest check for whether onboarding is complete. A separate OnboardingSession table adds complexity with no benefit at this stage. Progress tracking (which step was last completed) is derived at query time from the existence of related rows, not stored as state.
+**Alternatives rejected:** Separate OnboardingSession model (over-engineering); `onboarding_step: int` field (fragile, couples to step order).
+
+### D-027: Warning symptoms stored as UserMedicalFlag sentinel row
+**Decision:** Warning symptoms (free-text list) are stored in a `UserMedicalFlag` row with `condition_code="warning_symptoms"` and the symptom list JSON-encoded in the `notes` field.
+**Rationale:** Keeps all medical data in one table without schema changes. The existing `notes: Text` column on `UserMedicalFlag` is designed for exactly this kind of supplementary information.
+**Alternatives rejected:** Separate `WarningSymptom` table (unnecessary new table for a single list field); `UserProfile.notes` field (medical data belongs with medical flags).
+
+### D-028: Medical flags replaced on every POST /onboarding/medical (upsert per code)
+**Decision:** Each call to POST /onboarding/medical upserts all 10 condition flags using the `UniqueConstraint("user_id", "condition_code")`. Medications and allergies are fully replaced (delete-all + insert).
+**Rationale:** The onboarding flow is idempotent — calling any step twice must produce the same final state. Upsert for flags preserves the exact state from the most recent call. Delete-all for medications/allergies is correct because the user may have removed items since the last call.
+**Alternatives rejected:** Merge/diff medications (complex, error-prone, no benefit for onboarding-only use case).
+
+### D-029: Safety risk assessment runs at both /medical step and /complete step
+**Decision:** `SafetyGuardrailService.assess()` is called at both `POST /onboarding/medical` (returns preliminary risk_level in response) and `POST /onboarding/complete` (creates persisted NutritionRiskAssessment row).
+**Rationale:** Frontend needs early risk feedback after the medical step so it can show appropriate messaging before the user continues. The authoritative assessment is created at `complete` and stored in `NutritionRiskAssessment`. The medical-step assessment is ephemeral (not stored).
+**Alternatives rejected:** Risk assessment only at complete (delays feedback); store assessment at each medical call (creates many rows for partial updates).
+
+### D-030: clinical_review_required does not block is_onboarded=True
+**Decision:** Even users with `clinical_review_required` risk level have `is_onboarded` set to `True` on POST /onboarding/complete.
+**Rationale:** Onboarding captures intent and data — it does not gatekeep access. The app delivers appropriate messaging (consult a doctor) based on `risk_level`/`clinical_review_required` fields on the response and stored NutritionRiskAssessment. Blocking completion would trap users who need medical guidance most.
+**Alternatives rejected:** Block completion for clinical users (paternalistic, blocks flow for users who need the service most); separate "pending clinical review" status (extra state machine complexity).
+
+---
 *Last updated: 2026-06-03*

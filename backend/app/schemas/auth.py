@@ -47,6 +47,7 @@ class UserResponse(BaseModel):
     id: str
     phone: str
     is_active: bool
+    is_onboarded: bool
     created_at: datetime
 
 

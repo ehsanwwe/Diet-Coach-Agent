@@ -1,8 +1,8 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-03
-**Current phase:** Phase 3 COMPLETE → Phase 4 next
-**Overall progress:** Phase 3 of 10 complete (30%)
+**Current phase:** Phase 4 COMPLETE → Phase 5 next
+**Overall progress:** Phase 4 of 10 complete (40%)
 
 ## What Exists Now
 
@@ -39,6 +39,17 @@
 - Config: added OTP_EXPIRE_MINUTES=5, SMS_PROVIDER=mock
 - No new Alembic migration — users, auth_otps, token_blocklist all existed in Phase 1
 
+### Backend (`backend/`) — Phase 4
+- `app/models/user.py` — added `is_onboarded: bool = False`
+- `alembic/versions/0002_add_user_is_onboarded.py` — migration for new column
+- `app/schemas/onboarding.py` — ProfileRequest/Response, MedicalRequest/Response, LifestyleRequest/Response, PreferencesRequest/Response, BehaviorRequest/Response, OnboardingStatusResponse, OnboardingCompleteResponse (Pydantic v2)
+- `app/schemas/auth.py` — UserResponse extended with `is_onboarded` field
+- `app/repositories/onboarding_repository.py` — upsert_profile, replace_medical_flags, replace_medications, replace_allergies, upsert_warning_symptoms, upsert_lifestyle, upsert_food_preference, upsert_behavior_profile, create_risk_assessment, set_user_onboarded
+- `app/services/safety_guardrail_service.py` — assess() returning SafetyAssessment with risk_level (low/medium/high/clinical_review_required) and triggered flags
+- `app/services/onboarding_service.py` — get_status, save_profile, save_medical, save_lifestyle, save_preferences, save_behavior, complete_onboarding
+- `app/api/v1/endpoints/onboarding.py` — GET /onboarding/status, POST /onboarding/profile, POST /onboarding/medical, POST /onboarding/lifestyle, POST /onboarding/preferences, POST /onboarding/behavior, POST /onboarding/complete
+- All 7 endpoints require Bearer token authentication
+
 ### Frontend (`frontend/`) — Phase 3
 - `src/types/auth.ts` — AuthUser, TokenResponse, ApiSuccess, ApiError types
 - `src/lib/storage.ts` — localStorage abstraction (getToken, setToken, clearToken, getStoredUser, setStoredUser)
@@ -74,7 +85,8 @@
 2. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`
 3. Frontend: `cd frontend && npm run dev` → open http://localhost:3000 → redirects to /fa/login
 4. Test auth: POST /api/v1/auth/request-otp → POST /api/v1/auth/verify-otp with OTP 123456
-5. Start Phase 4: `/gsd:plan-phase 4`
+5. Test onboarding: Bearer token → GET /api/v1/onboarding/status → POST /api/v1/onboarding/profile → ...
+6. Start Phase 5: `/gsd:plan-phase 5`
 
 ## Phase Progress
 
@@ -83,7 +95,7 @@
 | 1 — Infra & Backend Foundation | **COMPLETE** |
 | 2 — i18n & Frontend Shell | **COMPLETE** |
 | 3 — Authentication | **COMPLETE** |
-| 4 — Onboarding Backend | Not started |
+| 4 — Onboarding Backend | **COMPLETE** |
 | 5 — Onboarding Frontend | Not started |
 | 6 — Voice & Audio | Not started |
 | 7 — Nutrition Backend & AI Layer | Not started |

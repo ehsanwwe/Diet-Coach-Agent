@@ -5,6 +5,33 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.4.0] - 2026-06-03
+
+### Added — Phase 4: Onboarding Backend
+
+**Backend**
+- `backend/app/models/user.py` — added `is_onboarded: bool = False` field
+- `backend/alembic/versions/0002_add_user_is_onboarded.py` — migration adding `is_onboarded` column to users table
+- `backend/app/schemas/onboarding.py` — `ProfileRequest/Response`, `MedicalRequest/Response`, `LifestyleRequest/Response`, `PreferencesRequest/Response`, `BehaviorRequest/Response`, `OnboardingStatusResponse`, `OnboardingCompleteResponse` (Pydantic v2, all list fields with JSON text deserialization)
+- `backend/app/schemas/auth.py` — `UserResponse` extended with `is_onboarded` field (auth `/me` endpoint now reflects onboarding state)
+- `backend/app/repositories/onboarding_repository.py` — `upsert_profile`, `replace_medical_flags`, `replace_medications`, `replace_allergies`, `upsert_warning_symptoms`, `get_warning_symptoms`, `upsert_lifestyle`, `upsert_food_preference`, `upsert_behavior_profile`, `create_risk_assessment`, `get_latest_risk_assessment`, `set_user_onboarded`
+- `backend/app/services/safety_guardrail_service.py` — `assess()` evaluates risk from medical flags, medications, warning symptoms, and age; returns `SafetyAssessment` with `risk_level` (low/medium/high/clinical_review_required) and `flags_triggered`; detects 15+ high-risk patterns; never issues medical prescriptions
+- `backend/app/services/onboarding_service.py` — `get_status`, `save_profile`, `save_medical`, `save_lifestyle`, `save_preferences`, `save_behavior`, `complete_onboarding`
+- `backend/app/api/v1/endpoints/onboarding.py` — `GET /onboarding/status`, `POST /onboarding/profile`, `POST /onboarding/medical`, `POST /onboarding/lifestyle`, `POST /onboarding/preferences`, `POST /onboarding/behavior`, `POST /onboarding/complete`
+- `backend/app/api/v1/router.py` — onboarding router registered at `/onboarding`
+
+### Notes
+- All 7 onboarding endpoints require Bearer token (401 if unauthenticated)
+- Medical flags upserted per condition code (idempotent); medications/allergies fully replaced on each call
+- Warning symptoms stored in sentinel `UserMedicalFlag` row (`condition_code="warning_symptoms"`)
+- Safety assessment runs twice: preliminary at `/medical` step (ephemeral), authoritative at `/complete` (stored in `NutritionRiskAssessment`)
+- `clinical_review_required` does not block `is_onboarded=True` — app delivers messaging based on stored risk level
+- Profile (Step 1) is the only required step for `/complete`; medical/lifestyle/preferences/behavior enrich the profile
+- No AI/OpenClaw calls — diet plan generation is Phase 7
+- Alembic: `alembic check` confirms schema is fully in sync after migration
+
+---
+
 ## [0.3.0] - 2026-06-03
 
 ### Added — Phase 3: Authentication
