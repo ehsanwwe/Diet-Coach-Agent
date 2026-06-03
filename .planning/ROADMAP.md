@@ -35,7 +35,16 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. All ORM relationships raise an error if accessed outside a session (lazy="raise" is enforced)
   4. `SECRET_KEY` absent from environment causes backend to refuse startup with a clear error message; `backend/.env.example` lists all 10 `OPENCLAW_*` variables with descriptions
   5. `npm run dev` from `frontend/` starts the Next.js dev server (skeleton, no features yet); root `PROJECT_STATE.md`, `NEXT_STEPS.md`, `DECISIONS.md`, and `CHANGELOG.md` exist and are populated
-**Plans**: TBD
+**Plans**: 8 plans
+Plans:
+- [ ] 01-01-PLAN.md — Monorepo skeleton and .gitignore
+- [ ] 01-02-PLAN.md — Backend pyproject.toml and core modules (config, database, errors)
+- [ ] 01-03-PLAN.md — ORM models Group 1 (User core) and Group 2 (Profile)
+- [ ] 01-04-PLAN.md — ORM models Groups 3-6 (Lifestyle, Nutrition, Chat, Progress)
+- [ ] 01-05-PLAN.md — Alembic setup and initial migration (all 22 tables)
+- [ ] 01-06-PLAN.md — FastAPI app factory, routers, schemas, startup validation
+- [ ] 01-07-PLAN.md — Next.js 16 frontend skeleton and Tailwind v4
+- [ ] 01-08-PLAN.md — Env example files, README files, continuation files
 
 ### Phase 2: i18n & Frontend Shell
 **Goal**: The frontend has a complete i18n foundation — fa/en/ar dictionaries with full coverage, document direction set server-side from cookie with zero RTL flicker, all CSS using Tailwind v4 logical properties (never pl-/pr-/ml-/mr-), direction-aware utilities for icons and animations, PWA manifest + service worker + offline fallback, and the muted/pale/app-like visual style system established — all before any feature screen is built.
@@ -159,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Infra & Backend Foundation | 0/TBD | Not started | - |
+| 1. Infra & Backend Foundation | 0/8 | In progress | - |
 | 2. i18n & Frontend Shell | 0/TBD | Not started | - |
 | 3. Authentication | 0/TBD | Not started | - |
 | 4. Onboarding Backend | 0/TBD | Not started | - |
