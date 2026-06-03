@@ -5,9 +5,11 @@ import { PlayCircle, CheckCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import ClinicalReviewNotice from '../ClinicalReviewNotice'
+import OnboardingHabitChat from '../OnboardingHabitChat'
 
 interface Props {
   dict: Dictionary['onboarding']
+  audioDict: Dictionary['audio']
   isSubmitting: boolean
   apiError: string | null
   clinicalReviewRequired: boolean
@@ -19,6 +21,7 @@ const DEV_BYPASS = process.env.NEXT_PUBLIC_ENABLE_DEV_VIDEO_BYPASS === 'true'
 
 export default function FinalVideoStep({
   dict,
+  audioDict,
   isSubmitting,
   apiError,
   clinicalReviewRequired,
@@ -34,7 +37,6 @@ export default function FinalVideoStep({
           <p className="text-sm text-ink-2 mt-1">{dict.finalSubtitle}</p>
         </div>
 
-        {/* Clinical review notice (shown if risk is high) */}
         {clinicalReviewRequired && <ClinicalReviewNotice dict={dict} />}
 
         {/* Video placeholder */}
@@ -47,7 +49,6 @@ export default function FinalVideoStep({
             <p className="text-sm text-ink-2 text-center px-6">{dict.finalVideoComingSoon}</p>
           </div>
 
-          {/* Dev bypass */}
           {DEV_BYPASS && !watched && (
             <div className="border-t border-line p-4">
               <button
@@ -71,6 +72,39 @@ export default function FinalVideoStep({
         {!watched && (
           <p className="text-xs text-ink-3 text-center">{dict.finalWatchFirst}</p>
         )}
+
+        {/* Habit chat — enabled only after video watched */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-ink">{audioDict.chatSectionTitle}</h2>
+          <p className="text-xs text-ink-3">{audioDict.chatSectionSubtitle}</p>
+          <OnboardingHabitChat
+            dict={{
+              startRecording: audioDict.startRecording,
+              stopRecording: audioDict.stopRecording,
+              cancelRecording: audioDict.cancelRecording,
+              sendAudio: audioDict.sendAudio,
+              recording: audioDict.recording,
+              uploading: audioDict.uploading,
+              permissionDenied: audioDict.permissionDenied,
+              unsupportedBrowser: audioDict.unsupportedBrowser,
+              noMicrophone: audioDict.noMicrophone,
+              audioPreview: audioDict.audioPreview,
+              recordingDuration: audioDict.recordingDuration,
+              uploadFailed: audioDict.uploadFailed,
+              uploadSuccess: audioDict.uploadSuccess,
+              labelPlay: audioDict.labelPlay,
+              labelPause: audioDict.labelPause,
+              labelReset: audioDict.labelReset,
+              textPlaceholder: audioDict.textPlaceholder,
+              sendText: audioDict.sendText,
+              historyEmpty: audioDict.historyEmpty,
+              transcriptionPending: audioDict.transcriptionPending,
+              transcriptionNotConfigured: audioDict.transcriptionNotConfigured,
+              processing: audioDict.processing,
+            }}
+            enabled={watched}
+          />
+        </div>
 
         {apiError && (
           <p className="text-sm text-error bg-error/10 rounded-xl px-4 py-3">{apiError}</p>

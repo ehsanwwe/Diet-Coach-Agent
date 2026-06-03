@@ -1,6 +1,32 @@
 import type { Dictionary } from './fa'
 
 const ar: Dictionary = {
+  audio: {
+    chatSectionTitle: 'محادثة العادات',
+    chatSectionSubtitle: 'هل لديك سؤال حول خطتك؟ أرسل رسالة أو ملاحظة صوتية.',
+    textPlaceholder: 'اكتب رسالة...',
+    sendText: 'إرسال',
+    startRecording: 'بدء التسجيل',
+    stopRecording: 'إيقاف التسجيل',
+    cancelRecording: 'إلغاء',
+    sendAudio: 'إرسال الصوت',
+    recording: 'جارٍ التسجيل',
+    processing: 'جارٍ المعالجة',
+    uploading: 'جارٍ الرفع...',
+    permissionDenied: 'تم رفض الوصول إلى الميكروفون. يرجى السماح به في إعدادات المتصفح.',
+    unsupportedBrowser: 'متصفحك لا يدعم تسجيل الصوت. يمكنك إرسال رسالة نصية بدلاً من ذلك.',
+    noMicrophone: 'لم يتم العثور على ميكروفون.',
+    uploadFailed: 'فشل رفع الصوت. يرجى المحاولة مرة أخرى.',
+    uploadSuccess: 'تم إرسال الصوت بنجاح',
+    audioPreview: 'معاينة الصوت',
+    recordingDuration: 'مدة التسجيل',
+    labelPlay: 'تشغيل',
+    labelPause: 'إيقاف مؤقت',
+    labelReset: 'إعادة تعيين',
+    historyEmpty: 'لا رسائل بعد. أرسل أولى رسائلك!',
+    transcriptionPending: 'في انتظار النسخ',
+    transcriptionNotConfigured: 'تم حفظ الصوت',
+  },
   common: {
     appName: 'مدرب التغذية',
     loading: 'جارٍ التحميل...',

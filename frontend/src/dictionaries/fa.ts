@@ -5,6 +5,39 @@
  */
 
 export interface Dictionary {
+  audio: {
+    // Chat section labels
+    chatSectionTitle: string
+    chatSectionSubtitle: string
+    // Text input
+    textPlaceholder: string
+    sendText: string
+    // Recording controls
+    startRecording: string
+    stopRecording: string
+    cancelRecording: string
+    sendAudio: string
+    // States
+    recording: string
+    processing: string
+    uploading: string
+    // Errors / feedback
+    permissionDenied: string
+    unsupportedBrowser: string
+    noMicrophone: string
+    uploadFailed: string
+    uploadSuccess: string
+    // Preview
+    audioPreview: string
+    recordingDuration: string
+    labelPlay: string
+    labelPause: string
+    labelReset: string
+    // History
+    historyEmpty: string
+    transcriptionPending: string
+    transcriptionNotConfigured: string
+  }
   common: {
     appName: string
     loading: string
@@ -284,6 +317,32 @@ export interface Dictionary {
 }
 
 const fa: Dictionary = {
+  audio: {
+    chatSectionTitle: 'گفتگوی عادت‌سازی',
+    chatSectionSubtitle: 'سوالی درباره برنامه غذایی دارید؟ پیام دهید یا صدای خود را ارسال کنید.',
+    textPlaceholder: 'پیام بنویسید...',
+    sendText: 'ارسال',
+    startRecording: 'شروع ضبط صدا',
+    stopRecording: 'توقف ضبط',
+    cancelRecording: 'لغو',
+    sendAudio: 'ارسال صدا',
+    recording: 'در حال ضبط',
+    processing: 'در حال پردازش',
+    uploading: 'در حال بارگذاری...',
+    permissionDenied: 'دسترسی به میکروفون رد شد. لطفاً در تنظیمات مرورگر اجازه دهید.',
+    unsupportedBrowser: 'مرورگر شما از ضبط صدا پشتیبانی نمی‌کند. می‌توانید پیام متنی بفرستید.',
+    noMicrophone: 'میکروفونی یافت نشد.',
+    uploadFailed: 'ارسال صدا ناموفق بود. دوباره تلاش کنید.',
+    uploadSuccess: 'صدا با موفقیت ارسال شد',
+    audioPreview: 'پیش‌نمایش صدا',
+    recordingDuration: 'مدت ضبط',
+    labelPlay: 'پخش',
+    labelPause: 'مکث',
+    labelReset: 'بازنشانی',
+    historyEmpty: 'هنوز پیامی ارسال نشده. اولین پیام را بفرستید!',
+    transcriptionPending: 'در انتظار رونویسی',
+    transcriptionNotConfigured: 'صدا ذخیره شد',
+  },
   common: {
     appName: 'مربی تغذیه',
     loading: 'در حال بارگذاری...',

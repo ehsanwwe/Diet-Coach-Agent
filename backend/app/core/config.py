@@ -38,6 +38,15 @@ class Settings(BaseSettings):
     # Comma-separated list; loaded from env, never hard-coded (BE-01)
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    # Audio storage
+    AUDIO_STORAGE_PATH: str = "./storage/audio"
+    MAX_AUDIO_UPLOAD_MB: int = 20
+    ALLOWED_AUDIO_MIME_TYPES: str = "audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav"
+
+    @property
+    def allowed_audio_mime_types_list(self) -> list[str]:
+        return [t.strip() for t in self.ALLOWED_AUDIO_MIME_TYPES.split(",") if t.strip()]
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]

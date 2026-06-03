@@ -1,6 +1,32 @@
 import type { Dictionary } from './fa'
 
 const en: Dictionary = {
+  audio: {
+    chatSectionTitle: 'Habit Chat',
+    chatSectionSubtitle: 'Have a question about your plan? Send a message or voice note.',
+    textPlaceholder: 'Type a message...',
+    sendText: 'Send',
+    startRecording: 'Start recording',
+    stopRecording: 'Stop recording',
+    cancelRecording: 'Cancel',
+    sendAudio: 'Send audio',
+    recording: 'Recording',
+    processing: 'Processing',
+    uploading: 'Uploading...',
+    permissionDenied: 'Microphone access was denied. Please allow it in your browser settings.',
+    unsupportedBrowser: 'Your browser does not support audio recording. You can send a text message instead.',
+    noMicrophone: 'No microphone found.',
+    uploadFailed: 'Audio upload failed. Please try again.',
+    uploadSuccess: 'Audio sent successfully',
+    audioPreview: 'Audio preview',
+    recordingDuration: 'Recording duration',
+    labelPlay: 'Play',
+    labelPause: 'Pause',
+    labelReset: 'Reset',
+    historyEmpty: 'No messages yet. Send your first one!',
+    transcriptionPending: 'Transcription pending',
+    transcriptionNotConfigured: 'Audio saved',
+  },
   common: {
     appName: 'Diet Coach',
     loading: 'Loading...',

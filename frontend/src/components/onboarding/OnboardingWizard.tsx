@@ -290,6 +290,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
         return (
           <FinalVideoStep
             dict={d}
+            audioDict={dict.audio}
             isSubmitting={isSubmitting}
             apiError={apiError}
             clinicalReviewRequired={clinicalReviewRequired}
