@@ -129,6 +129,8 @@ class NutritionPlan(Base):
     )
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # JSON-encoded dict: daily_guidelines, warnings, provider_info
+    plan_metadata: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     generated_by: Mapped[str] = mapped_column(String(20), nullable=False, default="mock")
     created_at: Mapped[datetime] = mapped_column(

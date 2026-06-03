@@ -197,4 +197,33 @@
 **Alternatives rejected:** Add audio keys directly to `onboarding` dict (pollutes a large namespace); hardcode strings (violates no-hardcoded-text rule).
 
 ---
+
+## 2026-06-03 — Phase 7 Implementation Decisions
+
+### D-035: Single `generate_text()` method on AIProvider (not per-task methods)
+**Decision:** AIProvider ABC exposes one `generate_text(messages, temperature, max_tokens)` method. Task dispatch is done by PromptBuilder injecting TASK:<type> markers into system messages, which MockAIProvider reads.
+**Rationale:** Keeps the provider interface minimal and OpenAI-compatible. Any future provider (Claude, Gemini) implements one method. MockAIProvider reads task markers rather than separate methods, avoiding interface explosion.
+**Alternatives rejected:** Per-task ABC methods (wider interface, every provider implements 4+ methods); task parameter on generate_text (not OpenAI-compatible, leaks app semantics into provider).
+
+### D-036: MockAIProvider returns deterministic Persian-friendly JSON for all 4 tasks
+**Decision:** MockAIProvider stores hardcoded JSON responses for generate_plan, analyze_meal, what_to_eat_now, and adapt_plan. Task type detected from TASK:<type> marker in system message.
+**Rationale:** App must work end-to-end without OpenClaw. Mock responses are realistic (Persian food names, culturally appropriate) so frontend can be developed and tested against real-shaped data.
+**Alternatives rejected:** Random/lorem responses (makes frontend development harder); empty stubs (not useful for UI testing).
+
+### D-037: NutritionAgentService falls back to mock on provider failure or unparseable JSON
+**Decision:** If OpenClawProvider raises AIProviderError, fall back to MockAIProvider. If JSON extraction from response fails, fall back to mock data. Both paths set is_mock=True.
+**Rationale:** Nutrition advice failures must not surface as 500 errors to users. Mock fallback ensures the app always returns a usable response, and the is_mock flag tells the frontend the response is not real AI.
+**Alternatives rejected:** Propagate errors to API layer (user sees error for transient network failure); return empty response (frontend breaks).
+
+### D-038: plan_metadata as JSON Text field on NutritionPlan
+**Decision:** Add one `plan_metadata` Text column (JSON) to `nutrition_plans` for daily_guidelines, warnings, and provider metadata. Meal rows store per-meal macros.
+**Rationale:** The existing NutritionPlan model has title/description/generated_by but no structured field for guidelines and warnings. Adding one JSON Text field is the smallest safe change and consistent with the project convention (D-015).
+**Alternatives rejected:** Multiple new columns for each guideline (over-engineering for Phase 7); encode in description (not machine-readable).
+
+### D-039: Safety guardrails in nutrition_service.py, not nutrition_agent_service.py
+**Decision:** NutritionService decides whether to call AI based on risk level. NutritionAgentService only does the AI call (no safety logic). Clinical-review users receive a hardcoded wellness guidance response.
+**Rationale:** Safety is a business rule, not an AI concern. Centralizing it in the service layer means it applies regardless of which provider is used or how the agent changes.
+**Alternatives rejected:** Safety in agent service (mixes AI orchestration with policy); safety in endpoints (thin services, bloated routes).
+
+---
 *Last updated: 2026-06-03*

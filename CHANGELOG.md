@@ -5,6 +5,46 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.7.0] - 2026-06-03
+
+### Added — Phase 7: Nutrition Backend & AI Layer
+
+**AI Provider Layer**
+- `backend/app/services/ai_provider.py` — AIProvider ABC, AIProviderResult dataclass, `get_ai_provider()` factory
+- `backend/app/services/mock_ai_provider.py` — deterministic mock for generate_plan, analyze_meal, what_to_eat_now, adapt_plan (Persian-friendly JSON responses, no external calls)
+- `backend/app/services/openclaw_provider.py` — httpx-based OpenAI-compatible provider with configurable retries and fallback
+
+**Prompt & Context Layer**
+- `backend/app/services/prompt_builder.py` — builds Persian system+user prompts with TASK:<type> markers, safety notes, cultural context
+- `backend/app/services/conversation_context_manager.py` — trims message list to OPENCLAW_CONTEXT_MAX_MESSAGES
+- `backend/app/services/nutrition_memory_service.py` — NutritionMemoryContext dataclass; builds compact user context from all DB tables
+
+**Orchestration & Business Logic**
+- `backend/app/services/nutrition_agent_service.py` — AI pipeline: prompt → messages → provider → JSON parse with mock fallback
+- `backend/app/services/nutrition_service.py` — all 6 endpoint handlers with safety guardrails and DB persistence
+
+**Data Layer**
+- `backend/app/schemas/nutrition.py` — Pydantic v2 schemas: NutritionProfileResponse, NutritionPlanResponse, MealAnalyzeRequest/Response, WhatToEatNowRequest/Response, AdaptPlanRequest/Response, DailyGuidelines, MealItem, FoodOption
+- `backend/app/repositories/nutrition_repository.py` — NutritionGoal, NutritionPlan, NutritionPlanMeal, MealEntry DB operations
+- `backend/alembic/versions/0003_add_nutrition_plan_metadata.py` — adds `plan_metadata` Text column to `nutrition_plans`
+- `backend/app/models/nutrition.py` — added `plan_metadata` field
+
+**API**
+- `backend/app/api/v1/endpoints/nutrition.py` — 6 authenticated endpoints
+- `backend/app/api/v1/router.py` — registered nutrition_router under /nutrition prefix
+
+**Config**
+- `backend/app/core/config.py` — added `AI_PROVIDER` setting (default: "mock")
+- `backend/.env.example` — added AI_PROVIDER var; updated OpenClaw recommended values
+
+### Safety Behavior
+- Clinical-review users receive wellness guidance only (no aggressive plan)
+- High-risk users receive wellness reminder in all warning lists
+- No body-shaming language in prompts; no medical prescription claims
+- is_mock flag in all responses tells frontend when AI is not live
+
+---
+
 ## [0.6.0] - 2026-06-03
 
 ### Added — Phase 6: Voice & Audio

@@ -1,46 +1,48 @@
 # Next Steps — Diet Coach Agent
 
 **Updated:** 2026-06-03
-**Current status:** Phase 6 COMPLETE. Phase 7 (Nutrition Backend & AI Layer) ready to start.
+**Current status:** Phase 7 COMPLETE. Phase 8 (Nutrition Frontend & Chat) ready to start.
 
 ## Immediate Next Action
 
-**Start Phase 7: Nutrition Backend & AI Layer**
+**Start Phase 8: Nutrition Frontend & Chat**
 
-Command: `/gsd:plan-phase 7` (then `/gsd:execute-phase 7`)
+Command: `/gsd:plan-phase 8` (then `/gsd:execute-phase 8`)
 
-## What Phase 7 Builds
+## What Phase 8 Builds
 
-Full AI nutrition layer:
-- `AIProvider` ABC with `OpenClawProvider` (OpenAI-compatible) and `MockAIProvider` fallback
-- `NutritionMemoryService` — builds `NutritionMemoryContext` from user profile
-- `PromptBuilder` — token-safe history pruning, rolling summaries when enabled
-- `NutritionAgentService` — orchestrates full AI call pipeline
-- `SafetyGuardrailService` injected on every AI endpoint
-- All 6 nutrition endpoints:
-  1. `POST /api/v1/nutrition/plan/generate`
-  2. `POST /api/v1/nutrition/chat`
-  3. `POST /api/v1/nutrition/meal/analyze`
-  4. `POST /api/v1/nutrition/what-to-eat-now`
-  5. `GET  /api/v1/nutrition/plan`
-  6. `GET  /api/v1/nutrition/history`
+Nutrition frontend screens wired to Phase 7 backend:
+- Nutrition dashboard screen (active plan display)
+- Meal log / analyze screen (text input → MealAnalysisResponse)
+- "What to eat now" quick suggestion screen
+- Nutrition chat screen (persistent companion session)
+- Plan adapt flow (feedback → AdaptPlanResponse)
+- Risk-level-aware UI messaging (clinical review prompts)
 
-## Onboarding Chat API (Working Now — Phase 6)
+## Current Nutrition API (Working Now — Phase 7)
 
 All endpoints require `Authorization: Bearer <token>`.
 
-1. `POST /api/v1/onboarding/chat/text` — sends text, returns user + placeholder assistant message
-2. `POST /api/v1/onboarding/chat/audio` — uploads multipart audio, stores locally, returns metadata
-3. `GET /api/v1/onboarding/chat/history` — full onboarding chat history
+1. `GET  /api/v1/nutrition/profile` — full profile summary
+2. `GET  /api/v1/nutrition/plan` — current active plan
+3. `POST /api/v1/nutrition/plan/generate` — generate plan
+4. `POST /api/v1/nutrition/meal/analyze` — analyze meal + log
+5. `POST /api/v1/nutrition/what-to-eat-now` — quick food suggestions
+6. `POST /api/v1/nutrition/adapt-plan` — adapt plan from feedback
 
-Audio storage: `backend/storage/audio/` (gitignored, configurable via AUDIO_STORAGE_PATH)
-STT: Not implemented yet (transcription_status = "not_configured")
+## Provider Behavior (Phase 7)
 
-## Known Limitations (Phase 6)
+- `AI_PROVIDER=mock` → MockAIProvider (no external calls, always works)
+- `AI_PROVIDER=openclaw` + `OPENCLAW_BASE_URL` → OpenClawProvider
+- Auto-fallback to mock on provider failure
+- Clinical-review users: wellness guidance only (no aggressive plan)
 
-- No speech-to-text. Audio is stored but not transcribed.
-- Assistant responses are placeholder Persian text — no AI.
-- Audio playback in history shows metadata only (no re-download endpoint yet).
+## Known Limitations (Phase 7)
+
+- No nutrition chat session (POST /nutrition/chat) — will be Phase 8.
+- No history endpoint — will be Phase 8.
+- No image meal analysis — out of scope.
+- No STT in meal analysis — out of scope.
 
 ## Phase Order Reminder
 
@@ -50,8 +52,8 @@ STT: Not implemented yet (transcription_status = "not_configured")
 4. ✅ Onboarding Backend (COMPLETE)
 5. ✅ Onboarding Frontend (COMPLETE)
 6. ✅ Voice & Audio (COMPLETE)
-7. → Nutrition Backend & AI Layer (NEXT)
-8. Nutrition Frontend & Chat (after Phase 7)
+7. ✅ Nutrition Backend & AI Layer (COMPLETE)
+8. → Nutrition Frontend & Chat (NEXT)
 9. Progress & Reports (after Phase 8)
 10. Settings, Polish & Remaining UI (after Phase 9)
 

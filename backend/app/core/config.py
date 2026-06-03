@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     OTP_EXPIRE_MINUTES: int = 5
     SMS_PROVIDER: str = "mock"
 
+    # AI provider selection (Phase 7)
+    # Values: "mock" (default) | "openclaw"
+    # App falls back to mock if "openclaw" is selected but OPENCLAW_BASE_URL is empty.
+    AI_PROVIDER: str = "mock"
+
     # OpenClaw AI provider (all 10 vars: OC-02, INFRA-03)
     OPENCLAW_BASE_URL: str = ""
     OPENCLAW_API_KEY: str = ""

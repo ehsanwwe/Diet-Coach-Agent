@@ -1,62 +1,63 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-03
-**Current phase:** Phase 6 COMPLETE → Phase 7 next
-**Overall progress:** Phase 6 of 10 complete (60%)
+**Current phase:** Phase 7 COMPLETE → Phase 8 next
+**Overall progress:** Phase 7 of 10 complete (70%)
 
 ## What Exists Now
 
-### Backend (`backend/`) — Phases 1, 3, 4, 6 COMPLETE
+### Backend (`backend/`) — Phases 1, 3, 4, 6, 7 COMPLETE
+
+#### Phase 1–4, 6 (unchanged)
 - Full ORM models, Alembic migrations, FastAPI shell
 - Auth: OTP login, JWT, logout, /me
 - Onboarding: GET /status, POST /profile /medical /lifestyle /preferences /behavior /complete
 - Safety guardrail service (risk_level, clinical_review_required)
-- **Onboarding Chat (Phase 6 NEW):**
-  - `POST /api/v1/onboarding/chat/text` — send text message, returns user + placeholder assistant message
-  - `POST /api/v1/onboarding/chat/audio` — upload multipart audio file, stores locally, returns metadata
-  - `GET /api/v1/onboarding/chat/history` — returns all text + audio history for user's onboarding session
-  - `backend/app/schemas/onboarding_chat.py` — Pydantic v2 schemas
-  - `backend/app/repositories/onboarding_chat_repository.py` — DB ops (ChatSession, ChatMessage, AudioMessage)
-  - `backend/app/services/audio_storage_service.py` — local file storage, MIME validation, size validation
-  - `backend/app/services/onboarding_chat_service.py` — business logic, no AI
-  - `backend/app/api/v1/endpoints/onboarding_chat.py` — 3 authenticated endpoints
-  - Audio stored under `backend/storage/audio/` (gitignored)
-  - No STT/transcription (transcription_status = "not_configured")
-  - No AI/OpenClaw (placeholder assistant response)
+- Onboarding Chat: text + audio + history endpoints
+
+#### Phase 7 — Nutrition Backend & AI Layer (NEW)
+- **AI Provider Abstraction:**
+  - `backend/app/services/ai_provider.py` — AIProvider ABC, AIProviderResult, `get_ai_provider()` factory
+  - `backend/app/services/mock_ai_provider.py` — deterministic Persian-friendly mock for all 4 task types
+  - `backend/app/services/openclaw_provider.py` — httpx-based OpenAI-compatible provider with retries
+- **Prompt & Context Layer:**
+  - `backend/app/services/prompt_builder.py` — builds system+user prompts for generate_plan, analyze_meal, what_to_eat_now, adapt_plan
+  - `backend/app/services/conversation_context_manager.py` — trims messages to OPENCLAW_CONTEXT_MAX_MESSAGES
+  - `backend/app/services/nutrition_memory_service.py` — collects NutritionMemoryContext from all DB tables
+- **Orchestration:**
+  - `backend/app/services/nutrition_agent_service.py` — AI pipeline with JSON fallback + mock fallback
+  - `backend/app/services/nutrition_service.py` — business logic for all 6 endpoints + safety guardrails
+- **Data Layer:**
+  - `backend/app/schemas/nutrition.py` — Pydantic v2 schemas for all 6 endpoints
+  - `backend/app/repositories/nutrition_repository.py` — NutritionGoal, NutritionPlan, NutritionPlanMeal, MealEntry DB ops
+  - `backend/alembic/versions/0003_add_nutrition_plan_metadata.py` — adds `plan_metadata` Text column to `nutrition_plans`
+  - `backend/app/models/nutrition.py` — updated with `plan_metadata` field
+- **API Endpoints (all authenticated):**
+  - `GET  /api/v1/nutrition/profile` — user's full nutrition profile summary
+  - `GET  /api/v1/nutrition/plan` — current active plan (or empty state)
+  - `POST /api/v1/nutrition/plan/generate` — generate adaptive nutrition plan
+  - `POST /api/v1/nutrition/meal/analyze` — analyze meal quality + log entry
+  - `POST /api/v1/nutrition/what-to-eat-now` — suggest Persian-culture food options
+  - `POST /api/v1/nutrition/adapt-plan` — adapt plan based on user feedback
+- **Config:**
+  - `AI_PROVIDER` env var added (default: "mock")
+  - `backend/.env.example` updated with AI_PROVIDER + recommended OpenClaw values
+
+### Safety Behavior
+- `clinical_review_required` users: get wellness guidance only (no aggressive plan)
+- `risk_level=high` users: wellness reminder appended to all warnings
+- No body-shaming language in prompts
+- No medical prescriptions in AI output
+- No doctor-replacement claims (reminder included in system prompts)
+
+### Provider Behavior
+- `AI_PROVIDER=mock` (default) → MockAIProvider — always works, no external calls
+- `AI_PROVIDER=openclaw` + `OPENCLAW_BASE_URL` set → OpenClawProvider
+- OpenClawProvider fails → falls back to MockAIProvider, marks `is_mock=True`
+- Unparseable AI JSON → falls back to mock data, marks `is_mock=True`
 
 ### Frontend (`frontend/`) — Phases 2, 3, 5, 6 COMPLETE
-
-#### Phase 2 — i18n & Shell
-- Dictionary system (fa/en/ar), middleware locale detection, RTL direction utils, PWA
-
-#### Phase 3 — Authentication
-- Phone OTP login, JWT storage, AuthGuard, useAuth hook
-
-#### Phase 5 — Onboarding Frontend
-- 7-step animated wizard
-
-#### Phase 6 — Voice & Audio (NEW)
-- `src/types/onboardingChat.ts` — TypeScript types for all 3 endpoints
-- `src/lib/onboardingChat.ts` — typed API client (sendTextMessage, uploadAudio, getChatHistory)
-- `src/lib/media.ts` — MIME type detection, MediaRecorder support check, duration formatter
-- `src/hooks/useAudioRecorder.ts` — MediaRecorder hook with Web Audio AnalyserNode, state machine, cleanup
-- `src/components/audio/AudioWaveform.tsx` — Canvas waveform via AnalyserNode
-- `src/components/audio/AudioPreview.tsx` — playback preview with progress bar
-- `src/components/audio/AudioRecorder.tsx` — full recorder UI (idle/requesting/recording/stopped/error)
-- `src/components/onboarding/OnboardingHabitChat.tsx` — chat UI with text + voice, history display
-- Updated `steps/FinalVideoStep.tsx` — integrates OnboardingHabitChat, enabled after video watched
-- Dictionaries extended with `audio` section (fa/en/ar, 23 keys each)
-
-## Critical Safeguards Verified
-- All 3 onboarding chat endpoints require Authentication (Bearer token)
-- AUDIO_STORAGE_PATH configurable via env var (default: ./storage/audio)
-- Audio storage path gitignored (backend/storage/)
-- MIME type validation: rejects non-audio formats
-- File size validation: configurable MAX_AUDIO_UPLOAD_MB (default: 20)
-- Absolute filesystem paths never returned to client (storage_key only)
-- No STT calls, no AI calls — Phase 06 scope respected
-- Frontend chat disabled until video watched (dev bypass still works)
-- No hard-coded Persian text — all from dictionaries
+- No Phase 8 frontend implemented yet.
 
 ## Phase Progress
 
@@ -68,7 +69,7 @@
 | 4 — Onboarding Backend | **COMPLETE** |
 | 5 — Onboarding Frontend | **COMPLETE** |
 | 6 — Voice & Audio | **COMPLETE** |
-| 7 — Nutrition Backend & AI Layer | Not started |
+| 7 — Nutrition Backend & AI Layer | **COMPLETE** |
 | 8 — Nutrition Frontend & Chat | Not started |
 | 9 — Progress & Reports | Not started |
 | 10 — Settings, Polish & Remaining UI | Not started |
@@ -76,6 +77,6 @@
 ## How to Resume (Cold Start)
 1. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`
 2. Frontend: `cd frontend && npm run dev` → open http://localhost:3000
-3. Login: POST /api/v1/auth/request-otp → verify-otp with OTP 123456 → redirected to /fa/onboarding
-4. Onboarding: 7-step wizard → final step → mark video watched → use text/voice chat
-5. Audio upload test: `curl -X POST http://localhost:8000/api/v1/onboarding/chat/audio -H "Authorization: Bearer <token>" -F "file=@test.webm"`
+3. Login: POST /api/v1/auth/request-otp → verify-otp with OTP 123456
+4. Test nutrition: POST /api/v1/nutrition/plan/generate with Bearer token
+5. Mock mode: AI_PROVIDER=mock in .env → works without OpenClaw

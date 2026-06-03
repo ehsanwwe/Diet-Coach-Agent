@@ -7,6 +7,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.nutrition import router as nutrition_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
 from app.api.v1.endpoints.onboarding_chat import router as onboarding_chat_router
 
@@ -23,3 +24,6 @@ api_router.include_router(onboarding_router, prefix="/onboarding")
 
 # Phase 6: Voice & Audio
 api_router.include_router(onboarding_chat_router, prefix="/onboarding")
+
+# Phase 7: Nutrition Backend & AI Layer
+api_router.include_router(nutrition_router, prefix="/nutrition")
