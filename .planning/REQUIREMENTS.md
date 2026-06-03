@@ -220,28 +220,142 @@
 
 ## Traceability
 
-*(Populated during roadmap creation)*
+*(Populated during roadmap creation — 2026-06-03)*
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 through INFRA-08 | Phase 1 | Pending |
-| BE-01 through BE-12 | Phase 1 | Pending |
-| DATA-01 through DATA-09 | Phase 1 | Pending |
-| I18N-01 through I18N-10 | Phase 2 | Pending |
-| AUTH-01 through AUTH-10 | Phase 3 | Pending |
-| OB-01 through OB-13 | Phase 4 | Pending |
-| AUDIO-01 through AUDIO-13 | Phase 5 | Pending |
-| NUTR-01 through NUTR-12 | Phase 6 | Pending |
-| AI-01 through AI-08 | Phase 6 | Pending |
-| CHAT-01 through CHAT-06 | Phase 7 | Pending |
-| PROG-01 through PROG-05 | Phase 8 | Pending |
-| UI-01 through UI-20 | Phases 3–8 | Pending |
+| INFRA-01 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-02 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-03 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-04 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-05 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-06 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-07 | Phase 1: Infra & Backend Foundation | Pending |
+| INFRA-08 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-01 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-02 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-03 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-04 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-05 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-06 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-07 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-08 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-09 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-10 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-11 | Phase 1: Infra & Backend Foundation | Pending |
+| BE-12 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-01 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-02 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-03 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-04 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-05 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-06 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-07 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-08 | Phase 1: Infra & Backend Foundation | Pending |
+| DATA-09 | Phase 1: Infra & Backend Foundation | Pending |
+| I18N-01 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-02 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-03 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-04 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-05 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-06 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-07 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-08 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-09 | Phase 2: i18n & Frontend Shell | Pending |
+| I18N-10 | Phase 2: i18n & Frontend Shell | Pending |
+| AUTH-01 | Phase 3: Authentication | Pending |
+| AUTH-02 | Phase 3: Authentication | Pending |
+| AUTH-03 | Phase 3: Authentication | Pending |
+| AUTH-04 | Phase 3: Authentication | Pending |
+| AUTH-05 | Phase 3: Authentication | Pending |
+| AUTH-06 | Phase 3: Authentication | Pending |
+| AUTH-07 | Phase 3: Authentication | Pending |
+| AUTH-08 | Phase 3: Authentication | Pending |
+| AUTH-09 | Phase 3: Authentication | Pending |
+| AUTH-10 | Phase 3: Authentication | Pending |
+| UI-01 | Phase 3: Authentication | Pending |
+| UI-02 | Phase 3: Authentication | Pending |
+| UI-03 | Phase 3: Authentication | Pending |
+| OB-01 | Phase 4: Onboarding Backend | Pending |
+| OB-02 | Phase 4: Onboarding Backend | Pending |
+| OB-03 | Phase 4: Onboarding Backend | Pending |
+| OB-04 | Phase 4: Onboarding Backend | Pending |
+| OB-05 | Phase 4: Onboarding Backend | Pending |
+| OB-06 | Phase 4: Onboarding Backend | Pending |
+| OB-07 | Phase 4: Onboarding Backend | Pending |
+| OB-13 | Phase 4: Onboarding Backend | Pending |
+| NUTR-01 | Phase 4: Onboarding Backend | Pending |
+| NUTR-02 | Phase 4: Onboarding Backend | Pending |
+| NUTR-03 | Phase 4: Onboarding Backend | Pending |
+| NUTR-04 | Phase 4: Onboarding Backend | Pending |
+| OB-08 | Phase 5: Onboarding Frontend | Pending |
+| OB-09 | Phase 5: Onboarding Frontend | Pending |
+| OB-10 | Phase 5: Onboarding Frontend | Pending |
+| OB-11 | Phase 5: Onboarding Frontend | Pending |
+| OB-12 | Phase 5: Onboarding Frontend | Pending |
+| UI-04 | Phase 5: Onboarding Frontend | Pending |
+| UI-05 | Phase 5: Onboarding Frontend | Pending |
+| AUDIO-01 | Phase 6: Voice & Audio | Pending |
+| AUDIO-02 | Phase 6: Voice & Audio | Pending |
+| AUDIO-03 | Phase 6: Voice & Audio | Pending |
+| AUDIO-04 | Phase 6: Voice & Audio | Pending |
+| AUDIO-05 | Phase 6: Voice & Audio | Pending |
+| AUDIO-06 | Phase 6: Voice & Audio | Pending |
+| AUDIO-07 | Phase 6: Voice & Audio | Pending |
+| AUDIO-08 | Phase 6: Voice & Audio | Pending |
+| AUDIO-09 | Phase 6: Voice & Audio | Pending |
+| AUDIO-10 | Phase 6: Voice & Audio | Pending |
+| AUDIO-11 | Phase 6: Voice & Audio | Pending |
+| AUDIO-12 | Phase 6: Voice & Audio | Pending |
+| AUDIO-13 | Phase 6: Voice & Audio | Pending |
+| NUTR-05 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-06 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-07 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-08 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-09 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-10 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-11 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| NUTR-12 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-01 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-02 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-03 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-04 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-05 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-06 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-07 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| AI-08 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| CHAT-01 | Phase 8: Nutrition Frontend & Chat | Pending |
+| CHAT-02 | Phase 8: Nutrition Frontend & Chat | Pending |
+| CHAT-03 | Phase 8: Nutrition Frontend & Chat | Pending |
+| CHAT-04 | Phase 8: Nutrition Frontend & Chat | Pending |
+| CHAT-05 | Phase 8: Nutrition Frontend & Chat | Pending |
+| CHAT-06 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-06 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-07 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-08 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-09 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-10 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-11 | Phase 8: Nutrition Frontend & Chat | Pending |
+| UI-15 | Phase 8: Nutrition Frontend & Chat | Pending |
+| PROG-01 | Phase 9: Progress & Reports | Pending |
+| PROG-02 | Phase 9: Progress & Reports | Pending |
+| PROG-03 | Phase 9: Progress & Reports | Pending |
+| PROG-04 | Phase 9: Progress & Reports | Pending |
+| PROG-05 | Phase 9: Progress & Reports | Pending |
+| UI-12 | Phase 9: Progress & Reports | Pending |
+| UI-13 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-14 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-16 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-17 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-18 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-19 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-20 | Phase 10: Settings, Polish & Remaining UI | Pending |
 
 **Coverage:**
-- v1 requirements: 98 total
-- Mapped to phases: 98
+- v1 requirements: 126 total
+- Mapped to phases: 126
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-03*
-*Last updated: 2026-06-03 after initial definition*
+*Last updated: 2026-06-03 — traceability populated during roadmap creation*
