@@ -114,9 +114,9 @@
 
 ### Progress & Reports
 
-- [ ] **PROG-01**: User can submit daily check-in: weight, hunger, sleep duration, stress level, activity, adherence notes (`POST /api/v1/progress/check-in`)
-- [ ] **PROG-02**: Progress summary (recent check-ins, trends) is retrievable (`GET /api/v1/progress/summary`)
-- [ ] **PROG-03**: Weekly report generated with: weight trend, adherence trend, hunger pattern, sleep/stress relation, food quality, suggested next-week focus (`GET /api/v1/progress/weekly-report`)
+- [x] **PROG-01**: User can submit daily check-in: weight, hunger, sleep duration, stress level, activity, adherence notes (`POST /api/v1/progress/check-in`)
+- [x] **PROG-02**: Progress summary (recent check-ins, trends) is retrievable (`GET /api/v1/progress/summary`)
+- [x] **PROG-03**: Weekly report generated with: weight trend, adherence trend, hunger pattern, sleep/stress relation, food quality, suggested next-week focus (`GET /api/v1/progress/weekly-report`)
 - [ ] **PROG-04**: Progress dashboard shows behavior wins — not only weight (protein, fiber, water, sleep, movement, logging consistency)
 - [ ] **PROG-05**: Weight trend shown as sparkline or simple chart (not just a number)
 
@@ -404,9 +404,9 @@
 | UI-10 | Phase 8: Nutrition Frontend & Chat | Pending |
 | UI-11 | Phase 8: Nutrition Frontend & Chat | Pending |
 | UI-15 | Phase 8: Nutrition Frontend & Chat | Pending |
-| PROG-01 | Phase 9: Progress & Reports | Pending |
-| PROG-02 | Phase 9: Progress & Reports | Pending |
-| PROG-03 | Phase 9: Progress & Reports | Pending |
+| PROG-01 | Phase 9: Progress & Reports | Complete |
+| PROG-02 | Phase 9: Progress & Reports | Complete |
+| PROG-03 | Phase 9: Progress & Reports | Complete |
 | PROG-04 | Phase 9: Progress & Reports | Pending |
 | PROG-05 | Phase 9: Progress & Reports | Pending |
 | UI-12 | Phase 9: Progress & Reports | Pending |
