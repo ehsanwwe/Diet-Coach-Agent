@@ -19,6 +19,7 @@ from app.services.nutrition_memory_service import NutritionMemoryContext
 from app.services.prompt_builder import (
     for_adapt_plan,
     for_analyze_meal,
+    for_chat_message,
     for_generate_plan,
     for_what_to_eat_now,
 )
@@ -132,6 +133,15 @@ class NutritionAgentService:
         prompt = for_what_to_eat_now(
             ctx, available_foods, hunger_level, meal_context, time_available_minutes
         )
+        return self._call(prompt)
+
+    def chat_message(
+        self,
+        ctx: NutritionMemoryContext,
+        user_message: str,
+        history: list[dict[str, str]],
+    ) -> tuple[dict, AIProviderResult]:
+        prompt = for_chat_message(ctx, user_message, history)
         return self._call(prompt)
 
     def adapt_plan(

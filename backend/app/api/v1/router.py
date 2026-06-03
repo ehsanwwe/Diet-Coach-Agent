@@ -6,6 +6,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.api.v1.endpoints.auth import router as auth_router
+from app.api.v1.endpoints.chat import router as chat_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.nutrition import router as nutrition_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
@@ -27,3 +28,6 @@ api_router.include_router(onboarding_chat_router, prefix="/onboarding")
 
 # Phase 7: Nutrition Backend & AI Layer
 api_router.include_router(nutrition_router, prefix="/nutrition")
+
+# Phase 8: Companion Chat
+api_router.include_router(chat_router, prefix="/chat")

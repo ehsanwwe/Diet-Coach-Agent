@@ -314,6 +314,141 @@ export interface Dictionary {
     errSubmitFailed: string
     errLoadFailed: string
   }
+  dashboard: {
+    title: string
+    greetingGeneric: string
+    greetingName: string
+    subtitle: string
+    quickActionsTitle: string
+    generatePlan: string
+    analyzeMeal: string
+    whatToEatNow: string
+    openChat: string
+    noPlanTitle: string
+    noPlanDesc: string
+    noPlanCta: string
+    currentPlanLabel: string
+    noOnboarding: string
+    noOnboardingCta: string
+    riskLow: string
+    riskMedium: string
+    riskHigh: string
+    riskClinical: string
+    providerMock: string
+    providerLive: string
+    clinicalAlertTitle: string
+    clinicalAlertDesc: string
+  }
+  plan: {
+    title: string
+    subtitle: string
+    generateBtn: string
+    regenerateBtn: string
+    generating: string
+    noPlanTitle: string
+    noPlanDesc: string
+    noPlanCta: string
+    generatedAt: string
+    summary: string
+    dailyGuidelinesTitle: string
+    calories: string
+    protein: string
+    carbs: string
+    fat: string
+    fiber: string
+    water: string
+    notes: string
+    mealsTitle: string
+    breakfast: string
+    lunch: string
+    dinner: string
+    snack: string
+    unknown: string
+    warnings: string
+    mockBadge: string
+    liveBadge: string
+    unitGrams: string
+    unitLiters: string
+    unitKcal: string
+    unitMin: string
+  }
+  mealAnalysis: {
+    title: string
+    subtitle: string
+    mealDescLabel: string
+    mealDescPlaceholder: string
+    mealTimeLabel: string
+    contextLabel: string
+    contextPlaceholder: string
+    analyzeBtn: string
+    analyzing: string
+    newAnalysisBtn: string
+    resultTitle: string
+    qualityScore: string
+    outOf10: string
+    protein: string
+    fiber: string
+    sugar: string
+    balance: string
+    portion: string
+    suggestionsTitle: string
+    warningsTitle: string
+    noWarnings: string
+    breakfast: string
+    lunch: string
+    dinner: string
+    snack: string
+    unknown: string
+    mockBadge: string
+  }
+  whatToEat: {
+    title: string
+    subtitle: string
+    availableFoodsLabel: string
+    availableFoodsPlaceholder: string
+    availableFoodsHint: string
+    addFood: string
+    hungerLevelLabel: string
+    hungerLow: string
+    hungerMedium: string
+    hungerHigh: string
+    mealContextLabel: string
+    mealContextPlaceholder: string
+    timeAvailableLabel: string
+    timeAvailablePlaceholder: string
+    askBtn: string
+    asking: string
+    optionsTitle: string
+    calories: string
+    prepTime: string
+    reasoningTitle: string
+    warningsTitle: string
+    tryAgainBtn: string
+    mockBadge: string
+  }
+  companionChat: {
+    title: string
+    subtitle: string
+    inputPlaceholder: string
+    sendBtn: string
+    sending: string
+    emptyTitle: string
+    emptyDesc: string
+    loadError: string
+    sendError: string
+    mockBadge: string
+    you: string
+    coach: string
+    typingIndicator: string
+  }
+  safety: {
+    clinicalTitle: string
+    clinicalMessage: string
+    clinicalDisclaimer: string
+    highRiskTitle: string
+    highRiskMessage: string
+    notADoctorNote: string
+  }
 }
 
 const fa: Dictionary = {
@@ -618,6 +753,144 @@ const fa: Dictionary = {
     errUnauthorized: 'لطفاً دوباره وارد شوید',
     errSubmitFailed: 'ارسال اطلاعات ناموفق بود. دوباره تلاش کنید.',
     errLoadFailed: 'بارگذاری اطلاعات ناموفق بود. صفحه را رفرش کنید.',
+  },
+  dashboard: {
+    title: 'خانه',
+    greetingGeneric: 'سلام!',
+    greetingName: 'سلام {name}!',
+    subtitle: 'مربی تغذیه آماده راهنمایی شماست.',
+    quickActionsTitle: 'اقدامات سریع',
+    generatePlan: 'ساخت برنامه غذایی',
+    analyzeMeal: 'تحلیل وعده غذایی',
+    whatToEatNow: 'الان چی بخورم؟',
+    openChat: 'گفتگو با مربی',
+    noPlanTitle: 'هنوز برنامه‌ای ندارید',
+    noPlanDesc: 'برنامه غذایی شخصی‌سازی‌شده خود را بسازید.',
+    noPlanCta: 'ساخت برنامه',
+    currentPlanLabel: 'برنامه فعلی',
+    noOnboarding: 'پروفایل ناقص است',
+    noOnboardingCta: 'تکمیل پروفایل',
+    riskLow: 'سطح ریسک: پایین',
+    riskMedium: 'سطح ریسک: متوسط',
+    riskHigh: 'سطح ریسک: بالا',
+    riskClinical: 'نیاز به بررسی پزشکی',
+    providerMock: 'حالت آزمایشی',
+    providerLive: 'هوش مصنوعی فعال',
+    clinicalAlertTitle: 'توجه: بررسی متخصص توصیه می‌شود',
+    clinicalAlertDesc: 'بر اساس وضعیت سلامت شما، پیش از شروع هر رژیم غذایی با پزشک یا متخصص تغذیه مشورت کنید.',
+  },
+  plan: {
+    title: 'برنامه غذایی',
+    subtitle: 'برنامه غذایی شخصی‌سازی‌شده شما',
+    generateBtn: 'ساخت برنامه',
+    regenerateBtn: 'بازسازی برنامه',
+    generating: 'در حال ساخت برنامه...',
+    noPlanTitle: 'هنوز برنامه‌ای ندارید',
+    noPlanDesc: 'مربی تغذیه بر اساس پروفایل شما یک برنامه شخصی می‌سازد.',
+    noPlanCta: 'ساخت برنامه غذایی',
+    generatedAt: 'ساخته‌شده در',
+    summary: 'خلاصه',
+    dailyGuidelinesTitle: 'راهنمای روزانه',
+    calories: 'کالری',
+    protein: 'پروتئین',
+    carbs: 'کربوهیدرات',
+    fat: 'چربی',
+    fiber: 'فیبر',
+    water: 'آب',
+    notes: 'یادداشت',
+    mealsTitle: 'وعده‌های غذایی',
+    breakfast: 'صبحانه',
+    lunch: 'ناهار',
+    dinner: 'شام',
+    snack: 'میان‌وعده',
+    unknown: 'وعده',
+    warnings: 'هشدارها',
+    mockBadge: 'حالت آزمایشی',
+    liveBadge: 'هوش مصنوعی',
+    unitGrams: 'گرم',
+    unitLiters: 'لیتر',
+    unitKcal: 'کیلوکالری',
+    unitMin: 'دقیقه',
+  },
+  mealAnalysis: {
+    title: 'تحلیل وعده غذایی',
+    subtitle: 'وعده غذایی خود را توضیح دهید تا تحلیل کنیم.',
+    mealDescLabel: 'توضیح وعده غذایی',
+    mealDescPlaceholder: 'مثال: برنج با مرغ و سالاد شیرازی، دوغ. یا: نان، پنیر، چای با شکر.',
+    mealTimeLabel: 'نوع وعده',
+    contextLabel: 'اطلاعات بیشتر (اختیاری)',
+    contextPlaceholder: 'مثلاً: بعد از ورزش، سر کار، رستوران...',
+    analyzeBtn: 'تحلیل کن',
+    analyzing: 'در حال تحلیل...',
+    newAnalysisBtn: 'تحلیل وعده جدید',
+    resultTitle: 'نتیجه تحلیل',
+    qualityScore: 'امتیاز کیفیت',
+    outOf10: 'از ۱۰',
+    protein: 'پروتئین',
+    fiber: 'فیبر',
+    sugar: 'قند',
+    balance: 'تعادل',
+    portion: 'حجم وعده',
+    suggestionsTitle: 'پیشنهادها',
+    warningsTitle: 'هشدارها',
+    noWarnings: 'بدون هشدار خاص',
+    breakfast: 'صبحانه',
+    lunch: 'ناهار',
+    dinner: 'شام',
+    snack: 'میان‌وعده',
+    unknown: 'نامشخص',
+    mockBadge: 'حالت آزمایشی',
+  },
+  whatToEat: {
+    title: 'الان چی بخورم؟',
+    subtitle: 'مواد موجود را بنویسید تا پیشنهاد بدیم.',
+    availableFoodsLabel: 'مواد موجود در خانه',
+    availableFoodsPlaceholder: 'مثلاً: برنج، تخم‌مرغ، ماست، نان...',
+    availableFoodsHint: 'Enter بزنید یا کاما بگذارید تا ماده اضافه شود',
+    addFood: 'افزودن',
+    hungerLevelLabel: 'سطح گرسنگی',
+    hungerLow: 'کم',
+    hungerMedium: 'متوسط',
+    hungerHigh: 'زیاد',
+    mealContextLabel: 'موقعیت (اختیاری)',
+    mealContextPlaceholder: 'مثلاً: بعد از ورزش، سر کار، میهمانی...',
+    timeAvailableLabel: 'زمان آماده‌سازی (دقیقه)',
+    timeAvailablePlaceholder: 'مثلاً: ۱۵',
+    askBtn: 'پیشنهاد بده',
+    asking: 'در حال آماده‌سازی پیشنهاد...',
+    optionsTitle: 'پیشنهادها',
+    calories: 'کالری تقریبی',
+    prepTime: 'زمان آماده‌سازی',
+    reasoningTitle: 'چرا این پیشنهادها؟',
+    warningsTitle: 'نکات مهم',
+    tryAgainBtn: 'پیشنهاد جدید',
+    mockBadge: 'حالت آزمایشی',
+  },
+  companionChat: {
+    title: 'گفتگو با مربی',
+    subtitle: 'سوال تغذیه‌ای دارید؟ بپرسید.',
+    inputPlaceholder: 'پیام خود را بنویسید...',
+    sendBtn: 'ارسال',
+    sending: 'در حال ارسال...',
+    emptyTitle: 'گفتگو را شروع کنید',
+    emptyDesc: 'سوال تغذیه‌ای دارید؟ مربی آماده پاسخ است.',
+    loadError: 'بارگذاری تاریخچه ناموفق بود.',
+    sendError: 'ارسال پیام ناموفق بود. دوباره تلاش کنید.',
+    mockBadge: 'حالت آزمایشی',
+    you: 'شما',
+    coach: 'مربی',
+    typingIndicator: 'مربی در حال نوشتن...',
+  },
+  safety: {
+    clinicalTitle: 'توجه: مشاوره پزشکی توصیه می‌شود',
+    clinicalMessage:
+      'بر اساس اطلاعات سلامتی شما، پیش از شروع هر برنامه غذایی تخصصی با پزشک یا متخصص تغذیه مشورت کنید. مربی تغذیه می‌تواند راهنمایی کلی ارائه دهد اما جایگزین مشاوره پزشکی نیست.',
+    clinicalDisclaimer:
+      'این اپلیکیشن جایگزین پزشک، متخصص تغذیه یا هر ارائه‌دهنده بهداشتی نیست.',
+    highRiskTitle: 'سطح ریسک: بالا',
+    highRiskMessage:
+      'با توجه به وضعیت سلامتی شما، برنامه ارائه‌شده محافظه‌کارانه و کلی است. مشاوره با متخصص تغذیه توصیه می‌شود.',
+    notADoctorNote: 'این اطلاعات آموزشی است و جایگزین تشخیص و درمان پزشکی نمی‌شود.',
   },
 }
 

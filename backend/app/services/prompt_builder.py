@@ -15,6 +15,7 @@ from app.services.mock_ai_provider import (
     TASK_ANALYZE_MEAL,
     TASK_WHAT_TO_EAT,
     TASK_ADAPT_PLAN,
+    TASK_CHAT,
 )
 
 _SYSTEM_BASE = """\
@@ -136,6 +137,29 @@ def for_what_to_eat_now(
         "}"
     )
     return PromptData(task_type="what_to_eat_now", system=system, user=user)
+
+
+def for_chat_message(
+    ctx: NutritionMemoryContext,
+    user_message: str,
+    history: list[dict[str, str]],
+) -> PromptData:
+    system = f"{_SYSTEM_BASE}\n{TASK_CHAT}{_safety_note(ctx)}"
+    user_ctx = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
+    history_str = ""
+    if history:
+        lines = [f"  [{m['role']}]: {m['content']}" for m in history[-6:]]
+        history_str = "\nتاریخچه اخیر گفتگو:\n" + "\n".join(lines) + "\n"
+    user = (
+        f"مشخصات کاربر: {user_ctx}\n"
+        f"{history_str}\n"
+        f"پیام کاربر: {user_message}\n\n"
+        "به این پیام به عنوان مربی تغذیه پاسخ بده. "
+        "پاسخت باید صمیمی، حرفه‌ای و کوتاه باشد (۱ تا ۳ پاراگراف). "
+        "دقیقاً به این فرمت JSON پاسخ بده:\n"
+        '{"reply": "..."}'
+    )
+    return PromptData(task_type="chat_message", system=system, user=user)
 
 
 def for_adapt_plan(

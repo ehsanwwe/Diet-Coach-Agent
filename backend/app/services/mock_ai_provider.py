@@ -15,6 +15,7 @@ TASK_GENERATE_PLAN = "TASK:generate_plan"
 TASK_ANALYZE_MEAL = "TASK:analyze_meal"
 TASK_WHAT_TO_EAT = "TASK:what_to_eat_now"
 TASK_ADAPT_PLAN = "TASK:adapt_plan"
+TASK_CHAT = "TASK:chat_message"
 
 _MOCK_PLAN = {
     "title": "برنامه تغذیه اولیه",
@@ -136,6 +137,14 @@ _MOCK_WHAT_TO_EAT = {
     "warnings": [],
 }
 
+_MOCK_CHAT = {
+    "reply": (
+        "سلام! من DietCoach، مربی تغذیه شما هستم. "
+        "آماده‌ام تا در مورد برنامه غذایی، انتخاب‌های مناسب، و سوالات تغذیه‌ای شما کمک کنم. "
+        "چه سوالی دارید؟"
+    )
+}
+
 _MOCK_ADAPT_PLAN = {
     "changes": [
         "برنامه بر اساس بازخورد شما بررسی و تنظیم شد.",
@@ -174,6 +183,8 @@ class MockAIProvider(AIProvider):
             content = json.dumps(_MOCK_WHAT_TO_EAT, ensure_ascii=False)
         elif task_type == "adapt_plan":
             content = json.dumps(_MOCK_ADAPT_PLAN, ensure_ascii=False)
+        elif task_type == "chat_message":
+            content = json.dumps(_MOCK_CHAT, ensure_ascii=False)
         else:
             content = json.dumps(_MOCK_PLAN, ensure_ascii=False)
 
@@ -197,4 +208,6 @@ class MockAIProvider(AIProvider):
                 return "what_to_eat_now"
             if TASK_ADAPT_PLAN in content:
                 return "adapt_plan"
+            if TASK_CHAT in content:
+                return "chat_message"
         return "generate_plan"

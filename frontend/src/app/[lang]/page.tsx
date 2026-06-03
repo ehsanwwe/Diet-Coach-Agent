@@ -80,12 +80,20 @@ export default async function SplashPage({ params }: Props) {
           {dict.splash.description}
         </p>
 
-        {/* Coming-soon badge — no auth implemented yet */}
-        <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-muted">
-          <span className="w-2 h-2 rounded-full bg-brand opacity-70" />
-          <span className="text-sm font-medium text-brand">
-            {dict.splash.comingSoon}
-          </span>
+        {/* CTA */}
+        <div className="flex flex-col items-center gap-3 w-full max-w-[280px]">
+          <a
+            href={`/${locale}/login`}
+            className="w-full text-center py-4 rounded-2xl bg-brand text-elevated font-semibold text-sm"
+          >
+            {dict.splash.getStarted}
+          </a>
+          <a
+            href={`/${locale}/dashboard`}
+            className="w-full text-center py-3 rounded-2xl border border-line text-ink-2 text-sm font-medium"
+          >
+            {dict.nav.home}
+          </a>
         </div>
       </div>
 
