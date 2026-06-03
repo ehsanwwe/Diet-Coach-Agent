@@ -68,8 +68,8 @@ export default function AppBottomNav({ locale, dict }: Props) {
       href: `/${locale}/progress`,
       label: dict.nav.progress,
       icon: ProgressIcon,
-      active: false,
-      disabled: true,
+      active: isActive('progress'),
+      disabled: false,
     },
     {
       href: `/${locale}/settings`,

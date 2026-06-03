@@ -449,6 +449,66 @@ export interface Dictionary {
     highRiskMessage: string
     notADoctorNote: string
   }
+  progress: {
+    title: string
+    subtitle: string
+    tabSummary: string
+    tabWeekly: string
+    checkInTitle: string
+    checkInSubtitle: string
+    checkInWeight: string
+    checkInWeightUnit: string
+    checkInHunger: string
+    checkInSleep: string
+    checkInSleepUnit: string
+    checkInStress: string
+    checkInActivity: string
+    checkInActivityUnit: string
+    checkInNotes: string
+    checkInNotesPlaceholder: string
+    checkInSubmit: string
+    checkInSubmitting: string
+    checkInSuccess: string
+    checkInAlreadyToday: string
+    checkInTodayMissing: string
+    summaryTitle: string
+    latestWeight: string
+    weightTrend: string
+    behaviourWinsTitle: string
+    loggingStreak: string
+    loggingStreakDays: string
+    winSleep: string
+    winActivity: string
+    winLogging: string
+    winLowStress: string
+    winLowHunger: string
+    winHydration: string
+    winProtein: string
+    winFiber: string
+    winNotTracked: string
+    weeklyTitle: string
+    weeklyPeriod: string
+    weeklyAdherence: string
+    weeklyAvgSleep: string
+    weeklyAvgStress: string
+    weeklyAvgHunger: string
+    weeklyTotalActivity: string
+    weeklyWeightDelta: string
+    weeklySleepStressNote: string
+    weeklyFocusTitle: string
+    weeklyLoggingDays: string
+    emptyTitle: string
+    emptyDesc: string
+    emptyCheckinCta: string
+    emptyWeeklyTitle: string
+    emptyWeeklyDesc: string
+    errSubmitFailed: string
+    errLoadFailed: string
+    unitKg: string
+    unitHours: string
+    unitMinutes: string
+    unitPercent: string
+  }
 }
 
 const fa: Dictionary = {
@@ -891,6 +951,66 @@ const fa: Dictionary = {
     highRiskMessage:
       'با توجه به وضعیت سلامتی شما، برنامه ارائه‌شده محافظه‌کارانه و کلی است. مشاوره با متخصص تغذیه توصیه می‌شود.',
     notADoctorNote: 'این اطلاعات آموزشی است و جایگزین تشخیص و درمان پزشکی نمی‌شود.',
+  },
+  progress: {
+    title: 'پیشرفت',
+    subtitle: 'مسیر سلامتی شما',
+    tabSummary: 'خلاصه',
+    tabWeekly: 'گزارش هفتگی',
+    checkInTitle: 'ثبت وضعیت امروز',
+    checkInSubtitle: 'چند دقیقه وقت بگذارید — اطلاعات بیشتر، راهنمایی بهتر',
+    checkInWeight: 'وزن امروز',
+    checkInWeightUnit: 'کیلوگرم',
+    checkInHunger: 'سطح گرسنگی (۱–۵)',
+    checkInSleep: 'ساعت خواب',
+    checkInSleepUnit: 'ساعت',
+    checkInStress: 'سطح استرس (۱–۵)',
+    checkInActivity: 'دقیقه تحرک',
+    checkInActivityUnit: 'دقیقه',
+    checkInNotes: 'یادداشت پیروی',
+    checkInNotesPlaceholder: 'مثلاً: امروز رژیم را رعایت کردم، یک شام سنگین داشتم...',
+    checkInSubmit: 'ثبت وضعیت',
+    checkInSubmitting: 'در حال ثبت...',
+    checkInSuccess: 'وضعیت امروز ثبت شد',
+    checkInAlreadyToday: 'امروز ثبت شده — می‌توانید ویرایش کنید',
+    checkInTodayMissing: 'امروز ثبت نشده — ثبت وضعیت',
+    summaryTitle: 'خلاصه پیشرفت',
+    latestWeight: 'آخرین وزن',
+    weightTrend: 'روند وزن',
+    behaviourWinsTitle: 'دستاوردهای این هفته',
+    loggingStreak: 'روزهای متوالی ثبت',
+    loggingStreakDays: 'روز',
+    winSleep: 'خواب منظم',
+    winActivity: 'تحرک کافی',
+    winLogging: 'ثبت منظم',
+    winLowStress: 'استرس پایین',
+    winLowHunger: 'گرسنگی کنترل‌شده',
+    winHydration: 'آب کافی',
+    winProtein: 'پروتئین کافی',
+    winFiber: 'فیبر کافی',
+    winNotTracked: 'هنوز ثبت نمی‌شود',
+    weeklyTitle: 'گزارش هفتگی',
+    weeklyPeriod: 'دوره گزارش',
+    weeklyAdherence: 'درصد پیروی',
+    weeklyAvgSleep: 'میانگین خواب',
+    weeklyAvgStress: 'میانگین استرس',
+    weeklyAvgHunger: 'میانگین گرسنگی',
+    weeklyTotalActivity: 'کل تحرک',
+    weeklyWeightDelta: 'تغییر وزن',
+    weeklySleepStressNote: 'نکته خواب و استرس',
+    weeklyFocusTitle: 'پیشنهاد هفته بعد',
+    weeklyLoggingDays: 'روزهای ثبت‌شده',
+    emptyTitle: 'هنوز هیچ ثبتی ندارید',
+    emptyDesc: 'اولین ثبت وضعیت را همین‌جا انجام دهید — فقط چند دقیقه کافی است',
+    emptyCheckinCta: 'ثبت وضعیت اول',
+    emptyWeeklyTitle: 'هنوز داده کافی ندارید',
+    emptyWeeklyDesc: 'پس از ۳ روز ثبت، گزارش هفتگی آماده می‌شود',
+    errSubmitFailed: 'ثبت ناموفق بود — دوباره تلاش کنید',
+    errLoadFailed: 'بارگذاری داده‌ها با مشکل مواجه شد — دوباره تلاش کنید',
+    unitKg: 'کیلوگرم',
+    unitHours: 'ساعت',
+    unitMinutes: 'دقیقه',
+    unitPercent: 'درصد',
   },
 }
 

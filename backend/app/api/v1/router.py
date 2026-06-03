@@ -11,6 +11,7 @@ from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.nutrition import router as nutrition_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
 from app.api.v1.endpoints.onboarding_chat import router as onboarding_chat_router
+from app.api.v1.endpoints.progress import router as progress_router
 
 api_router = APIRouter()
 
@@ -31,3 +32,6 @@ api_router.include_router(nutrition_router, prefix="/nutrition")
 
 # Phase 8: Companion Chat
 api_router.include_router(chat_router, prefix="/chat")
+
+# Phase 9: Progress & Reports
+api_router.include_router(progress_router, prefix="/progress")
