@@ -1,40 +1,48 @@
 # Next Steps — Diet Coach Agent
 
-> Updated after every meaningful commit. Start here after `/clear` or a new session.
+**Updated:** 2026-06-03
+**Current status:** Phase 1 COMPLETE. Phase 2 ready to start.
 
 ## Immediate Next Action
 
-**Start Phase 1: Infra & Backend Foundation**
+**Start Phase 2: i18n & Frontend Shell**
 
-Run: `/gsd:plan-phase 1`
+Command: `/gsd:plan-phase 2` (then `/gsd:execute-phase 2`)
 
-Or to discuss first: `/gsd:discuss-phase 1`
+## What Phase 2 Builds
 
-## What Phase 1 Delivers
+Phase 2 goal: Complete i18n foundation — fa/en/ar dictionaries, RTL direction from cookie (zero flicker), all CSS using Tailwind v4 logical properties, direction-aware utilities, PWA manifest + service worker, muted/pale/app-like style system.
 
-- Monorepo structure (`backend/` + `frontend/`)
-- FastAPI app factory with CORS from env
-- SQLAlchemy 2.x (sync) + Alembic (`render_as_batch=True`, `lazy="raise"`)
-- All 22 ORM models migrated on blank SQLite
-- `pydantic-settings` typed config with all 10 `OPENCLAW_*` vars
-- `SECRET_KEY` startup validation
-- Root `.env.example` + `backend/.env.example` + `frontend/.env.example`
-- `PROJECT_STATE.md`, `NEXT_STEPS.md`, `DECISIONS.md`, `CHANGELOG.md` initialized
+### First files to touch in Phase 2:
+1. `frontend/src/middleware.ts` — locale detection from cookie/Accept-Language, redirect to /[lang]
+2. `frontend/src/app/[lang]/dictionaries/fa.json` — Persian dictionary (all UI strings)
+3. `frontend/src/app/[lang]/dictionaries/en.json` — English dictionary
+4. `frontend/src/app/[lang]/dictionaries/ar.json` — Arabic dictionary
+5. `frontend/src/app/[lang]/layout.tsx` — add `lang` and `dir` attributes from server-side locale
 
-## Files to Touch First (Phase 1)
+### First command to run:
+```bash
+cd frontend && npm install  # if not already done
+# Then execute Phase 2 plans
+```
 
-1. `backend/pyproject.toml` — dependencies
-2. `backend/app/core/config.py` — pydantic-settings with OPENCLAW vars
-3. `backend/app/core/database.py` — SQLAlchemy engine + session
-4. `backend/app/models/` — all 22 models
-5. `backend/alembic/env.py` — render_as_batch=True
-6. `backend/.env.example` — all env vars documented
-7. `frontend/package.json` — Next.js 16 + Tailwind v4 setup
-8. Root `.env.example`
+## If Phase 2 is Already Done
 
-## After Phase 1
+Read `.planning/phases/02-*/02-*-SUMMARY.md` files to understand what was built.
+Then check `ROADMAP.md` for Phase 3 (Authentication).
 
-Next: `/gsd:plan-phase 2` — i18n & Frontend Shell (PWA, RTL, UI style system)
+## Phase Order Reminder
+
+1. ✅ Infra & Backend Foundation (COMPLETE)
+2. → i18n & Frontend Shell (NEXT)
+3. Authentication (after Phase 2)
+4. Onboarding Backend (after Phase 3)
+5. Onboarding Frontend (after Phase 4)
+6. Voice & Audio (after Phase 5)
+7. Nutrition Backend & AI Layer (after Phase 4)
+8. Nutrition Frontend & Chat (after Phase 7)
+9. Progress & Reports (after Phase 8)
+10. Settings, Polish & Remaining UI (after Phase 9)
 
 ---
 *Last updated: 2026-06-03*

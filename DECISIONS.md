@@ -72,4 +72,23 @@
 **Alternatives rejected:** Relying on git log (too noisy); relying on .planning/ STATE.md (not surfaced enough).
 
 ---
+
+## 2026-06-03 — Phase 1 Implementation Decisions
+
+### D-014: All ORM models use String(36) for UUID primary keys (not native UUID type)
+**Decision:** Use `String(36)` with `default=lambda: str(uuid.uuid4())` for all primary keys.
+**Rationale:** SQLite has no native UUID type. String(36) is portable to PostgreSQL without migration changes. The Alembic render_as_batch=True flag handles future type changes safely.
+**Alternatives rejected:** Python UUID type (dialect-specific, requires extra Alembic config); Integer PKs (prevents distributed ID generation).
+
+### D-015: JSON list fields stored as Text (not JSON type)
+**Decision:** Fields containing lists (disliked_foods, cravings, report_data, etc.) use `Text` column type, with application-layer JSON serialization.
+**Rationale:** SQLite has no native JSON type (JSON1 extension varies); using Text is portable to PostgreSQL (which does have JSON). The application layer owns serialization/deserialization.
+**Alternatives rejected:** SQLAlchemy JSON type (uses SQLite's JSON1 extension — not universally available); separate junction tables (over-engineered for list fields that are read/written as units).
+
+### D-016: SECRET_KEY validated via pydantic field_validator at import time
+**Decision:** `settings = Settings()` is called at module level in `config.py`; the `@field_validator("SECRET_KEY")` runs immediately, raising `ValueError` if absent or placeholder. FastAPI import of `settings` in `main.py` triggers this at startup.
+**Rationale:** Fails fast — the process never starts with a missing key. No runtime check needed in routes.
+**Alternatives rejected:** Lifespan event validation (later failure, harder to catch in tests); manual check in each route (error-prone, could be missed).
+
+---
 *Last updated: 2026-06-03*

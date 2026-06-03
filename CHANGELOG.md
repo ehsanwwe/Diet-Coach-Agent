@@ -5,6 +5,42 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.1.0] - 2026-06-03
+
+### Added — Phase 1: Infra & Backend Foundation
+
+**Backend**
+- Monorepo structure: `backend/` and `frontend/` directories established
+- `backend/pyproject.toml` with all required dependencies (FastAPI, SQLAlchemy 2.x, Alembic, PyJWT, pydantic-settings)
+- `backend/app/core/config.py`: pydantic-settings BaseSettings with SECRET_KEY validation and all 10 OPENCLAW_* vars
+- `backend/app/core/database.py`: SQLAlchemy 2.x sync engine, `get_session()` FastAPI dependency, `DeclarativeBase`
+- `backend/app/core/errors.py`: consistent `{"status", "message", "detail"}` error response helpers
+- All 22 ORM models with `lazy="raise"` on all relationships, UUID PKs, created_at/updated_at
+- Alembic migration environment with `render_as_batch=True` + `compare_type=True` (SQLite DDL safety)
+- Initial migration `0001_initial_schema.py` covering all 22 tables
+- FastAPI app factory with CORS from environment, global error handlers, modular directory structure
+- `/api/v1/health` endpoint returning `{"status": "ok"}`
+- `backend/.env.example` documenting all env vars including all 10 OPENCLAW_* vars
+- `backend/README.md` with setup, migration commands, technology notes
+
+**Frontend**
+- Next.js 16 skeleton with App Router `src/app/[lang]/` structure
+- Tailwind CSS v4 with `@tailwindcss/postcss` PostCSS plugin
+- TypeScript strict mode enabled
+- `frontend/.env.example` documenting frontend env vars
+- `frontend/README.md` with setup guide
+
+**Repository**
+- `.gitignore` covering SQLite files, env files, uploads, caches
+- Root `.env.example` with cross-service documentation linking to service examples
+
+### Notes
+- `lazy="raise"` on all ORM relationships: accessing any relationship outside a session raises MissingGreenlet/DetachedInstanceError
+- `render_as_batch=True` in BOTH alembic/env.py context.configure() calls — required for all future SQLite DDL
+- SECRET_KEY absent causes server to refuse startup with clear error message
+
+---
+
 ## [Unreleased]
 
 ### Planned
