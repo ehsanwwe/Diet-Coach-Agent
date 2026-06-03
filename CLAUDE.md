@@ -12,11 +12,15 @@ An AI-powered multilingual nutrition and health companion that guides users thro
 - **Database**: SQLite only for now — no PostgreSQL yet
 - **Auth**: Phone OTP only — no email/password, no OAuth
 - **Language**: Persian is default; app must feel native to Persian speakers
-- **AI**: Mock responses only until real provider configured — app must work end-to-end without AI
+- **AI**: `OpenClawProvider` when `OPENCLAW_BASE_URL` is set; `MockAIProvider` fallback — app works end-to-end without OpenClaw configured
+- **OpenClaw config**: ALL 10 `OPENCLAW_*` env vars from backend environment only — never hard-coded, never from frontend: `OPENCLAW_BASE_URL`, `OPENCLAW_API_KEY`, `OPENCLAW_MODEL`, `OPENCLAW_CHAT_COMPLETIONS_PATH`, `OPENCLAW_TIMEOUT_SECONDS`, `OPENCLAW_MAX_RETRIES`, `OPENCLAW_TEMPERATURE`, `OPENCLAW_MAX_TOKENS`, `OPENCLAW_CONTEXT_MAX_MESSAGES`, `OPENCLAW_CONTEXT_SUMMARY_ENABLED`
 - **Audio**: Browser MediaRecorder API — no native mobile SDKs
 - **Migrations**: All schema changes via Alembic — SQLite file never committed
 - **Backend structure**: Must follow `backend/app/` modular structure as specified
 - **Frontend structure**: Must follow `frontend/src/` modular structure as specified
+- **UI style**: Muted, pale, soft aesthetic — NO saturated colors, NO gym palette, NO Bootstrap card grids, NO admin-panel borders, NO website-style top nav. App-like: bottom nav, full-bleed screens, soft rounded cards (≥16px), subtle shadows
+- **PWA**: App must be installable — manifest.json, service worker, offline fallback page required
+- **Continuation files**: After EVERY meaningful commit, update these 4 files at repo root: `PROJECT_STATE.md` (current state), `NEXT_STEPS.md` (exact next action), `DECISIONS.md` (append decision), `CHANGELOG.md` (append entry). This is mandatory — not optional cleanup
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->

@@ -43,10 +43,14 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - Roadmap: render_as_batch=True and lazy="raise" placed in Phase 1 — retrofitting costs are prohibitive
-- Roadmap: i18n and CSS logical properties in Phase 2 — before any UI component is built
+- Roadmap: i18n, CSS logical properties, PWA, and UI style system in Phase 2 — before any UI component is built
 - Roadmap: SafetyGuardrailService implemented as FastAPI Depends() in Phase 4 — not callable directly
-- Roadmap: MockAIProvider with 20+ Persian variants in Phase 7 — not obvious placeholders
+- Roadmap: OpenClawProvider + MockAIProvider fallback in Phase 7; all 10 OPENCLAW_* vars via pydantic-settings
+- Roadmap: Rolling summaries (OPENCLAW_CONTEXT_SUMMARY_ENABLED) + NutritionMemoryContext in Phase 7
 - Roadmap: Voice/audio in Phase 6 (after onboarding frontend) — shares chat infrastructure
+- Requirements update: 26 new requirements added (PWA-01..05, OC-01..08, MEM-01..04, UI-STYLE-01..04, CONT-01..04, INFRA-09) → 152 total
+- UI: Muted/pale/app-like aesthetic mandated — no Bootstrap cards, no admin panel UI, no website-style nav
+- Continuation files: PROJECT_STATE.md, NEXT_STEPS.md, DECISIONS.md, CHANGELOG.md required at repo root; updated after every meaningful commit
 
 ### Pending Todos
 

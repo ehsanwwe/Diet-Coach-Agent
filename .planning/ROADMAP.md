@@ -26,27 +26,27 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Phase Details
 
 ### Phase 1: Infra & Backend Foundation
-**Goal**: The monorepo skeleton and backend engine exist with all critical safeguards — render_as_batch=True in Alembic, lazy="raise" on all ORM relationships, all 22 data models migrated cleanly against a blank SQLite database, FastAPI app factory running, and both READMEs documenting setup.
+**Goal**: The monorepo skeleton and backend engine exist with all critical safeguards — render_as_batch=True in Alembic, lazy="raise" on all ORM relationships, all 22 data models migrated cleanly against a blank SQLite database, FastAPI app factory running, all three env example files (root + backend + frontend) with all 10 OPENCLAW_* vars documented, and all four continuation files (PROJECT_STATE.md, NEXT_STEPS.md, DECISIONS.md, CHANGELOG.md) initialized at repository root.
 **Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, BE-01, BE-02, BE-03, BE-04, BE-05, BE-06, BE-07, BE-08, BE-09, BE-10, BE-11, BE-12, DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07, DATA-08, DATA-09
+**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, INFRA-07, INFRA-08, INFRA-09, BE-01, BE-02, BE-03, BE-04, BE-05, BE-06, BE-07, BE-08, BE-09, BE-10, BE-11, BE-12, DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07, DATA-08, DATA-09, CONT-01, CONT-02, CONT-03, CONT-04
 **Success Criteria** (what must be TRUE):
   1. Running `uvicorn app.main:app` from `backend/` starts the server and `/docs` returns OpenAPI UI with no errors
   2. Running `alembic upgrade head` on a blank database creates all tables without error and is reversible with `alembic downgrade base`
   3. All ORM relationships raise an error if accessed outside a session (lazy="raise" is enforced)
-  4. `SECRET_KEY` absent from environment causes backend to refuse startup with a clear error message
-  5. `npm run dev` from `frontend/` starts the Next.js dev server (skeleton, no features yet)
+  4. `SECRET_KEY` absent from environment causes backend to refuse startup with a clear error message; `backend/.env.example` lists all 10 `OPENCLAW_*` variables with descriptions
+  5. `npm run dev` from `frontend/` starts the Next.js dev server (skeleton, no features yet); root `PROJECT_STATE.md`, `NEXT_STEPS.md`, `DECISIONS.md`, and `CHANGELOG.md` exist and are populated
 **Plans**: TBD
 
 ### Phase 2: i18n & Frontend Shell
-**Goal**: The frontend has a complete i18n foundation — fa/en/ar dictionaries with full coverage, document direction set server-side from cookie with zero RTL flicker, all CSS using Tailwind v4 logical properties (never pl-/pr-/ml-/mr-), and direction-aware utilities for icons and animations — before any UI component is built.
+**Goal**: The frontend has a complete i18n foundation — fa/en/ar dictionaries with full coverage, document direction set server-side from cookie with zero RTL flicker, all CSS using Tailwind v4 logical properties (never pl-/pr-/ml-/mr-), direction-aware utilities for icons and animations, PWA manifest + service worker + offline fallback, and the muted/pale/app-like visual style system established — all before any feature screen is built.
 **Depends on**: Phase 1
-**Requirements**: I18N-01, I18N-02, I18N-03, I18N-04, I18N-05, I18N-06, I18N-07, I18N-08, I18N-09, I18N-10
+**Requirements**: I18N-01, I18N-02, I18N-03, I18N-04, I18N-05, I18N-06, I18N-07, I18N-08, I18N-09, I18N-10, PWA-01, PWA-02, PWA-03, PWA-04, PWA-05, UI-STYLE-01, UI-STYLE-02, UI-STYLE-03, UI-STYLE-04
 **Success Criteria** (what must be TRUE):
   1. Loading the app with `?lang=fa` (or Persian cookie) renders the root layout with `dir="rtl"` on the `<html>` tag — no direction flicker on load
   2. Loading with `?lang=en` renders `dir="ltr"` with English text; switching language live updates direction without full page reload
-  3. The `useTranslation()` hook returns Persian strings by default; missing keys fall back gracefully without throwing
-  4. A chevron icon in the direction-aware utility points left in LTR and right in RTL (mirrors correctly)
-  5. No component file contains `pl-`, `pr-`, `ml-`, or `mr-` Tailwind classes (verified by ESLint or grep)
+  3. The app can be installed as a PWA on mobile (manifest valid, service worker registered, offline fallback visible when offline)
+  4. A chevron icon in the direction-aware utility points left in LTR and right in RTL (mirrors correctly); no component file contains `pl-`, `pr-`, `ml-`, or `mr-` Tailwind classes
+  5. The shell screen uses the muted/pale/app-like style system — soft colors, rounded cards, bottom-nav layout, comfortable typography; does not resemble a website or admin panel
 **Plans**: TBD
 **UI hint**: yes
 
@@ -102,15 +102,15 @@ Decimal phases appear between their surrounding integers in numeric order.
 **UI hint**: yes
 
 ### Phase 7: Nutrition Backend & AI Layer
-**Goal**: The full AI nutrition layer is operational — AIProvider ABC with MockAIProvider returning 20+ contextually appropriate Persian nutrition response variants, NutritionMemoryService injecting medical flags into every system prompt, PromptBuilder with token-safe history pruning, NutritionAgentService orchestrating the full call, SafetyGuardrailService injected on every AI endpoint, and all 6 nutrition endpoints working end-to-end.
+**Goal**: The full AI nutrition layer is operational — AIProvider ABC with OpenClawProvider (OpenAI-compatible) and MockAIProvider fallback, NutritionMemoryService building structured NutritionMemoryContext and injecting it into every system prompt, PromptBuilder with token-safe history pruning, rolling conversation summaries when OPENCLAW_CONTEXT_SUMMARY_ENABLED=true, NutritionAgentService orchestrating the full call, SafetyGuardrailService injected on every AI endpoint, and all 6 nutrition endpoints working end-to-end.
 **Depends on**: Phase 4
-**Requirements**: NUTR-05, NUTR-06, NUTR-07, NUTR-08, NUTR-09, NUTR-10, NUTR-11, NUTR-12, AI-01, AI-02, AI-03, AI-04, AI-05, AI-06, AI-07, AI-08
+**Requirements**: NUTR-05, NUTR-06, NUTR-07, NUTR-08, NUTR-09, NUTR-10, NUTR-11, NUTR-12, AI-01, AI-02, AI-03, AI-04, AI-05, AI-06, AI-07, AI-08, OC-01, OC-02, OC-03, OC-04, OC-05, OC-06, OC-07, OC-08, MEM-01, MEM-02, MEM-03, MEM-04
 **Success Criteria** (what must be TRUE):
-  1. POST /api/v1/nutrition/plan/generate returns a personalized plan that references the user's actual goals and medical flags (verifiable from mock response content)
-  2. A user with clinical_review_required risk level hitting any nutrition AI endpoint receives the clinical review response — not a plan
-  3. POST /api/v1/nutrition/what-to-eat-now with "برنج و مرغ" (rice and chicken) returns 2–3 suggestions referencing recognizable Iranian meal options
-  4. MockAIProvider has at minimum 20 distinct response variants seeded by goal type — no two consecutive calls for the same goal type return identical text
-  5. Changing AI_PROVIDER env var to an unrecognized value falls back to MockAIProvider without crashing
+  1. With `OPENCLAW_BASE_URL` set and a valid OpenAI-compatible endpoint, POST /api/v1/nutrition/plan/generate calls the real AI and returns a plan; with it unset, MockAIProvider returns a deterministic response — both paths produce the same response structure
+  2. A user with clinical_review_required risk level hitting any AI endpoint receives the clinical review response — not a plan, regardless of provider
+  3. POST /api/v1/nutrition/what-to-eat-now with "برنج و مرغ" (rice and chicken) returns 2–3 suggestions referencing recognizable Iranian meal options (via mock or real OpenClaw)
+  4. After `OPENCLAW_CONTEXT_MAX_MESSAGES` messages, the next request includes a rolling summary instead of full history; `ChatSession.summary` is populated when `OPENCLAW_CONTEXT_SUMMARY_ENABLED=true`
+  5. All 10 OPENCLAW_* env vars are loaded via pydantic-settings; OpenClaw request logs appear at DEBUG level only (no user content in INFO logs)
 **Plans**: TBD
 
 ### Phase 8: Nutrition Frontend & Chat

@@ -9,12 +9,13 @@
 
 - [ ] **INFRA-01**: Monorepo contains exactly `backend/` and `frontend/` directories; no app source files in root
 - [ ] **INFRA-02**: `.gitignore` excludes SQLite files (`*.db`, `*.sqlite`, `*.sqlite3`), env files, audio/upload dirs, caches, and `.planning/` internal dirs
-- [ ] **INFRA-03**: `backend/.env.example` documents all required and optional environment variables
+- [ ] **INFRA-03**: `backend/.env.example` documents all required and optional environment variables including all 10 `OPENCLAW_*` variables
 - [ ] **INFRA-04**: `frontend/.env.example` documents all required frontend environment variables
 - [ ] **INFRA-05**: Backend runs with `uvicorn app.main:app` from `backend/` directory
 - [ ] **INFRA-06**: Frontend runs with `npm run dev` from `frontend/` directory
 - [ ] **INFRA-07**: `backend/README.md` documents setup, migration commands, and environment variables
 - [ ] **INFRA-08**: `frontend/README.md` documents setup and development commands
+- [ ] **INFRA-09**: Root `.env.example` at repository root documents cross-service environment variables and links to `backend/.env.example` and `frontend/.env.example`
 
 ### Backend Foundation
 
@@ -167,6 +168,46 @@
 - [ ] **DATA-08**: All models have `created_at` and `updated_at` timestamps
 - [ ] **DATA-09**: All migrations are clean, reversible, and tested on a fresh database
 
+### Progressive Web App (PWA)
+
+- [ ] **PWA-01**: Web app manifest (`manifest.json`) with name, short name, icons (192×192, 512×512, maskable), theme color, background color, `display: standalone`
+- [ ] **PWA-02**: Service worker with network-first strategy for API calls and cache-first for static assets; offline fallback page shown when network unavailable
+- [ ] **PWA-03**: Install prompt shown at an appropriate moment (after onboarding completion or first meaningful interaction) — not on first load
+- [ ] **PWA-04**: Installed PWA launches without browser chrome on mobile; status bar color matches app theme
+- [ ] **PWA-05**: All screens work in standalone PWA mode; no broken layout due to missing browser navigation
+
+### OpenClaw AI Integration
+
+- [ ] **OC-01**: `OpenClawProvider` implements `AIProvider` interface using OpenAI-compatible `/chat/completions` endpoint
+- [ ] **OC-02**: OpenClaw configuration loaded exclusively from 10 backend environment variables: `OPENCLAW_BASE_URL`, `OPENCLAW_API_KEY`, `OPENCLAW_MODEL`, `OPENCLAW_CHAT_COMPLETIONS_PATH`, `OPENCLAW_TIMEOUT_SECONDS`, `OPENCLAW_MAX_RETRIES`, `OPENCLAW_TEMPERATURE`, `OPENCLAW_MAX_TOKENS`, `OPENCLAW_CONTEXT_MAX_MESSAGES`, `OPENCLAW_CONTEXT_SUMMARY_ENABLED`
+- [ ] **OC-03**: All AI endpoints — chat companion, nutrition plan generation, meal analysis, what-to-eat-now, plan adaptation, onboarding assistant chat, habit coaching — route through `OpenClawProvider` when `OPENCLAW_BASE_URL` is set
+- [ ] **OC-04**: When `OPENCLAW_BASE_URL` is absent, app falls back to `MockAIProvider` with no crash and no user-facing error
+- [ ] **OC-05**: Conversation context respects `OPENCLAW_CONTEXT_MAX_MESSAGES`; oldest messages pruned from history when limit is reached
+- [ ] **OC-06**: Timeout and retry logic implemented per `OPENCLAW_TIMEOUT_SECONDS` and `OPENCLAW_MAX_RETRIES`; network errors surface as friendly messages, not raw exceptions
+- [ ] **OC-07**: `OPENCLAW_TEMPERATURE` and `OPENCLAW_MAX_TOKENS` passed in every OpenClaw request body
+- [ ] **OC-08**: OpenClaw request/response is logged at DEBUG level (not INFO) to avoid leaking user content in production logs
+
+### Conversation Persistence & Nutrition Memory
+
+- [ ] **MEM-01**: `NutritionMemoryContext` struct serialized per user: medical flags, risk level, current plan summary, recent 7-day check-in trends, top 3 behavior patterns — injected into every AI system prompt prefix
+- [ ] **MEM-02**: Rolling conversation summary generated when message count exceeds `OPENCLAW_CONTEXT_MAX_MESSAGES` and `OPENCLAW_CONTEXT_SUMMARY_ENABLED=true`
+- [ ] **MEM-03**: Rolling summary stored in `ChatSession.summary` field; injected at the top of system prompt context in subsequent sessions — long conversations resume without losing nutrition context
+- [ ] **MEM-04**: `ChatSession` model tracks `summary`, `summary_generated_at`, `message_count`; `NutritionMemoryService.build_context()` is the single point of truth for prompt context assembly
+
+### UI Style System
+
+- [ ] **UI-STYLE-01**: Visual aesthetic is muted, pale, and soft — no saturated colors, no aggressive fitness/gym palette; primary palette uses desaturated tones with high readability
+- [ ] **UI-STYLE-02**: Layout is app-like, not website-like — no horizontal nav bars at top, no Bootstrap-style card grids, no admin-panel borders or table layouts; uses bottom navigation and full-bleed screens
+- [ ] **UI-STYLE-03**: Components use subtle shadows and soft rounded corners (≥ 16px radius on cards) — no hard-bordered boxes, no flat Bootstrap-style panels
+- [ ] **UI-STYLE-04**: Typography uses comfortable line height (≥ 1.6), appropriate font size for mobile (≥ 15px body), spacious padding — health app feel, not form-heavy admin tool
+
+### Continuation & Context Files
+
+- [ ] **CONT-01**: Root `PROJECT_STATE.md` maintained with: current phase, last completed feature/commit, what's in progress, known blockers — updated after every meaningful commit so work can resume after `/clear`
+- [ ] **CONT-02**: Root `NEXT_STEPS.md` updated after every commit with: exact next action, which file to touch first, which command to run — enables cold-start resumption
+- [ ] **CONT-03**: Root `DECISIONS.md` documents every architectural and product decision: what was decided, why, what alternatives were rejected — append-only log
+- [ ] **CONT-04**: Root `CHANGELOG.md` updated with every meaningful commit: date, what changed, why — follows Keep a Changelog format
+
 ---
 
 ## v2 Requirements
@@ -206,7 +247,7 @@
 | OAuth (Google, GitHub) | Not needed for phone-OTP-only auth in v1 |
 | Native iOS / Android app | Web-first (PWA-ready); native app deferred |
 | Real SMS provider in v1 | OTP=123456 sufficient for dev/demo; wired in v2 |
-| Real AI provider in v1 | Mock provider enables full e2e testing without API keys |
+| OpenAI/Claude provider in v1 | OpenClaw covers OpenAI-compatible real AI in v1; other provider SDKs are v2 |
 | Real STT/transcription in v1 | Audio stored with `status=pending`; STT plugged in v2 |
 | Image meal analysis in v1 | Text-only for v1; camera architecture prepared |
 | Calorie-counting / macro tracking | Explicitly anti-feature — behavior-centric coaching, not calorie obsession |
@@ -308,6 +349,20 @@
 | AUDIO-11 | Phase 6: Voice & Audio | Pending |
 | AUDIO-12 | Phase 6: Voice & Audio | Pending |
 | AUDIO-13 | Phase 6: Voice & Audio | Pending |
+| INFRA-09 | Phase 1: Infra & Backend Foundation | Pending |
+| CONT-01 | Phase 1: Infra & Backend Foundation | Pending |
+| CONT-02 | Phase 1: Infra & Backend Foundation | Pending |
+| CONT-03 | Phase 1: Infra & Backend Foundation | Pending |
+| CONT-04 | Phase 1: Infra & Backend Foundation | Pending |
+| PWA-01 | Phase 2: i18n & Frontend Shell | Pending |
+| PWA-02 | Phase 2: i18n & Frontend Shell | Pending |
+| PWA-03 | Phase 2: i18n & Frontend Shell | Pending |
+| PWA-04 | Phase 2: i18n & Frontend Shell | Pending |
+| PWA-05 | Phase 2: i18n & Frontend Shell | Pending |
+| UI-STYLE-01 | Phase 2: i18n & Frontend Shell | Pending |
+| UI-STYLE-02 | Phase 2: i18n & Frontend Shell | Pending |
+| UI-STYLE-03 | Phase 2: i18n & Frontend Shell | Pending |
+| UI-STYLE-04 | Phase 2: i18n & Frontend Shell | Pending |
 | NUTR-05 | Phase 7: Nutrition Backend & AI Layer | Pending |
 | NUTR-06 | Phase 7: Nutrition Backend & AI Layer | Pending |
 | NUTR-07 | Phase 7: Nutrition Backend & AI Layer | Pending |
@@ -324,6 +379,18 @@
 | AI-06 | Phase 7: Nutrition Backend & AI Layer | Pending |
 | AI-07 | Phase 7: Nutrition Backend & AI Layer | Pending |
 | AI-08 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-01 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-02 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-03 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-04 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-05 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-06 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-07 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| OC-08 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| MEM-01 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| MEM-02 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| MEM-03 | Phase 7: Nutrition Backend & AI Layer | Pending |
+| MEM-04 | Phase 7: Nutrition Backend & AI Layer | Pending |
 | CHAT-01 | Phase 8: Nutrition Frontend & Chat | Pending |
 | CHAT-02 | Phase 8: Nutrition Frontend & Chat | Pending |
 | CHAT-03 | Phase 8: Nutrition Frontend & Chat | Pending |
@@ -352,9 +419,13 @@
 | UI-20 | Phase 10: Settings, Polish & Remaining UI | Pending |
 
 **Coverage:**
-- v1 requirements: 126 total
-- Mapped to phases: 126
+- v1 requirements: 152 total (126 original + 26 added 2026-06-03: INFRA-09, PWA-01..05, OC-01..08, MEM-01..04, UI-STYLE-01..04, CONT-01..04)
+- Mapped to phases: 152
 - Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-06-03*
+*Last updated: 2026-06-03 after PWA, OpenClaw, UI style, conversation memory, and continuation file requirements added*
 
 ---
 *Requirements defined: 2026-06-03*

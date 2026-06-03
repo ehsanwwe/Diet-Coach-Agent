@@ -106,13 +106,43 @@ A daily AI nutrition companion that users trust to guide every meal decision saf
 - [ ] User, AuthOTP, UserProfile, MedicalCondition, UserMedicalFlag
 - [ ] Medication, Allergy, LifestyleProfile, FoodPreference, BehaviorProfile
 - [ ] NutritionGoal, NutritionRiskAssessment, NutritionPlan, NutritionPlanMeal
-- [ ] MealEntry, ChatSession, ChatMessage, AudioMessage
+- [ ] MealEntry, ChatSession (with summary + message_count), ChatMessage, AudioMessage
 - [ ] DailyCheckIn, ProgressEntry, WeeklyReport, UserLanguagePreference, AuditLog
+
+**PWA**
+- [ ] Web app manifest (name, icons, theme color, display: standalone)
+- [ ] Service worker with offline fallback
+- [ ] Install prompt at appropriate moment (post-onboarding or first meaningful use)
+- [ ] App-like mobile UI when installed (no browser chrome)
+
+**OpenClaw AI Integration**
+- [ ] `OpenClawProvider` implementing `AIProvider` using OpenAI-compatible `/chat/completions`
+- [ ] All 10 `OPENCLAW_*` env vars: `BASE_URL`, `API_KEY`, `MODEL`, `CHAT_COMPLETIONS_PATH`, `TIMEOUT_SECONDS`, `MAX_RETRIES`, `TEMPERATURE`, `MAX_TOKENS`, `CONTEXT_MAX_MESSAGES`, `CONTEXT_SUMMARY_ENABLED`
+- [ ] Every AI endpoint (chat, plan gen, meal analysis, what-to-eat-now, adapt-plan, onboarding chat) routes through OpenClawProvider when configured; falls back to MockAIProvider when not
+- [ ] Rolling conversation summaries via `OPENCLAW_CONTEXT_SUMMARY_ENABLED`
+- [ ] Structured `NutritionMemoryContext` injected into every AI system prompt prefix
+
+**UI Style System**
+- [ ] Muted, pale, soft aesthetic — no saturated colors, no gym palette
+- [ ] App-like layout — bottom nav, full-bleed screens, no Bootstrap card grids, no admin borders
+- [ ] Soft rounded corners (≥ 16px), subtle shadows — health app feel
+- [ ] Comfortable typography (≥ 15px body, ≥ 1.6 line height)
+
+**Continuation Files (updated after every commit)**
+- [ ] `PROJECT_STATE.md` — current phase, last completed, in-progress, blockers
+- [ ] `NEXT_STEPS.md` — exact next action, file to touch, command to run
+- [ ] `DECISIONS.md` — architectural decisions with rationale (append-only)
+- [ ] `CHANGELOG.md` — Keep a Changelog format, updated every commit
+
+**Env Files**
+- [ ] Root `.env.example`
+- [ ] `backend/.env.example` (all 10 `OPENCLAW_*` vars + all backend vars)
+- [ ] `frontend/.env.example`
 
 ### Out of Scope
 
 - Real SMS provider integration — prepared but not wired (OTP=123456 in dev)
-- Real AI provider (OpenAI, Claude, etc.) — mock layer only for v1
+- OpenAI/Claude SDK direct integration — OpenClaw covers OpenAI-compatible real AI in v1
 - STT/transcription — architecture prepared, status=pending
 - Image-based meal analysis — text-first, architecture prepared
 - Human nutritionist panel — models/routes scaffolded, not built
@@ -135,7 +165,8 @@ A daily AI nutrition companion that users trust to guide every meal decision saf
 - **Database**: SQLite only for now — no PostgreSQL yet
 - **Auth**: Phone OTP only — no email/password, no OAuth
 - **Language**: Persian is default; app must feel native to Persian speakers
-- **AI**: Mock responses only until real provider configured — app must work end-to-end without AI
+- **AI**: OpenClawProvider when `OPENCLAW_BASE_URL` is set; MockAIProvider fallback — app must work end-to-end without OpenClaw configured
+- **OpenClaw config**: All 10 `OPENCLAW_*` vars from backend environment only — never hard-coded, never from frontend
 - **Audio**: Browser MediaRecorder API — no native mobile SDKs
 - **Migrations**: All schema changes via Alembic — SQLite file never committed
 - **Backend structure**: Must follow `backend/app/` modular structure as specified
@@ -152,6 +183,11 @@ A daily AI nutrition companion that users trust to guide every meal decision saf
 | AI provider abstraction from day 1 | Avoids tight coupling to any one provider; mock first | — Pending |
 | Mobile-first centered layout for desktop | Health apps are primarily mobile; desktop gets same centered view | — Pending |
 | MediaRecorder API for audio (not external SDK) | No dependency, works in modern browsers, sufficient for MVP | — Pending |
+| PWA (not native app) | Web-first; PWA gives install prompt and app-like feel without App Store dependency | — Pending |
+| OpenClaw as v1 real AI provider | OpenAI-compatible interface; env-var-only config; falls back to mock — enables real AI without SDK lock-in | — Pending |
+| Rolling conversation summaries | Long OpenClaw conversations exceed context limits; summaries stored in ChatSession and re-injected | — Pending |
+| Continuation files updated every commit | After `/clear` context is lost; PROJECT_STATE.md / NEXT_STEPS.md / DECISIONS.md / CHANGELOG.md are the persistent resume trail | — Pending |
+| UI style: muted/pale/app-like | Target users are health-conscious adults; clinical-calm aesthetic builds trust vs. aggressive gym app look | — Pending |
 
 ## Evolution
 
@@ -171,4 +207,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-03 after initialization*
+*Last updated: 2026-06-03 after PWA, OpenClaw, UI style, conversation memory, and continuation file requirements added*
