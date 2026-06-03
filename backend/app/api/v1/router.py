@@ -8,6 +8,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.onboarding import router as onboarding_router
+from app.api.v1.endpoints.progress import router as progress_router
 
 api_router = APIRouter()
 
@@ -19,3 +20,6 @@ api_router.include_router(auth_router, prefix="/auth")
 
 # Phase 4: Onboarding
 api_router.include_router(onboarding_router, prefix="/onboarding")
+
+# Phase 9: Progress & Reports
+api_router.include_router(progress_router, prefix="/progress")
