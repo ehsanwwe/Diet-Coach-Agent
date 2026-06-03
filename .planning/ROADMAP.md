@@ -20,7 +20,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 6: Voice & Audio** - MediaRecorder with MIME type detection, Web Audio waveform visualizer, recording controls, audio upload, and AudioMessage backend
 - [ ] **Phase 7: Nutrition Backend & AI Layer** - AIProvider ABC, MockAIProvider with 20+ Persian variants, NutritionMemoryService, PromptBuilder, NutritionAgentService, and all nutrition endpoints
 - [ ] **Phase 8: Nutrition Frontend & Chat** - Home dashboard, chat companion screen, meal analysis, "what to eat now", diet plan screen, and medical safety screen
-- [ ] **Phase 9: Progress & Reports** - Daily check-in, progress summary, weekly report, and behavior-centric progress dashboard
+- [x] **Phase 9: Progress & Reports** - Daily check-in, progress summary, weekly report, and behavior-centric progress dashboard (completed 2026-06-03)
 - [ ] **Phase 10: Settings, Polish & Remaining UI** - Settings screen, language selector, mobile nav, loading/empty/error states, and full UI polish pass
 
 ## Phase Details
@@ -149,7 +149,7 @@ Plans:
 Plans:
 - [x] 09-01-PLAN.md — Backend: pytest scaffold, schemas, repository, service, endpoints, router registration (PROG-01, PROG-02, PROG-03)
 - [x] 09-02-PLAN.md — Frontend contract: types, lib client, fa/en/ar dictionary additions
-- [ ] 09-03-PLAN.md — Frontend implementation: sparkline, check-in form, summary view, weekly report, progress screen, bottom-nav enable (PROG-04, PROG-05, UI-12)
+- [x] 09-03-PLAN.md — Frontend implementation: sparkline, check-in form, summary view, weekly report, progress screen, bottom-nav enable (PROG-04, PROG-05, UI-12)
 **UI hint**: yes
 
 ### Phase 10: Settings, Polish & Remaining UI
@@ -180,5 +180,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Voice & Audio | 0/TBD | Not started | - |
 | 7. Nutrition Backend & AI Layer | 0/TBD | Not started | - |
 | 8. Nutrition Frontend & Chat | 0/TBD | Not started | - |
-| 9. Progress & Reports | 2/3 | In Progress|  |
+| 9. Progress & Reports | 3/3 | Complete   | 2026-06-03 |
 | 10. Settings, Polish & Remaining UI | 0/TBD | Not started | - |
