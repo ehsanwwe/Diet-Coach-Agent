@@ -46,6 +46,27 @@ export interface Dictionary {
     offline: string
     generic: string
   }
+  auth: {
+    loginTitle: string
+    loginSubtitle: string
+    phonePlaceholder: string
+    phoneLabel: string
+    phoneError: string
+    sendOtp: string
+    otpTitle: string
+    otpSubtitle: string
+    otpLabel: string
+    otpPlaceholder: string
+    otpError: string
+    otpExpired: string
+    verify: string
+    resend: string
+    resendIn: string
+    invalidOtp: string
+    loginSuccess: string
+    logoutSuccess: string
+    networkError: string
+  }
 }
 
 const fa: Dictionary = {
@@ -90,6 +111,27 @@ const fa: Dictionary = {
     notFound: 'صفحه مورد نظر یافت نشد',
     offline: 'اتصال اینترنت برقرار نیست',
     generic: 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.',
+  },
+  auth: {
+    loginTitle: 'ورود به مربی تغذیه',
+    loginSubtitle: 'شماره موبایل خود را وارد کنید',
+    phonePlaceholder: '۰۹۱۲۳۴۵۶۷۸۹',
+    phoneLabel: 'شماره موبایل',
+    phoneError: 'شماره موبایل معتبر نیست',
+    sendOtp: 'ارسال کد تأیید',
+    otpTitle: 'کد تأیید',
+    otpSubtitle: 'کد ۶ رقمی ارسال شده را وارد کنید',
+    otpLabel: 'کد تأیید',
+    otpPlaceholder: '۱۲۳۴۵۶',
+    otpError: 'کد باید ۶ رقم باشد',
+    otpExpired: 'کد منقضی شده. مجدداً درخواست دهید.',
+    verify: 'تأیید',
+    resend: 'ارسال مجدد کد',
+    resendIn: 'ارسال مجدد تا {seconds} ثانیه',
+    invalidOtp: 'کد وارد شده اشتباه است',
+    loginSuccess: 'با موفقیت وارد شدید',
+    logoutSuccess: 'از حساب خارج شدید',
+    networkError: 'خطای شبکه. لطفاً دوباره تلاش کنید.',
   },
 }
 

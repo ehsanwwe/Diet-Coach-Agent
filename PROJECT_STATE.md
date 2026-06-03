@@ -1,8 +1,8 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-03
-**Current phase:** Phase 2 COMPLETE → Phase 3 next
-**Overall progress:** Phase 2 of 10 complete (20%)
+**Current phase:** Phase 3 COMPLETE → Phase 4 next
+**Overall progress:** Phase 3 of 10 complete (30%)
 
 ## What Exists Now
 
@@ -28,6 +28,30 @@
 - **next.config.ts** — Cache-Control headers for sw.js and manifest.json
 - **frontend/.env.example** — NEXT_PUBLIC_APP_NAME, NEXT_PUBLIC_API_BASE_URL, NEXT_PUBLIC_DEFAULT_LOCALE, NEXT_PUBLIC_SUPPORTED_LOCALES, NEXT_PUBLIC_ENABLE_DEV_VIDEO_BYPASS
 
+### Backend (`backend/`) — Phase 3
+- `app/core/security.py` — JWT create/decode with PyJWT 2.x, naive UTC for SQLite
+- `app/schemas/auth.py` — RequestOTPRequest, VerifyOTPRequest, TokenResponse, UserResponse (Pydantic v2)
+- `app/repositories/user_repository.py` — get_by_phone, get_by_id, create
+- `app/repositories/auth_repository.py` — create_otp, get_latest_valid_otp, mark_otp_used, add_to_blocklist, is_jti_blocked
+- `app/services/auth_service.py` — request_otp, verify_otp, logout, get_current_user; SMS mock architecture
+- `app/api/dependencies.py` — AuthContext dataclass, get_auth_context, get_current_user FastAPI deps
+- `app/api/v1/endpoints/auth.py` — POST /request-otp, POST /verify-otp, POST /logout, GET /me
+- Config: added OTP_EXPIRE_MINUTES=5, SMS_PROVIDER=mock
+- No new Alembic migration — users, auth_otps, token_blocklist all existed in Phase 1
+
+### Frontend (`frontend/`) — Phase 3
+- `src/types/auth.ts` — AuthUser, TokenResponse, ApiSuccess, ApiError types
+- `src/lib/storage.ts` — localStorage abstraction (getToken, setToken, clearToken, getStoredUser, setStoredUser)
+- `src/lib/api.ts` — typed fetch wrapper with ApiRequestError, BASE_URL from env
+- `src/lib/auth.ts` — requestOtp, verifyOtp, logout, getCurrentUser API helpers
+- `src/hooks/useAuth.ts` — useAuth hook (user, isLoading, isAuthenticated, logout)
+- `src/components/auth/PhoneLoginForm.tsx` — phone input, validation, OTP request, redirects to verify
+- `src/components/auth/OtpVerifyForm.tsx` — 6-digit OTP input, countdown timer, resend, verify flow
+- `src/components/auth/AuthGuard.tsx` — route protection, redirects to /[lang]/login when unauthenticated
+- `src/app/[lang]/login/page.tsx` — login screen (Server Component)
+- `src/app/[lang]/login/verify/page.tsx` — OTP verify screen (Server Component), reads phone from query param
+- Dictionaries (fa/en/ar) extended with `auth` section (18 strings each)
+
 ### Root
 - `.env.example`, `.gitignore`, `backend/README.md`, `frontend/README.md`
 
@@ -42,13 +66,15 @@
 ## Known Issues / Notes
 - `middleware.ts` naming is deprecated in Next.js 16 (prefer `proxy.ts`) — rename in Phase 10 polish
 - PWA icon uses SVG (browser-supported); Phase 10 should add 192×192 and 512×512 PNGs for iOS
-- Frontend does not yet call the backend (no auth, no API calls)
+- Token stored in localStorage (not httpOnly cookie) — acceptable for mobile PWA, revisit in Phase 10
+- Splash page still shows "Coming Soon" badge — Phase 5 (Onboarding Frontend) will replace with "Get Started" → login
 
 ## How to Resume (Cold Start)
 1. Read this file + NEXT_STEPS.md
 2. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`
-3. Frontend: `cd frontend && npm run dev` → open http://localhost:3000 → redirects to /fa
-4. Start Phase 3: `/gsd:plan-phase 3`
+3. Frontend: `cd frontend && npm run dev` → open http://localhost:3000 → redirects to /fa/login
+4. Test auth: POST /api/v1/auth/request-otp → POST /api/v1/auth/verify-otp with OTP 123456
+5. Start Phase 4: `/gsd:plan-phase 4`
 
 ## Phase Progress
 
@@ -56,7 +82,7 @@
 |-------|--------|
 | 1 — Infra & Backend Foundation | **COMPLETE** |
 | 2 — i18n & Frontend Shell | **COMPLETE** |
-| 3 — Authentication | Not started |
+| 3 — Authentication | **COMPLETE** |
 | 4 — Onboarding Backend | Not started |
 | 5 — Onboarding Frontend | Not started |
 | 6 — Voice & Audio | Not started |

@@ -43,6 +43,27 @@ const en: Dictionary = {
     offline: 'No internet connection',
     generic: 'Something went wrong. Please try again.',
   },
+  auth: {
+    loginTitle: 'Sign in to Diet Coach',
+    loginSubtitle: 'Enter your phone number to continue',
+    phonePlaceholder: '09123456789',
+    phoneLabel: 'Phone number',
+    phoneError: 'Enter a valid phone number',
+    sendOtp: 'Send verification code',
+    otpTitle: 'Verification code',
+    otpSubtitle: 'Enter the 6-digit code we sent you',
+    otpLabel: 'Verification code',
+    otpPlaceholder: '123456',
+    otpError: 'Code must be 6 digits',
+    otpExpired: 'Code expired. Please request a new one.',
+    verify: 'Verify',
+    resend: 'Resend code',
+    resendIn: 'Resend in {seconds}s',
+    invalidOtp: 'Incorrect code. Please try again.',
+    loginSuccess: 'Signed in successfully',
+    logoutSuccess: 'Signed out successfully',
+    networkError: 'Network error. Please try again.',
+  },
 }
 
 export default en

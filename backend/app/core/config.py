@@ -42,8 +42,10 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
-    # Dev OTP
+    # Auth — OTP
     DEV_OTP_CODE: str = "123456"
+    OTP_EXPIRE_MINUTES: int = 5
+    SMS_PROVIDER: str = "mock"
 
     # OpenClaw AI provider (all 10 vars: OC-02, INFRA-03)
     OPENCLAW_BASE_URL: str = ""

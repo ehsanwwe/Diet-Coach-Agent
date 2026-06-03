@@ -1,39 +1,37 @@
 # Next Steps — Diet Coach Agent
 
 **Updated:** 2026-06-03
-**Current status:** Phase 2 COMPLETE. Phase 3 (Authentication) ready to start.
+**Current status:** Phase 3 COMPLETE. Phase 4 (Onboarding Backend) ready to start.
 
 ## Immediate Next Action
 
-**Start Phase 3: Authentication**
+**Start Phase 4: Onboarding Backend**
 
-Command: `/gsd:plan-phase 3` (then `/gsd:execute-phase 3`)
+Command: `/gsd:plan-phase 4` (then `/gsd:execute-phase 4`)
 
-## What Phase 3 Builds
+## What Phase 4 Builds
 
-Backend + Frontend authentication via Phone OTP:
-- `POST /api/v1/auth/request-otp` — accepts phone number, creates AuthOTP record
-- `POST /api/v1/auth/verify-otp` — validates OTP (dev: 123456), returns JWT
-- `POST /api/v1/auth/logout` — invalidates token via jti blocklist
-- `GET /api/v1/auth/me` — returns current user profile
-- Auth screens: `/fa/auth/login` (phone input), `/fa/auth/verify` (OTP input)
-- JWT stored in httpOnly cookie
-- Route guard: redirect unauthenticated users to /[lang]/auth/login
+Backend onboarding data collection endpoints:
+- `POST /api/v1/onboarding/profile` — name, gender, age, height, weight, activity level
+- `POST /api/v1/onboarding/medical` — medical flags, medications, allergies
+- `POST /api/v1/onboarding/lifestyle` — dietary preferences, food dislikes, meal frequency
+- `POST /api/v1/onboarding/goals` — weight goal, target weight, timeline
+- `GET /api/v1/onboarding/status` — which steps are complete
+- All endpoints require authentication via Bearer token (use `get_current_user` dep)
 
-## First Files to Touch in Phase 3
+## Auth Flow (Working Now)
 
-1. `backend/app/api/v1/auth.py` — OTP + JWT endpoints
-2. `backend/app/services/auth_service.py` — OTP generation, JWT encode/decode
-3. `backend/app/repositories/user_repository.py` — find/create user
-4. `frontend/src/app/[lang]/auth/login/page.tsx` — phone number input screen
-5. `frontend/src/app/[lang]/auth/verify/page.tsx` — OTP entry screen
+1. `POST /api/v1/auth/request-otp` — phone_number → OTP 123456 in dev
+2. `POST /api/v1/auth/verify-otp` — phone_number + otp_code → access_token + user
+3. Frontend: `/fa/login` → `/fa/login/verify?phone=...` → redirects to `/fa`
+4. Token stored in localStorage via `src/lib/storage.ts`
 
 ## Phase Order Reminder
 
 1. ✅ Infra & Backend Foundation (COMPLETE)
 2. ✅ i18n & Frontend Shell (COMPLETE)
-3. → Authentication (NEXT)
-4. Onboarding Backend (after Phase 3)
+3. ✅ Authentication (COMPLETE)
+4. → Onboarding Backend (NEXT)
 5. Onboarding Frontend (after Phase 4)
 6. Voice & Audio (after Phase 5)
 7. Nutrition Backend & AI Layer (after Phase 4)

@@ -5,6 +5,42 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.3.0] - 2026-06-03
+
+### Added — Phase 3: Authentication
+
+**Backend**
+- `backend/app/core/security.py` — `create_access_token()`, `decode_access_token()` using PyJWT 2.x with jti, naive UTC for SQLite
+- `backend/app/schemas/auth.py` — `RequestOTPRequest`, `VerifyOTPRequest`, `TokenResponse`, `UserResponse` (Pydantic v2)
+- `backend/app/repositories/user_repository.py` — `get_by_phone()`, `get_by_id()`, `create()`
+- `backend/app/repositories/auth_repository.py` — `create_otp()` (invalidates prior OTPs), `get_latest_valid_otp()`, `mark_otp_used()`, `add_to_blocklist()`, `is_jti_blocked()`
+- `backend/app/services/auth_service.py` — `request_otp()` (mock SMS), `verify_otp()`, `logout()`, `get_current_user()`
+- `backend/app/api/dependencies.py` — `AuthContext` dataclass, `get_auth_context()`, `get_current_user()` FastAPI dependencies
+- `backend/app/api/v1/endpoints/auth.py` — `POST /auth/request-otp`, `POST /auth/verify-otp`, `POST /auth/logout`, `GET /auth/me`
+- `backend/app/core/config.py` — added `OTP_EXPIRE_MINUTES=5`, `SMS_PROVIDER=mock`
+- `backend/.env.example` — documented `OTP_EXPIRE_MINUTES`, `SMS_PROVIDER`
+
+**Frontend**
+- `frontend/src/types/auth.ts` — `AuthUser`, `TokenResponse`, `ApiSuccess`, `ApiError` TypeScript types
+- `frontend/src/lib/storage.ts` — `getToken`, `setToken`, `clearToken`, `getStoredUser`, `setStoredUser` (localStorage abstraction)
+- `frontend/src/lib/api.ts` — typed fetch wrapper with `ApiRequestError`, reads `NEXT_PUBLIC_API_BASE_URL`
+- `frontend/src/lib/auth.ts` — `requestOtp()`, `verifyOtp()`, `logout()`, `getCurrentUser()` API helpers
+- `frontend/src/hooks/useAuth.ts` — `useAuth()` hook: user state, isLoading, isAuthenticated, logout
+- `frontend/src/components/auth/PhoneLoginForm.tsx` — phone input, validation, OTP request, redirect to verify
+- `frontend/src/components/auth/OtpVerifyForm.tsx` — 6-digit OTP input, 60s countdown, resend, verify → redirect
+- `frontend/src/components/auth/AuthGuard.tsx` — route guard: redirects unauthenticated users to login
+- `frontend/src/app/[lang]/login/page.tsx` — login screen (Server Component)
+- `frontend/src/app/[lang]/login/verify/page.tsx` — OTP verify screen; phone from query param
+- Dictionaries (`fa.ts`, `en.ts`, `ar.ts`) extended with `auth` section (18 strings each)
+
+### Notes
+- No new Alembic migration — `users`, `auth_otps`, `token_blocklist` were created in Phase 1 schema
+- Dev OTP is always `123456` when `ENVIRONMENT=development`; change `SMS_PROVIDER` for production
+- Token in localStorage (not httpOnly cookie) — acceptable for mobile PWA; revisit in Phase 10
+- `build` passes: 0 TypeScript errors, 4 routes (`/[lang]`, `/[lang]/login`, `/[lang]/login/verify`, `/_not-found`)
+
+---
+
 ## [0.2.0] - 2026-06-03
 
 ### Added — Phase 2: i18n & Frontend Shell

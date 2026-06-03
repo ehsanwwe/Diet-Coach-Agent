@@ -115,4 +115,33 @@
 **Alternatives rejected:** `dir` set via client script (causes flicker); `dir` only in body/div (breaks CSS logical properties on scrollbar and root fonts).
 
 ---
+
+## 2026-06-03 — Phase 3 Implementation Decisions
+
+### D-021: Token stored in localStorage (not httpOnly cookie) for Phase 3
+**Decision:** Access token stored in `localStorage` via `src/lib/storage.ts` abstraction.
+**Rationale:** This is a mobile PWA where `httpOnly` cookies add complexity (CSRF protection, cross-origin cookie handling). All token access is centralized in `storage.ts` — no scattered `localStorage` calls in components. Can be migrated to `httpOnly` cookie in Phase 10 polish.
+**Alternatives rejected:** `httpOnly` cookie (requires cookie-based refresh logic and CSRF handling now); sessionStorage (lost on tab close, bad for mobile).
+
+### D-022: Phone number passed via query parameter from login to verify page
+**Decision:** After OTP request, router navigates to `/[lang]/login/verify?phone=<encoded>`. Verify page reads phone from `searchParams`.
+**Rationale:** Simplest stateless approach; phone is not sensitive; avoids Zustand store for a single in-flight value; works with Next.js Server Components (searchParams available at server render).
+**Alternatives rejected:** Zustand store (requires Provider, more setup for Phase 3); URL state via cookies (over-engineering for a single page transition).
+
+### D-023: Naive UTC datetimes throughout for SQLite compatibility
+**Decision:** All datetime values stored in SQLite use naive UTC datetimes (`datetime.now(timezone.utc).replace(tzinfo=None)`). API responses use timezone-aware datetimes.
+**Rationale:** SQLite's DateTime column stores naive datetimes. Mixing timezone-aware and naive datetimes in comparisons causes errors. Consistent naive UTC avoids this. API layer can re-attach timezone info for clients.
+**Alternatives rejected:** SQLite `DateTime(timezone=True)` (SQLite doesn't support it natively); `datetime.utcnow()` (deprecated in Python 3.12+).
+
+### D-024: AuthContext dataclass for FastAPI dependency carrying jti + exp
+**Decision:** `get_auth_context` returns `AuthContext(user, jti, exp)` dataclass. Routes needing only the user use `get_current_user` (derived dep); logout uses `get_auth_context` to access jti.
+**Rationale:** Avoids decoding the JWT twice per request. FastAPI caches dependency results per request — `get_auth_context` is computed once even when both `get_auth_context` and `get_current_user` appear in the dependency tree.
+**Alternatives rejected:** Decode token again in logout (wasteful, error-prone); put jti in a separate Depends (same double-decode problem).
+
+### D-025: OTP invalidation on re-request
+**Decision:** When a new OTP is requested for a phone number, all existing unused+valid OTPs for that phone are marked `invalidated_at = now()` before the new one is created.
+**Rationale:** Prevents a user from having multiple valid OTPs concurrently, which would allow replaying an older code. Simpler than setting a flag on the user; works with the existing `AuthOTP.invalidated_at` column from Phase 1 schema.
+**Alternatives rejected:** Let old OTPs expire naturally (allows concurrent valid codes); delete old OTPs (loses audit trail).
+
+---
 *Last updated: 2026-06-03*
