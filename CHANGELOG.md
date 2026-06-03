@@ -5,6 +5,57 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [0.8.0] - 2026-06-03
+
+### Added — Phase 8: Nutrition Frontend & Chat
+
+**Backend — Companion Chat**
+- `backend/app/schemas/chat.py` — ChatMessageRequest, ChatMessageResponse, ChatHistoryResponse
+- `backend/app/repositories/chat_repository.py` — companion session/message DB ops
+- `backend/app/services/chat_service.py` — AI chat using NutritionAgentService + NutritionMemoryService
+- `backend/app/api/v1/endpoints/chat.py` — POST /chat/message, GET /chat/history (auth-required)
+- `backend/app/services/mock_ai_provider.py` — TASK_CHAT constant + Persian mock response
+- `backend/app/services/prompt_builder.py` — for_chat_message() with history context
+- `backend/app/services/nutrition_agent_service.py` — chat_message() method
+
+**Frontend — Types & Libs**
+- `src/types/nutrition.ts`, `src/types/chat.ts` — TypeScript types for all responses
+- `src/lib/nutrition.ts` — raw fetch helpers for all 5 nutrition endpoints
+- `src/lib/chat.ts` — SuccessResponse-aware chat API helpers
+- `src/hooks/useNutritionProfile.ts` — profile fetch hook with 401 redirect
+
+**Frontend — Components**
+- `AppBottomNav` — 4-tab nav (home/chat/progress[disabled]/settings[disabled])
+- `ClinicalReviewState` — calm professional safety notice (compact + full variants)
+- `NutritionDashboard` — dashboard with quick actions, plan summary, risk badge
+- `PlanSummary` — full plan with daily guidelines grid + meal list + warnings
+- `PlanGenerator` — generate/regenerate button with loading state
+- `MealAnalysisForm` — text + meal-time selector + context
+- `MealAnalysisResult` — quality score, nutrient details, suggestions, warnings
+- `WhatToEatForm` — food tag input, hunger level, time, context
+- `WhatToEatResult` — food option cards with tags, reasoning, warnings
+- `CompanionChat` — optimistic UI chat with history load + typing indicator
+- `ChatBubble`, `ChatComposer` — chat message display + text input
+
+**Frontend — Pages (all AuthGuard-protected)**
+- `/[lang]/dashboard` — home screen
+- `/[lang]/nutrition/plan` — diet plan + generate
+- `/[lang]/nutrition/meal-analysis` — meal analysis flow
+- `/[lang]/nutrition/what-to-eat` — what to eat now flow
+- `/[lang]/chat` — companion chat screen
+- `/[lang]` (splash) — updated with login + dashboard CTAs
+
+**Dictionaries** — fa/en/ar extended with: dashboard, plan, mealAnalysis, whatToEat, companionChat, safety
+
+### Not Implemented (Out of Scope for Phase 8)
+- Progress/weekly reports (Phase 9)
+- Settings/polish (Phase 10)
+- Image meal analysis
+- STT transcription
+- Voice chat
+
+---
+
 ## [0.7.0] - 2026-06-03
 
 ### Added — Phase 7: Nutrition Backend & AI Layer

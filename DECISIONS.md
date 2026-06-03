@@ -226,4 +226,20 @@
 **Alternatives rejected:** Safety in agent service (mixes AI orchestration with policy); safety in endpoints (thin services, bloated routes).
 
 ---
+
+## 2026-06-03 — Phase 8 Implementation Decisions
+
+### D-040: Nutrition endpoints return raw models (not SuccessResponse-wrapped)
+**Decision:** Phase 7 nutrition endpoints return raw Pydantic models; Phase 8 frontend lib uses raw fetch (not `api.get/post`) to match.
+**Rationale:** Nutrition endpoints were written in Phase 7 without SuccessResponse wrapper. Changing them would break nothing but adds churn. Frontend lib handles both patterns: `lib/nutrition.ts` parses raw, `lib/chat.ts` unwraps `data`.
+
+### D-041: Chat dictionary loaded client-side on nutrition/plan/chat pages
+**Decision:** Nutrition pages (plan, meal-analysis, what-to-eat, chat) load the dictionary client-side via `getDictionary()` in a `useEffect`.
+**Rationale:** These are interactive Client Component pages that need the full dictionary. Server Component + Client Component split would require prop-drilling. Client-side load adds one render cycle but keeps components self-contained. Refactor to Server Components in Phase 10 if needed.
+
+### D-042: Companion chat uses existing ChatSession model with session_type="companion"
+**Decision:** Companion chat reuses ChatSession/ChatMessage tables from Phase 1 schema with `session_type="companion"`. One session per user (latest active).
+**Rationale:** Tables already exist; no migration needed. One session per user is correct for Phase 8 (conversation persists across visits). Multi-session support can be added in Phase 9/10.
+
+---
 *Last updated: 2026-06-03*

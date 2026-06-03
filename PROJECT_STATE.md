@@ -1,63 +1,56 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-03
-**Current phase:** Phase 7 COMPLETE → Phase 8 next
-**Overall progress:** Phase 7 of 10 complete (70%)
+**Current phase:** Phase 8 COMPLETE → Phase 9 next
+**Overall progress:** Phase 8 of 10 complete (80%)
 
 ## What Exists Now
 
-### Backend (`backend/`) — Phases 1, 3, 4, 6, 7 COMPLETE
+### Backend (`backend/`) — Phases 1, 3, 4, 6, 7, 8 COMPLETE
 
-#### Phase 1–4, 6 (unchanged)
-- Full ORM models, Alembic migrations, FastAPI shell
-- Auth: OTP login, JWT, logout, /me
-- Onboarding: GET /status, POST /profile /medical /lifestyle /preferences /behavior /complete
-- Safety guardrail service (risk_level, clinical_review_required)
-- Onboarding Chat: text + audio + history endpoints
+#### Phase 8 — Companion Chat (NEW)
+- `backend/app/schemas/chat.py` — ChatMessageRequest, ChatMessageResponse, ChatHistoryResponse
+- `backend/app/repositories/chat_repository.py` — companion ChatSession/ChatMessage DB ops
+- `backend/app/services/chat_service.py` — send_message() + get_history() using NutritionAgentService
+- `backend/app/api/v1/endpoints/chat.py` — POST /chat/message, GET /chat/history (both auth-required)
+- `backend/app/api/v1/router.py` — chat_router registered at /chat
+- `backend/app/services/mock_ai_provider.py` — TASK_CHAT + _MOCK_CHAT response added
+- `backend/app/services/prompt_builder.py` — for_chat_message() added
+- `backend/app/services/nutrition_agent_service.py` — chat_message() method added
 
-#### Phase 7 — Nutrition Backend & AI Layer (NEW)
-- **AI Provider Abstraction:**
-  - `backend/app/services/ai_provider.py` — AIProvider ABC, AIProviderResult, `get_ai_provider()` factory
-  - `backend/app/services/mock_ai_provider.py` — deterministic Persian-friendly mock for all 4 task types
-  - `backend/app/services/openclaw_provider.py` — httpx-based OpenAI-compatible provider with retries
-- **Prompt & Context Layer:**
-  - `backend/app/services/prompt_builder.py` — builds system+user prompts for generate_plan, analyze_meal, what_to_eat_now, adapt_plan
-  - `backend/app/services/conversation_context_manager.py` — trims messages to OPENCLAW_CONTEXT_MAX_MESSAGES
-  - `backend/app/services/nutrition_memory_service.py` — collects NutritionMemoryContext from all DB tables
-- **Orchestration:**
-  - `backend/app/services/nutrition_agent_service.py` — AI pipeline with JSON fallback + mock fallback
-  - `backend/app/services/nutrition_service.py` — business logic for all 6 endpoints + safety guardrails
-- **Data Layer:**
-  - `backend/app/schemas/nutrition.py` — Pydantic v2 schemas for all 6 endpoints
-  - `backend/app/repositories/nutrition_repository.py` — NutritionGoal, NutritionPlan, NutritionPlanMeal, MealEntry DB ops
-  - `backend/alembic/versions/0003_add_nutrition_plan_metadata.py` — adds `plan_metadata` Text column to `nutrition_plans`
-  - `backend/app/models/nutrition.py` — updated with `plan_metadata` field
-- **API Endpoints (all authenticated):**
-  - `GET  /api/v1/nutrition/profile` — user's full nutrition profile summary
-  - `GET  /api/v1/nutrition/plan` — current active plan (or empty state)
-  - `POST /api/v1/nutrition/plan/generate` — generate adaptive nutrition plan
-  - `POST /api/v1/nutrition/meal/analyze` — analyze meal quality + log entry
-  - `POST /api/v1/nutrition/what-to-eat-now` — suggest Persian-culture food options
-  - `POST /api/v1/nutrition/adapt-plan` — adapt plan based on user feedback
-- **Config:**
-  - `AI_PROVIDER` env var added (default: "mock")
-  - `backend/.env.example` updated with AI_PROVIDER + recommended OpenClaw values
+### Frontend (`frontend/`) — Phases 2, 3, 5, 6, 8 COMPLETE
 
-### Safety Behavior
-- `clinical_review_required` users: get wellness guidance only (no aggressive plan)
-- `risk_level=high` users: wellness reminder appended to all warnings
-- No body-shaming language in prompts
-- No medical prescriptions in AI output
-- No doctor-replacement claims (reminder included in system prompts)
+#### Phase 8 — Nutrition Frontend & Chat (NEW)
+- **Dictionaries:** fa.ts / en.ts / ar.ts — extended with dashboard, plan, mealAnalysis, whatToEat, companionChat, safety sections
+- **Types:** `src/types/nutrition.ts`, `src/types/chat.ts`
+- **API libs:** `src/lib/nutrition.ts` (raw fetch, no SuccessResponse wrapper), `src/lib/chat.ts` (SuccessResponse-wrapped)
+- **Hooks:** `src/hooks/useNutritionProfile.ts`
+- **Components:**
+  - `components/layout/AppBottomNav.tsx` — 4-tab bottom nav (home/chat/progress[disabled]/settings[disabled])
+  - `components/nutrition/ClinicalReviewState.tsx` — calm professional safety notice
+  - `components/nutrition/NutritionDashboard.tsx` — dashboard with quick actions + plan summary
+  - `components/nutrition/PlanSummary.tsx` — full plan display with guidelines + meals
+  - `components/nutrition/PlanGenerator.tsx` — generate/regenerate button
+  - `components/nutrition/MealAnalysisForm.tsx` — meal text + meal time + context form
+  - `components/nutrition/MealAnalysisResult.tsx` — quality score + nutrient breakdown + suggestions
+  - `components/nutrition/WhatToEatForm.tsx` — food tag input + hunger + time form
+  - `components/nutrition/WhatToEatResult.tsx` — food options cards + reasoning
+  - `components/chat/ChatBubble.tsx`, `ChatComposer.tsx`, `CompanionChat.tsx`
+- **Pages:**
+  - `/[lang]/dashboard` — home screen with AuthGuard + bottom nav
+  - `/[lang]/nutrition/plan` — diet plan screen
+  - `/[lang]/nutrition/meal-analysis` — meal analysis screen
+  - `/[lang]/nutrition/what-to-eat` — what to eat now screen
+  - `/[lang]/chat` — companion chat screen
+  - `/[lang]` (splash) — updated with Get Started + Dashboard links
 
-### Provider Behavior
-- `AI_PROVIDER=mock` (default) → MockAIProvider — always works, no external calls
-- `AI_PROVIDER=openclaw` + `OPENCLAW_BASE_URL` set → OpenClawProvider
-- OpenClawProvider fails → falls back to MockAIProvider, marks `is_mock=True`
-- Unparseable AI JSON → falls back to mock data, marks `is_mock=True`
-
-### Frontend (`frontend/`) — Phases 2, 3, 5, 6 COMPLETE
-- No Phase 8 frontend implemented yet.
+## API Endpoints (All Phases)
+- GET/POST /api/v1/auth/* — auth
+- GET/POST /api/v1/onboarding/* — onboarding
+- POST/GET /api/v1/onboarding/chat/* — onboarding habit chat
+- GET/POST /api/v1/nutrition/* — nutrition AI layer
+- POST /api/v1/chat/message — companion chat send
+- GET /api/v1/chat/history — companion chat history
 
 ## Phase Progress
 
@@ -70,7 +63,7 @@
 | 5 — Onboarding Frontend | **COMPLETE** |
 | 6 — Voice & Audio | **COMPLETE** |
 | 7 — Nutrition Backend & AI Layer | **COMPLETE** |
-| 8 — Nutrition Frontend & Chat | Not started |
+| 8 — Nutrition Frontend & Chat | **COMPLETE** |
 | 9 — Progress & Reports | Not started |
 | 10 — Settings, Polish & Remaining UI | Not started |
 
@@ -78,5 +71,5 @@
 1. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`
 2. Frontend: `cd frontend && npm run dev` → open http://localhost:3000
 3. Login: POST /api/v1/auth/request-otp → verify-otp with OTP 123456
-4. Test nutrition: POST /api/v1/nutrition/plan/generate with Bearer token
+4. Dashboard: navigate to /fa/dashboard
 5. Mock mode: AI_PROVIDER=mock in .env → works without OpenClaw
