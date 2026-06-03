@@ -1,0 +1,93 @@
+# ============================================================
+# Diet Coach Agent - .gitignore
+# ============================================================
+
+# SQLite database files (NEVER commit)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment files (NEVER commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+backend/.env
+frontend/.env
+# .env.example files ARE committed - they document required vars
+
+# Audio / upload directories
+backend/uploads/
+backend/audio/
+backend/media/
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+env/
+venv/
+.venv/
+ENV/
+.env.bak
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.pytest_cache/
+htmlcov/
+
+# uv (Python package manager)
+.uv/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.npm
+
+# TypeScript build output
+*.tsbuildinfo
+next-env.d.ts
+
+# OS artifacts
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# GSD planning internal dirs (not for end users)
+.planning/codebase/
+.planning/research/
+
+# Alembic SQLite artifact
+backend/app.db
