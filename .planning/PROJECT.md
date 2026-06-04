@@ -12,7 +12,14 @@ A daily AI nutrition companion that users trust to guide every meal decision saf
 
 ### Validated
 
-(None yet — ship to validate)
+**Phase 10 — Settings, Polish & Remaining UI (validated 2026-06-04):**
+- Settings screen with Language, Profile (phone read-only), Account (logout with inline confirmation) sections — UI-13
+- Language selector screen writing `NEXT_LOCALE` cookie + fire-and-forget backend persist via `PATCH /api/v1/settings/language` — UI-14
+- Settings tab enabled in AppBottomNav with active path highlighting — UI-17
+- `app-container` wrapper on every authenticated screen page (was missing on onboarding) — UI-16
+- Canonical `err.message === 'UNAUTHORIZED'` catch pattern adopted uniformly across all client components — UI-20
+- Loading spinner + empty state + error card standardized in CompanionChat, PlanSummary, NutritionDashboard — UI-18, UI-19
+- Backend settings module: `PATCH /api/v1/settings/language` with 5-test pytest coverage — UI-13, UI-14
 
 ### Active
 
