@@ -1,0 +1,55 @@
+{
+  "paused_at": "2026-06-04T00:00:00Z",
+  "phase": "09-progress-reports",
+  "plan": "09-03",
+  "task_position": "Task 3 of 3 — human visual verification (PENDING)",
+  "overall_phase_status": "code complete, awaiting visual sign-off",
+
+  "last_commits": [
+    {
+      "sha": "fa5edfc",
+      "message": "fix(auth): preserve OTP login transition",
+      "note": "auth regression fix — applied this session, not part of Phase 09 plan"
+    },
+    {
+      "sha": "940a85c",
+      "message": "docs(09-03): add progress frontend summary — checkpoint reached at Task 3",
+      "note": "SUMMARY.md for Phase 09-03 — checkpoint commit, code was already committed earlier"
+    }
+  ],
+
+  "session_fixes_applied": [
+    {
+      "fix": "fix(auth): preserve OTP login transition",
+      "commit": "fa5edfc",
+      "files": [
+        "frontend/src/types/auth.ts — added is_onboarded: boolean to AuthUser",
+        "frontend/src/lib/api.ts — guard undefined errorBody.message → 'Request failed'",
+        "frontend/src/components/auth/OtpVerifyForm.tsx — route to /dashboard or /onboarding based on is_onboarded",
+        "frontend/src/app/[lang]/login/verify/page.tsx — redirect to /login instead of notFound() on missing phone"
+      ]
+    },
+    {
+      "fix": "Navigation loop fix (no commit — file reverted to already-committed state)",
+      "commit": null,
+      "files": [
+        "frontend/next.config.ts — removed rogue allowedDevOrigins + fixed Cache-localhostControl typo"
+      ],
+      "note": "next.config.ts still shows as modified in git status (.planning/config.json also modified). These are pre-existing local changes unrelated to this session."
+    }
+  ],
+
+  "continuation_files_outstanding": {
+    "note": "PROJECT_STATE.md and NEXT_STEPS.md still say 'Phase 9 COMPLETE' — this is optimistic; Task 3 visual check has NOT been signed off. They should be updated after visual verification passes.",
+    "DECISIONS.md": "needs entry for auth regression fix decisions",
+    "CHANGELOG.md": "needs entry for fa5edfc auth fix"
+  },
+
+  "blocking_before_resume": [
+    "Backend must be running on port 8000",
+    "Frontend must be running on port 3000 (npm run dev, no allowedDevOrigins in next.config.ts)",
+    "Register as new user OR clear DB to get fresh account for onboarding→progress flow test"
+  ],
+
+  "resume_action": "Open http://localhost:3000/fa/login → enter phone → OTP 123456 → /fa/onboarding (new user) → complete onboarding → navigate to /fa/progress via bottom nav → verify Task 3 checklist in 09-03-PLAN.md"
+}
