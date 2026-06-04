@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Nutrition Backend & AI Layer** - AIProvider ABC, MockAIProvider with 20+ Persian variants, NutritionMemoryService, PromptBuilder, NutritionAgentService, and all nutrition endpoints
 - [ ] **Phase 8: Nutrition Frontend & Chat** - Home dashboard, chat companion screen, meal analysis, "what to eat now", diet plan screen, and medical safety screen
 - [x] **Phase 9: Progress & Reports** - Daily check-in, progress summary, weekly report, and behavior-centric progress dashboard (completed 2026-06-03)
-- [ ] **Phase 10: Settings, Polish & Remaining UI** - Settings screen, language selector, mobile nav, loading/empty/error states, and full UI polish pass
+- [x] **Phase 10: Settings, Polish & Remaining UI** - Settings screen, language selector, mobile nav, loading/empty/error states, and full UI polish pass (completed 2026-06-04)
 
 ## Phase Details
 
@@ -165,8 +165,8 @@ Plans:
 **Plans**: 3 plans
 Plans:
 - [x] 10-01-PLAN.md — Dictionary settings.* namespace + backend PATCH /api/v1/settings/language endpoint (UI-13, UI-14 foundation)
-- [ ] 10-02-PLAN.md — Polish pass: dictionary-mapped errors + loading/empty/error state audit across 7 existing screens (UI-18, UI-19, UI-20)
-- [ ] 10-03-PLAN.md — SettingsScreen + LanguageSelector + enable bottom-nav settings tab (UI-13, UI-14, UI-16, UI-17)
+- [x] 10-02-PLAN.md — Polish pass: dictionary-mapped errors + loading/empty/error state audit across 7 existing screens (UI-18, UI-19, UI-20)
+- [x] 10-03-PLAN.md — SettingsScreen + LanguageSelector + enable bottom-nav settings tab (UI-13, UI-14, UI-16, UI-17)
 **UI hint**: yes
 
 ## Progress
@@ -185,4 +185,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Nutrition Backend & AI Layer | 0/TBD | Not started | - |
 | 8. Nutrition Frontend & Chat | 0/TBD | Not started | - |
 | 9. Progress & Reports | 3/3 | Complete   | 2026-06-03 |
-| 10. Settings, Polish & Remaining UI | 2/3 | In Progress|  |
+| 10. Settings, Polish & Remaining UI | 3/3 | Complete   | 2026-06-04 |

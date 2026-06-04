@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: Ready to execute
-stopped_at: Completed 10-02-PLAN.md (Wave 1 of 2 complete)
-last_updated: "2026-06-04T14:22:00.000Z"
+stopped_at: Completed 10-03-PLAN.md (Phase 10 complete — all 3 plans done)
+last_updated: "2026-06-04T14:36:13.474Z"
 progress:
   total_phases: 10
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 14
-<<<<<<< HEAD
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -25,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-06-03)
 ## Current Position
 
 Phase: 10 (settings-polish-remaining-ui) — EXECUTING
-Plan: 2 of 3 complete (Wave 1 done; Wave 2 pending)
+Plan: 3 of 3 complete (Wave 1 done; Wave 2 pending)
 
 ## Performance Metrics
 
@@ -51,6 +50,7 @@ Plan: 2 of 3 complete (Wave 1 done; Wave 2 pending)
 | Phase 09-progress-reports P01 | 6m | 3 tasks | 8 files |
 | Phase 10 P02 | 508 | 3 tasks | 11 files |
 | Phase 10-settings-polish-remaining-ui P01 | 13 | 2 tasks | 10 files |
+| Phase 10-settings-polish-remaining-ui P03 | 297 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -74,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 10]: Canonical UNAUTHORIZED pattern unified: err instanceof Error && err.message === 'UNAUTHORIZED' (matches ProgressScreen) adopted across all 7 patched components — no status-based 401 checks
 - [Phase 10-settings-polish-remaining-ui]: Tests created in backend/tests/ (plan 01 created first test directory; conftest uses in-memory SQLite with rollback isolation)
 - [Phase 10-settings-polish-remaining-ui]: settings_service uses datetime.now(UTC) instead of deprecated utcnow() — Python 3.12+ best practice
+- [Phase 10-settings-polish-remaining-ui]: Language selector page excludes AppBottomNav — it is a sub-screen of Settings navigated to by language row tap
+- [Phase 10-settings-polish-remaining-ui]: Phone number in settings rendered with dir='ltr' — phone numbers are technical identifiers, LTR even in RTL layouts
 
 ### Pending Todos
 
@@ -86,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-06-04T14:22:00.000Z
-Stopped at: Completed Wave 1 (10-01 + 10-02); Wave 2 (10-03) pending
+Last session: 2026-06-04T14:36:13.472Z
+Stopped at: Completed 10-03-PLAN.md (Phase 10 complete — all 3 plans done)
 Resume file: None

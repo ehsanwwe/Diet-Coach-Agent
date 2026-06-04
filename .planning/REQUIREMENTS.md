@@ -151,7 +151,7 @@
 - [x] **UI-14**: Language selector screen
 - [ ] **UI-15**: Medical safety / clinical review required state screen (respectful, with path forward)
 - [x] **UI-16**: Mobile-first layout; desktop shows the same mobile view centered with appropriate max-width
-- [ ] **UI-17**: Bottom mobile navigation after onboarding is complete
+- [x] **UI-17**: Bottom mobile navigation after onboarding is complete
 - [x] **UI-18**: Loading states for all async operations
 - [x] **UI-19**: Empty states for lists/dashboards with no data yet
 - [x] **UI-20**: Error states with user-friendly messages (no raw API errors shown to user)
@@ -413,7 +413,7 @@
 | UI-13 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-14 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-16 | Phase 10: Settings, Polish & Remaining UI | Complete |
-| UI-17 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-17 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-18 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-19 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-20 | Phase 10: Settings, Polish & Remaining UI | Complete |

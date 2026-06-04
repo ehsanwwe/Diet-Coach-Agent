@@ -59,11 +59,11 @@ Font sizes are in pixels. All body copy uses `font-family-sans` (system stack, P
 | Role | Size | Weight | Line Height | Tailwind Classes | Usage |
 |------|------|--------|-------------|-----------------|-------|
 | Body | 15px | 400 (regular) | 1.6 | `text-sm leading-relaxed` (Tailwind `sm` = 14px; use `text-[15px]` where precision required) | Form labels, list item descriptions, card body copy, error messages, settings row values |
-| Label / UI | 14px | 500 (medium) | 1.4 | `text-xs font-medium` (Tailwind `xs` = 12px; `text-sm font-medium` for 14px) | Nav tab labels, badge text, secondary annotations, setting row sublabels |
+| Label / UI | 14px | 400 (regular) | 1.4 | `text-xs` (Tailwind `xs` = 12px; `text-sm` for 14px) | Nav tab labels, badge text, secondary annotations, setting row sublabels |
 | Heading | 20px | 700 (bold) | 1.3 | `text-xl font-bold` | Screen titles (`settings.title`), section headers within settings, empty state headings |
 | Display | 28px | 700 (bold) | 1.2 | `text-2xl font-bold` | Not used in Phase 10 — reserved for splash/dashboard |
 
-Declared font weights: **400 (regular)** and **700 (bold)**. Medium (500) used only for nav labels and UI chrome — not for prose content.
+Declared font weights: **400 (regular)** and **700 (bold)**.
 
 Notes:
 - `UI-STYLE-04` mandates minimum 15px body, ≥1.6 line height, spacious padding. This contract enforces it.
@@ -98,6 +98,8 @@ Accent (`bg-brand`) is reserved specifically for:
 5. Focus ring outline (`outline-brand`, from `:focus-visible` in `globals.css`)
 
 Accent is NOT used for: decorative illustrations, section headers, card borders, or general interactive states.
+
+Primary focal point (Settings screen): screen title (`text-xl font-bold`) — first element the eye lands on after the bottom nav.
 
 ---
 
@@ -221,7 +223,7 @@ app-container
 Row pattern for settings items:
 ```
 rounded-2xl bg-elevated px-4 py-4 flex items-center justify-between
-  Left: column — title text-sm font-medium text-ink / subtitle text-xs text-ink-3
+  Left: column — title text-sm text-ink / subtitle text-xs text-ink-3
   Right: chevron icon (direction-aware via getIconFlipClass(locale))
 ```
 
@@ -235,7 +237,7 @@ app-container
       For each locale in SUPPORTED_LOCALES:
         button — w-full flex items-center justify-between px-4 py-4 rounded-2xl
           Active:   bg-brand-muted text-brand font-bold
-          Inactive: bg-elevated text-ink font-medium
+          Inactive: bg-elevated text-ink
           Right side (active only): dict.language.current label — text-xs text-brand
     (No AppBottomNav — this is a sub-screen)
 ```
