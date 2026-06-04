@@ -75,8 +75,8 @@ export default function AppBottomNav({ locale, dict }: Props) {
       href: `/${locale}/settings`,
       label: dict.nav.settings,
       icon: SettingsIcon,
-      active: false,
-      disabled: true,
+      active: isActive('settings'),
+      disabled: false,
     },
   ]
 
