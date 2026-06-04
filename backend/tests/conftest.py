@@ -92,6 +92,12 @@ def test_user(db_session: Session) -> User:
     return user
 
 
+@pytest.fixture
+def auth_headers():
+    """Dummy auth headers — client fixture already overrides get_current_user, so headers are ignored."""
+    return {"Authorization": "Bearer test-token"}
+
+
 def _make_session_override(session: Session):
     """Return a FastAPI dependency override that yields the given session."""
     def override_get_session() -> Generator[Session, None, None]:
