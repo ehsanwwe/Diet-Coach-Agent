@@ -2,6 +2,8 @@
 # Diet Coach Agent - .gitignore
 # ============================================================
 
+.claude/*
+
 # SQLite database files (NEVER commit)
 *.db
 *.sqlite
