@@ -16,7 +16,9 @@ export default async function OnboardingPage({ params }: Props) {
 
   return (
     <AuthGuard locale={locale}>
-      <OnboardingWizard dict={dict} locale={locale} />
+      <div className="app-container">
+        <OnboardingWizard dict={dict} locale={locale} />
+      </div>
     </AuthGuard>
   )
 }
