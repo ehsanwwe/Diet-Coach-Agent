@@ -1,0 +1,66 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { api, ApiRequestError } from '@/lib/api'
+import { cn } from '@/lib/cn'
+import { LOCALE_COOKIE, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
+import type { Dictionary } from '@/dictionaries/fa'
+
+interface Props {
+  locale: Locale
+  dict: Pick<Dictionary, 'language' | 'settings' | 'common'>
+}
+
+export default function LanguageSelector({ locale, dict }: Props) {
+  const router = useRouter()
+  const [pending, setPending] = useState<Locale | null>(null)
+
+  function handleSelect(newLocale: Locale) {
+    if (newLocale === locale || pending) return
+    setPending(newLocale)
+
+    // 1. Write NEXT_LOCALE cookie (httpOnly:false confirmed in middleware.ts)
+    document.cookie = `${LOCALE_COOKIE}=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+
+    // 2. Fire-and-forget backend persist (cookie is canonical client-side; errors silently swallowed)
+    void api
+      .patch('/api/v1/settings/language', { language_code: newLocale }, true)
+      .catch((err: unknown) => {
+        if (err instanceof ApiRequestError) return // ignore — cookie already written
+      })
+
+    // 3. Navigate to same screen in new locale — server re-renders <html lang dir>
+    router.push(`/${newLocale}/settings/language`)
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-5 pt-6 pb-10 space-y-2">
+      <h1 className="text-xl font-bold text-ink mb-4">{dict.language.select}</h1>
+      {SUPPORTED_LOCALES.map((loc) => {
+        const isActive = loc === locale
+        const isPending = pending === loc
+        return (
+          <button
+            key={loc}
+            type="button"
+            onClick={() => handleSelect(loc)}
+            disabled={isPending}
+            className={cn(
+              'w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-colors',
+              isActive
+                ? 'bg-brand-muted text-brand font-bold'
+                : 'bg-elevated text-ink font-medium',
+              isPending ? 'opacity-60 cursor-wait' : '',
+            )}
+          >
+            <span className="text-sm">{dict.language[loc]}</span>
+            {isActive && (
+              <span className="text-xs text-brand">{dict.language.current}</span>
+            )}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
