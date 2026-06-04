@@ -1,18 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
+import type { Locale } from '@/lib/i18n'
 import type { MealAnalysisResponse } from '@/types/nutrition'
 import { analyzeMeal } from '@/lib/nutrition'
+import { ApiRequestError } from '@/lib/api'
 
 type MealTime = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'unknown'
 
 interface Props {
-  dict: Pick<Dictionary, 'mealAnalysis' | 'common'>
+  dict: Pick<Dictionary, 'mealAnalysis' | 'common' | 'errors'>
+  locale: Locale
   onResult: (result: MealAnalysisResponse) => void
 }
 
-export default function MealAnalysisForm({ dict, onResult }: Props) {
+export default function MealAnalysisForm({ dict, locale, onResult }: Props) {
+  const router = useRouter()
   const [mealText, setMealText] = useState('')
   const [mealTime, setMealTime] = useState<MealTime>('unknown')
   const [context, setContext] = useState('')
@@ -40,7 +45,15 @@ export default function MealAnalysisForm({ dict, onResult }: Props) {
       })
       onResult(result)
     } catch (err) {
-      setError(err instanceof Error ? err.message : dict.common.error)
+      if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+        router.replace(`/${locale}/login`)
+        return
+      }
+      if (err instanceof ApiRequestError) {
+        setError(err.status >= 500 ? dict.errors.generic : dict.errors.generic)
+        return
+      }
+      setError(dict.errors.generic)
     } finally {
       setLoading(false)
     }

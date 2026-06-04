@@ -38,7 +38,13 @@ export default function PhoneLoginForm({ dict, locale }: Props) {
       router.push(`/${locale}/login/verify?phone=${encoded}`)
     } catch (err) {
       if (err instanceof ApiRequestError) {
-        setError(err.message)
+        if (err.status === 422) {
+          setError(dict.phoneError)
+        } else if (err.status >= 500) {
+          setError(dict.networkError)
+        } else {
+          setError(dict.networkError)
+        }
       } else {
         setError(dict.networkError)
       }

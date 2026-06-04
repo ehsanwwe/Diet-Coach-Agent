@@ -18,7 +18,7 @@ function WhatToEatScreen({ locale, dict }: { locale: Locale; dict: Dictionary })
         <p className="text-sm text-ink-2 mt-1">{dict.whatToEat.subtitle}</p>
       </div>
       {!result ? (
-        <WhatToEatForm dict={dict} onResult={setResult} />
+        <WhatToEatForm dict={dict} locale={locale} onResult={setResult} />
       ) : (
         <WhatToEatResult result={result} dict={dict} onReset={() => setResult(null)} />
       )}
