@@ -1,9 +1,14 @@
+'use client'
+
 import type { NutritionPlanResponse } from '@/types/nutrition'
 import type { Dictionary } from '@/dictionaries/fa'
 
 interface Props {
-  plan: NutritionPlanResponse
-  dict: Pick<Dictionary, 'plan'>
+  plan?: NutritionPlanResponse | null
+  loading?: boolean
+  loadError?: string | null
+  onRetry?: () => void
+  dict: Pick<Dictionary, 'plan' | 'errors' | 'common'>
 }
 
 const MEAL_TIME_ICONS: Record<string, string> = {
@@ -27,7 +32,52 @@ function formatDate(iso: string | null): string {
   }
 }
 
-export default function PlanSummary({ plan, dict }: Props) {
+export default function PlanSummary({ plan, loading, loadError, onRetry, dict }: Props) {
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div
+          role="status"
+          aria-label={dict.common.loading}
+          className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin"
+        />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex-1 px-5 pt-6 pb-28">
+        <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-3">
+          <p className="text-sm text-error">{loadError}</p>
+          {onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="px-4 py-2 rounded-2xl bg-brand text-elevated font-bold text-sm"
+            >
+              {dict.common.retry}
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  if (!plan || !plan.meals || plan.meals.length === 0) {
+    return (
+      <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28">
+        <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
+          <div className="mx-auto w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center">
+            <span className="text-3xl">🍽️</span>
+          </div>
+          <h2 className="text-xl font-bold text-ink">{dict.plan.noPlanTitle}</h2>
+          <p className="text-sm text-ink-2 leading-relaxed">{dict.plan.noPlanDesc}</p>
+        </div>
+      </div>
+    )
+  }
+
   const g = plan.daily_guidelines
 
   return (
