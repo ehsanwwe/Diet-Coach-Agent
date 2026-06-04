@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { PlayCircle, CheckCircle } from 'lucide-react'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import ClinicalReviewNotice from '../ClinicalReviewNotice'
@@ -28,6 +28,7 @@ export default function FinalVideoStep({
   onComplete,
 }: Props) {
   const [watched, setWatched] = useState(false)
+  const [videoError, setVideoError] = useState(false)
 
   return (
     <div className="flex flex-col h-full">
@@ -39,15 +40,28 @@ export default function FinalVideoStep({
 
         {clinicalReviewRequired && <ClinicalReviewNotice dict={dict} />}
 
-        {/* Video placeholder */}
+        {/* Video */}
         <div
           className="rounded-2xl bg-elevated border border-line overflow-hidden"
           aria-label={dict.finalVideoLabel}
         >
-          <div className="aspect-video flex flex-col items-center justify-center gap-4 bg-brand-muted">
-            <PlayCircle size={52} className="text-brand opacity-50" />
-            <p className="text-sm text-ink-2 text-center px-6">{dict.finalVideoComingSoon}</p>
-          </div>
+          {videoError ? (
+            <div className="aspect-video flex flex-col items-center justify-center gap-3 bg-brand-muted px-6">
+              <AlertCircle size={40} className="text-ink-3 opacity-60" />
+              <p className="text-sm text-ink-2 text-center">{dict.finalVideoLoadError}</p>
+            </div>
+          ) : (
+            <video
+              src="/assets/video/finalvideo.mp4"
+              controls
+              preload="metadata"
+              playsInline
+              aria-label={dict.finalVideoLabel}
+              onEnded={() => setWatched(true)}
+              onError={() => setVideoError(true)}
+              className="w-full aspect-video bg-black"
+            />
+          )}
 
           {DEV_BYPASS && !watched && (
             <div className="border-t border-line p-4">
@@ -115,10 +129,10 @@ export default function FinalVideoStep({
         <button
           type="button"
           onClick={onComplete}
-          disabled={!watched || isSubmitting}
+          disabled={isSubmitting}
           className={cn(
             'w-full py-3.5 rounded-2xl font-semibold text-base transition-all',
-            watched && !isSubmitting
+            !isSubmitting
               ? 'bg-brand text-white'
               : 'bg-line text-ink-3 cursor-not-allowed',
           )}

@@ -306,6 +306,7 @@ export interface Dictionary {
     finalSubtitle: string
     finalVideoLabel: string
     finalVideoComingSoon: string
+    finalVideoLoadError: string
     finalWatchFirst: string
     finalMarkWatched: string
     finalWatchedBadge: string
@@ -817,7 +818,8 @@ const fa: Dictionary = {
     finalSubtitle: 'یک ویدئوی کوتاه راهنما را تماشا کنید و ثبت‌نام خود را تکمیل کنید.',
     finalVideoLabel: 'ویدئوی راهنمای اپلیکیشن',
     finalVideoComingSoon: 'ویدئوی راهنما به زودی اضافه می‌شود',
-    finalWatchFirst: 'لطفاً ابتدا ویدئو را تماشا کنید',
+    finalVideoLoadError: 'بارگذاری ویدئو ناموفق بود. می‌توانید ادامه دهید.',
+    finalWatchFirst: 'تماشای ویدئو توصیه می‌شود، اما می‌توانید ادامه دهید.',
     finalMarkWatched: '✓ تماشا شد (محیط توسعه)',
     finalWatchedBadge: 'ویدئو تماشا شد',
     finalComplete: 'شروع با مربی تغذیه',
