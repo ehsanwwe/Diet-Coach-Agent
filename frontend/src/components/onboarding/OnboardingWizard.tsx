@@ -174,14 +174,10 @@ export default function OnboardingWizard({ dict, locale }: Props) {
 
   async function handleComplete() {
     await withSubmit(async () => {
-      const res = await completeOnboarding()
+      await completeOnboarding()
       if (!hasNavigatedRef.current) {
         hasNavigatedRef.current = true
-        if (res.data.clinical_review_required) {
-          router.replace(`/${locale}?onboarded=1&clinical=1`)
-        } else {
-          router.replace(`/${locale}?onboarded=1`)
-        }
+        router.replace(`/${locale}/dashboard`)
       }
     })
   }
