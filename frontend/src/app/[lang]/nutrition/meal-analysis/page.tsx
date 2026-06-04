@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -11,11 +11,13 @@ import type { MealAnalysisResponse } from '@/types/nutrition'
 
 function MealAnalysisScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const router = useRouter()
+  const routerRef = useRef(router)
+  routerRef.current = router
   const [result, setResult] = useState<MealAnalysisResponse | null>(null)
 
   function handleResult(r: MealAnalysisResponse) {
     if ((r as unknown as { detail?: { message?: string } })?.detail?.message === 'UNAUTHORIZED') {
-      router.replace(`/${locale}/login`)
+      routerRef.current.replace(`/${locale}/login`)
       return
     }
     setResult(r)

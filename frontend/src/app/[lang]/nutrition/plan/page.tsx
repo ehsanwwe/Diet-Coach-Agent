@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -13,6 +13,8 @@ import type { NutritionPlanResponse, NutritionProfileResponse } from '@/types/nu
 
 function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const router = useRouter()
+  const routerRef = useRef(router)
+  routerRef.current = router
   const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -20,9 +22,10 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   useEffect(() => {
     Promise.all([getNutritionPlan(), getNutritionProfile()])
       .then(([pl, pr]) => { setPlan(pl); setProfile(pr) })
-      .catch((e) => { if (e?.message === 'UNAUTHORIZED') router.replace(`/${locale}/login`) })
+      .catch((e) => { if (e?.message === 'UNAUTHORIZED') routerRef.current.replace(`/${locale}/login`) })
       .finally(() => setLoading(false))
-  }, [locale, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center">

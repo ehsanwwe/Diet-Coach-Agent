@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -63,6 +63,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [clinicalReviewRequired, setClinicalReviewRequired] = useState(false)
+  const hasNavigatedRef = useRef(false)
 
   // Preserved form data for back navigation
   const [profileData, setProfileData] = useState<ProfileFormData | null>(null)
@@ -76,7 +77,10 @@ export default function OnboardingWizard({ dict, locale }: Props) {
     getOnboardingStatus()
       .then((res) => {
         if (res.data.is_onboarded) {
-          router.replace(`/${locale}`)
+          if (!hasNavigatedRef.current) {
+            hasNavigatedRef.current = true
+            router.replace(`/${locale}`)
+          }
           return
         }
         setCurrentStep(getInitialStep(res.data))
@@ -171,10 +175,13 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleComplete() {
     await withSubmit(async () => {
       const res = await completeOnboarding()
-      if (res.data.clinical_review_required) {
-        router.replace(`/${locale}?onboarded=1&clinical=1`)
-      } else {
-        router.replace(`/${locale}?onboarded=1`)
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true
+        if (res.data.clinical_review_required) {
+          router.replace(`/${locale}?onboarded=1&clinical=1`)
+        } else {
+          router.replace(`/${locale}?onboarded=1`)
+        }
       }
     })
   }

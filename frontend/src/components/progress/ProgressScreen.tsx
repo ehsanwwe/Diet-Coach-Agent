@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
@@ -24,6 +24,8 @@ function todayISODate(): string {
 
 export default function ProgressScreen({ dict, locale }: Props) {
   const router = useRouter()
+  const routerRef = useRef(router)
+  routerRef.current = router
   const [summary, setSummary] = useState<ProgressSummaryResponse | null>(null)
   const [weekly, setWeekly] = useState<WeeklyReportResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -41,14 +43,14 @@ export default function ProgressScreen({ dict, locale }: Props) {
       setWeekly(w)
     } catch (err) {
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
-        router.replace(`/${locale}/login`)
+        routerRef.current.replace(`/${locale}/login`)
         return
       }
       setLoadError(err instanceof Error ? err.message : dict.progress.errLoadFailed)
     } finally {
       setLoading(false)
     }
-  }, [locale, router, dict.progress.errLoadFailed])
+  }, [locale, dict.progress.errLoadFailed])
 
   useEffect(() => { void reload() }, [reload])
 

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
 import type { ChatHistoryItem } from '@/types/chat'
@@ -16,6 +16,9 @@ interface Props {
 
 export default function CompanionChat({ dict, locale }: Props) {
   const router = useRouter()
+  const routerRef = useRef(router)
+  routerRef.current = router
+  const pathname = usePathname()
   const [messages, setMessages] = useState<ChatHistoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -27,11 +30,16 @@ export default function CompanionChat({ dict, locale }: Props) {
     getChatHistory()
       .then((data) => setMessages(data.messages))
       .catch((err) => {
-        if (err?.message === 'UNAUTHORIZED') { router.replace(`/${locale}/login`); return }
+        if (err?.message === 'UNAUTHORIZED') {
+          const loginPath = `/${locale}/login`
+          if (pathname !== loginPath) routerRef.current.replace(loginPath)
+          return
+        }
         setLoadError(dict.companionChat.loadError)
       })
       .finally(() => setLoading(false))
-  }, [locale, router, dict.companionChat.loadError])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -58,7 +66,8 @@ export default function CompanionChat({ dict, locale }: Props) {
       setMessages((prev) => [...prev, assistant])
     } catch (err) {
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
-        router.replace(`/${locale}/login`)
+        const loginPath = `/${locale}/login`
+        if (pathname !== loginPath) routerRef.current.replace(loginPath)
         return
       }
       setSendError(dict.companionChat.sendError)

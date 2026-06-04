@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
@@ -28,6 +28,8 @@ function QuickActionCard({ href, icon, label }: { href: string; icon: string; la
 
 export default function NutritionDashboard({ dict, locale }: Props) {
   const router = useRouter()
+  const routerRef = useRef(router)
+  routerRef.current = router
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,10 +38,11 @@ export default function NutritionDashboard({ dict, locale }: Props) {
     Promise.all([getNutritionProfile(), getNutritionPlan()])
       .then(([p, pl]) => { setProfile(p); setPlan(pl) })
       .catch((err) => {
-        if (err?.message === 'UNAUTHORIZED') router.replace(`/${locale}/login`)
+        if (err?.message === 'UNAUTHORIZED') routerRef.current.replace(`/${locale}/login`)
       })
       .finally(() => setLoading(false))
-  }, [locale, router])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locale])
 
   if (loading) {
     return (
