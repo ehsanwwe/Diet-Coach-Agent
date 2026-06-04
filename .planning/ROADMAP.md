@@ -164,7 +164,7 @@ Plans:
   5. On mobile, the bottom navigation bar is visible after onboarding completes; the desktop layout shows the same mobile view centered with max-width
 **Plans**: 3 plans
 Plans:
-- [ ] 10-01-PLAN.md — Dictionary settings.* namespace + backend PATCH /api/v1/settings/language endpoint (UI-13, UI-14 foundation)
+- [x] 10-01-PLAN.md — Dictionary settings.* namespace + backend PATCH /api/v1/settings/language endpoint (UI-13, UI-14 foundation)
 - [ ] 10-02-PLAN.md — Polish pass: dictionary-mapped errors + loading/empty/error state audit across 7 existing screens (UI-18, UI-19, UI-20)
 - [ ] 10-03-PLAN.md — SettingsScreen + LanguageSelector + enable bottom-nav settings tab (UI-13, UI-14, UI-16, UI-17)
 **UI hint**: yes
@@ -185,4 +185,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Nutrition Backend & AI Layer | 0/TBD | Not started | - |
 | 8. Nutrition Frontend & Chat | 0/TBD | Not started | - |
 | 9. Progress & Reports | 3/3 | Complete   | 2026-06-03 |
-| 10. Settings, Polish & Remaining UI | 0/3 | Not started | - |
+| 10. Settings, Polish & Remaining UI | 1/3 | In Progress|  |

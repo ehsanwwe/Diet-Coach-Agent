@@ -147,14 +147,14 @@
 - [ ] **UI-10**: Meal analysis screen (enter meal text, view analysis result)
 - [ ] **UI-11**: "What should I eat now?" screen (ingredients input, suggestion output)
 - [ ] **UI-12**: Progress and weekly report screen
-- [ ] **UI-13**: Settings screen (language, profile, account)
-- [ ] **UI-14**: Language selector screen
+- [x] **UI-13**: Settings screen (language, profile, account)
+- [x] **UI-14**: Language selector screen
 - [ ] **UI-15**: Medical safety / clinical review required state screen (respectful, with path forward)
-- [ ] **UI-16**: Mobile-first layout; desktop shows the same mobile view centered with appropriate max-width
+- [x] **UI-16**: Mobile-first layout; desktop shows the same mobile view centered with appropriate max-width
 - [ ] **UI-17**: Bottom mobile navigation after onboarding is complete
-- [ ] **UI-18**: Loading states for all async operations
-- [ ] **UI-19**: Empty states for lists/dashboards with no data yet
-- [ ] **UI-20**: Error states with user-friendly messages (no raw API errors shown to user)
+- [x] **UI-18**: Loading states for all async operations
+- [x] **UI-19**: Empty states for lists/dashboards with no data yet
+- [x] **UI-20**: Error states with user-friendly messages (no raw API errors shown to user)
 
 ### Data Models
 
@@ -410,13 +410,13 @@
 | PROG-04 | Phase 9: Progress & Reports | Pending |
 | PROG-05 | Phase 9: Progress & Reports | Pending |
 | UI-12 | Phase 9: Progress & Reports | Pending |
-| UI-13 | Phase 10: Settings, Polish & Remaining UI | Pending |
-| UI-14 | Phase 10: Settings, Polish & Remaining UI | Pending |
-| UI-16 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-13 | Phase 10: Settings, Polish & Remaining UI | Complete |
+| UI-14 | Phase 10: Settings, Polish & Remaining UI | Complete |
+| UI-16 | Phase 10: Settings, Polish & Remaining UI | Complete |
 | UI-17 | Phase 10: Settings, Polish & Remaining UI | Pending |
-| UI-18 | Phase 10: Settings, Polish & Remaining UI | Pending |
-| UI-19 | Phase 10: Settings, Polish & Remaining UI | Pending |
-| UI-20 | Phase 10: Settings, Polish & Remaining UI | Pending |
+| UI-18 | Phase 10: Settings, Polish & Remaining UI | Complete |
+| UI-19 | Phase 10: Settings, Polish & Remaining UI | Complete |
+| UI-20 | Phase 10: Settings, Polish & Remaining UI | Complete |
 
 **Coverage:**
 - v1 requirements: 152 total (126 original + 26 added 2026-06-03: INFRA-09, PWA-01..05, OC-01..08, MEM-01..04, UI-STYLE-01..04, CONT-01..04)
