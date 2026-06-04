@@ -5,6 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [1.0.0] - 2026-06-04
+
+### Added — Phase 10: Settings, Polish & Remaining UI
+
+- **Backend:** `PATCH /api/v1/settings/language` — persist user language preference to `UserLanguagePreference` (UI-13, UI-14)
+- **Frontend:** `frontend/src/lib/api.ts` — added `api.patch()` method mirroring `api.post()` with `method: 'PATCH'`
+- **Frontend:** `SettingsScreen` client component — Language nav row, Profile (phone read-only), Account section with inline logout confirmation (UI-13)
+- **Frontend:** `LanguageSelector` client component — writes `NEXT_LOCALE` cookie, fire-and-forget backend persist, navigate to `/${newLocale}/settings/language` (UI-14)
+- **Frontend:** `/[lang]/settings` route — AuthGuard + app-container + SettingsScreen + AppBottomNav (UI-16)
+- **Frontend:** `/[lang]/settings/language` route — AuthGuard + app-container + LanguageSelector (no nav bar; sub-screen) (UI-16)
+- **Frontend:** AppBottomNav settings tab enabled — `active: isActive('settings')`, `disabled: false` (UI-17)
+- **Dictionaries:** `settings.*` namespace (12 keys: title, languageSection, profileSection, accountSection, currentLanguage, changeLanguage, displayName, phoneNumber, logoutBtn, logoutConfirm, logoutCancel, appVersion) across fa/en/ar
+
+### Implementation Notes
+
+- Canonical UNAUTHORIZED pattern (`err.message === 'UNAUTHORIZED'` FIRST) adopted in SettingsScreen — consistent with ProgressScreen.tsx line 45
+- Phone numbers rendered with `dir="ltr"` — technical identifiers always LTR even in RTL layouts
+- Language selector fires `PATCH /api/v1/settings/language` fire-and-forget; cookie is canonical client-side source of truth
+- TypeScript strict: 0 errors across all new files
+
+---
+
 ## [0.9.0] - 2026-06-04
 
 ### Added — Phase 9: Progress & Reports

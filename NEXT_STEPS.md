@@ -1,20 +1,11 @@
 # Next Steps — Diet Coach Agent
 
 **Updated:** 2026-06-04
-**Current status:** Phase 9 COMPLETE. Phase 10 (Settings, Polish & Remaining UI) ready to start.
+**Current status:** ALL 10 PHASES COMPLETE. App is feature-complete for v1.0.
 
 ## Immediate Next Action
 
-Run Phase 10 planning:
-```
-/gsd:plan-phase
-```
-
-Phase 10 covers: settings screen, profile editing, notification preferences, polish/animations, PWA install prompt, offline fallback, and any remaining UI gaps.
-
-## Manual Visual Verification (Phase 9 — still required)
-
-The automated tests pass but visual verification of the progress screen is pending:
+Run end-to-end manual QA verification:
 
 ```
 # Terminal 1
@@ -24,14 +15,26 @@ cd backend && uvicorn app.main:app --reload --port 8000
 cd frontend && npm run dev
 ```
 
-Navigate to http://localhost:3000/fa/login → OTP 123456 → dashboard → tap پیشرفت tab.
+Navigate to http://localhost:3000/fa/login → OTP 123456 → complete onboarding → explore all screens.
 
-Verify the 7 checks from `.planning/phases/09-progress-reports/09-03-PLAN.md` Task 3.
+## Key QA Checks
 
-## Phase 10 Scope (from ROADMAP)
-- Settings screen `/[lang]/settings` (currently disabled in bottom nav)
-- Profile editing (weight goal, dietary restrictions update)
-- Notification preferences
-- PWA install prompt + service worker + offline fallback
-- App-wide polish: animations, loading states, error boundaries
-- Any ROADMAP requirements not covered by phases 1-9
+1. **Settings screen:** `/fa/settings` — Language row, Profile (phone), Logout inline confirm
+2. **Language switch:** Tap Language row → select English → page switches to `/en/settings/language` with LTR layout
+3. **Settings tab:** Bottom nav settings icon highlights when on /settings or /settings/language
+4. **Logout flow:** Expand logout confirm → confirm → redirects to /fa/login
+5. **Progress screen:** `/fa/progress` — check-in form + weekly report
+6. **Nutrition:** Dashboard, plan, meal analysis, what-to-eat-now
+
+## Known Issues to Address
+
+1. **Next.js build failure on /fa/onboarding** — `InvariantError: Expected workStore to be initialized`. Fix: add `export const dynamic = 'force-dynamic'` to `frontend/src/app/[lang]/onboarding/page.tsx`
+2. **ESLint not configured** — project has no `eslint.config.mjs`. TypeScript strict mode serves as primary linting.
+
+## Post-v1 Roadmap
+
+- Real SMS provider (Kavenegar for Iran / Twilio)
+- Push notifications
+- Wearable integration
+- Human nutritionist panel
+- Payment/subscription

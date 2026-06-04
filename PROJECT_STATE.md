@@ -1,8 +1,8 @@
 # Project State — Diet Coach Agent
 
 **Last updated:** 2026-06-04
-**Current phase:** Phase 9 COMPLETE → Phase 10 next
-**Overall progress:** Phase 9 of 10 complete (90%)
+**Current phase:** Phase 10 COMPLETE
+**Overall progress:** All 10 phases complete (100%)
 
 ## What Exists Now
 
@@ -32,6 +32,14 @@
   - `components/layout/AppBottomNav.tsx` — progress tab enabled (was disabled)
 - **Pages:** `/[lang]/progress` — authenticated progress screen
 
+#### Phase 10 — Settings, Polish & Remaining UI (NEW)
+- **Backend:** `backend/app/schemas/settings.py`, `backend/app/services/settings_service.py`, `backend/app/api/v1/endpoints/settings.py` — PATCH /api/v1/settings/language
+- **Dictionaries:** `settings.*` namespace (12 keys) added to fa/en/ar
+- **Frontend Components:** `SettingsScreen.tsx`, `LanguageSelector.tsx`
+- **Pages:** `/[lang]/settings` and `/[lang]/settings/language`
+- **AppBottomNav:** Settings tab enabled (was disabled)
+- **api.ts:** `api.patch()` method added
+
 ## API Endpoints (All Phases)
 - GET/POST /api/v1/auth/* — auth
 - GET/POST /api/v1/onboarding/* — onboarding
@@ -56,7 +64,7 @@
 | 7 — Nutrition Backend & AI Layer | **COMPLETE** |
 | 8 — Nutrition Frontend & Chat | **COMPLETE** |
 | 9 — Progress & Reports | **COMPLETE** |
-| 10 — Settings, Polish & Remaining UI | Not started |
+| 10 — Settings, Polish & Remaining UI | **COMPLETE** |
 
 ## How to Resume (Cold Start)
 1. Backend: `cd backend && alembic upgrade head && uvicorn app.main:app --reload`

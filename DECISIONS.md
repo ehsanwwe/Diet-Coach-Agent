@@ -262,4 +262,24 @@
 **Rationale:** Users see the full picture of what matters; untracked chips communicate future roadmap and set expectations without hiding data gaps.
 
 ---
+
+## 2026-06-04 — Phase 10 Implementation Decisions
+
+### D-047: Language selector page excludes AppBottomNav
+**Decision:** `/[lang]/settings/language` page does NOT include `<AppBottomNav>`.
+**Rationale:** Language selector is a sub-screen of Settings (navigated to from the Language row). Back navigation is via browser back button. Including bottom nav would create nested nav confusion and visual clutter.
+
+### D-048: Phone number rendered dir="ltr" in Settings
+**Decision:** The phone number display in SettingsScreen uses `dir="ltr"` attribute.
+**Rationale:** Phone numbers are technical identifiers — they read left-to-right regardless of locale. This is the standard pattern for numeric/technical data in RTL layouts and is NOT a violation of the project's "no hard-coded direction" rule (which applies to `<html>` and layout containers, not inline data values).
+
+### D-049: Logout server-side failure silently swallowed
+**Decision:** `api.post('/api/v1/auth/logout', ...)` errors are caught and ignored; `clearToken() + router.replace(login)` always executes regardless of server response.
+**Rationale:** The user's intent to log out must always succeed from their perspective. If the server logout endpoint fails (401 because token already expired, 500 because server error), the correct UX is still to clear the local token and redirect to login. Blocking logout on server failure would leave users stuck.
+
+### D-050: api.patch() method added to api.ts
+**Decision:** Extended `api` object with a `patch()` method matching `post()` pattern but with `method: 'PATCH'`.
+**Rationale:** Required for fire-and-forget language preference persist call in LanguageSelector. Following the project's existing `api.get/post` pattern keeps all HTTP calls through the typed wrapper.
+
+---
 *Last updated: 2026-06-04*
