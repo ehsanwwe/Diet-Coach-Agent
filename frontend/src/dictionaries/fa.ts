@@ -79,6 +79,20 @@ export interface Dictionary {
     offline: string
     generic: string
   }
+  settings: {
+    title: string
+    languageSection: string
+    profileSection: string
+    accountSection: string
+    currentLanguage: string
+    changeLanguage: string
+    displayName: string
+    phoneNumber: string
+    logoutBtn: string
+    logoutConfirm: string
+    logoutCancel: string
+    appVersion: string
+  }
   auth: {
     loginTitle: string
     loginSubtitle: string
@@ -579,6 +593,20 @@ const fa: Dictionary = {
     notFound: 'صفحه مورد نظر یافت نشد',
     offline: 'اتصال اینترنت برقرار نیست',
     generic: 'مشکلی پیش آمد. لطفاً دوباره تلاش کنید.',
+  },
+  settings: {
+    title: 'تنظیمات',
+    languageSection: 'زبان',
+    profileSection: 'پروفایل',
+    accountSection: 'حساب کاربری',
+    currentLanguage: 'زبان فعلی',
+    changeLanguage: 'تغییر زبان',
+    displayName: 'نام شما',
+    phoneNumber: 'شماره موبایل',
+    logoutBtn: 'خروج از حساب',
+    logoutConfirm: 'آیا مطمئن هستید که می‌خواهید خارج شوید؟',
+    logoutCancel: 'ماندن',
+    appVersion: 'نسخه برنامه',
   },
   auth: {
     loginTitle: 'ورود به مربی تغذیه',
