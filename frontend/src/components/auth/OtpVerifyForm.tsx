@@ -64,7 +64,13 @@ export default function OtpVerifyForm({ dict, locale, phone }: Props) {
       )
     } catch (err) {
       if (err instanceof ApiRequestError) {
-        setError(err.status === 400 ? dict.invalidOtp : err.message)
+        if (err.status === 400 || err.status === 401) {
+          setError(dict.invalidOtp)
+        } else if (err.status === 410) {
+          setError(dict.otpExpired)
+        } else {
+          setError(dict.networkError)
+        }
       } else {
         setError(dict.networkError)
       }
@@ -81,7 +87,11 @@ export default function OtpVerifyForm({ dict, locale, phone }: Props) {
       startCountdown()
     } catch (err) {
       if (err instanceof ApiRequestError) {
-        setError(err.message)
+        if (err.status >= 500) {
+          setError(dict.networkError)
+        } else {
+          setError(dict.networkError)
+        }
       } else {
         setError(dict.networkError)
       }

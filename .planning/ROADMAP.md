@@ -185,4 +185,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Nutrition Backend & AI Layer | 0/TBD | Not started | - |
 | 8. Nutrition Frontend & Chat | 0/TBD | Not started | - |
 | 9. Progress & Reports | 3/3 | Complete   | 2026-06-03 |
-| 10. Settings, Polish & Remaining UI | 1/3 | In Progress|  |
+| 10. Settings, Polish & Remaining UI | 2/3 | In Progress|  |

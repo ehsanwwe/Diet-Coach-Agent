@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
@@ -33,21 +33,53 @@ export default function NutritionDashboard({ dict, locale }: Props) {
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  useEffect(() => {
-    Promise.all([getNutritionProfile(), getNutritionPlan()])
-      .then(([p, pl]) => { setProfile(p); setPlan(pl) })
-      .catch((err) => {
-        if (err?.message === 'UNAUTHORIZED') routerRef.current.replace(`/${locale}/login`)
-      })
-      .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  const reload = useCallback(async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const [p, pl] = await Promise.all([getNutritionProfile(), getNutritionPlan()])
+      setProfile(p)
+      setPlan(pl)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+        routerRef.current.replace(`/${locale}/login`)
+        return
+      }
+      setLoadError(dict.errors.generic)
+    } finally {
+      setLoading(false)
+    }
+  }, [locale, dict.errors.generic])
+
+  useEffect(() => { void reload() }, [reload])
 
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div
+          role="status"
+          aria-label={dict.common.loading}
+          className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin"
+        />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex-1 px-5 pt-6 pb-28">
+        <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-3">
+          <p className="text-sm text-error">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="px-4 py-2 rounded-2xl bg-brand text-elevated font-bold text-sm"
+          >
+            {dict.common.retry}
+          </button>
+        </div>
       </div>
     )
   }

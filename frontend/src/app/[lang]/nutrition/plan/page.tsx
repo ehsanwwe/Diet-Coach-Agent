@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
 import AuthGuard from '@/components/auth/AuthGuard'
@@ -18,20 +18,27 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
-  useEffect(() => {
-    Promise.all([getNutritionPlan(), getNutritionProfile()])
-      .then(([pl, pr]) => { setPlan(pl); setProfile(pr) })
-      .catch((e) => { if (e?.message === 'UNAUTHORIZED') routerRef.current.replace(`/${locale}/login`) })
-      .finally(() => setLoading(false))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locale])
+  const reload = useCallback(async () => {
+    setLoading(true)
+    setLoadError(null)
+    try {
+      const [pl, pr] = await Promise.all([getNutritionPlan(), getNutritionProfile()])
+      setPlan(pl)
+      setProfile(pr)
+    } catch (err) {
+      if (err instanceof Error && err.message === 'UNAUTHORIZED') {
+        routerRef.current.replace(`/${locale}/login`)
+        return
+      }
+      setLoadError(dict.errors.generic)
+    } finally {
+      setLoading(false)
+    }
+  }, [locale, dict.errors.generic])
 
-  if (loading) return (
-    <div className="flex-1 flex items-center justify-center">
-      <div className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
-    </div>
-  )
+  useEffect(() => { void reload() }, [reload])
 
   return (
     <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28 space-y-6">
@@ -39,24 +46,26 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
         <h1 className="text-2xl font-bold text-ink">{dict.plan.title}</h1>
         <p className="text-sm text-ink-2 mt-1">{dict.plan.subtitle}</p>
       </div>
-      {profile?.clinical_review_required && (
+      {!loading && !loadError && profile?.clinical_review_required && (
         <ClinicalReviewState dict={dict} compact variant="clinical" />
       )}
-      {!profile?.clinical_review_required && profile?.risk_level === 'high' && (
+      {!loading && !loadError && !profile?.clinical_review_required && profile?.risk_level === 'high' && (
         <ClinicalReviewState dict={dict} compact variant="high_risk" />
       )}
-      <PlanGenerator
-        dict={dict}
-        hasPlan={plan?.has_plan ?? false}
-        onGenerated={(p) => setPlan(p)}
-      />
-      {plan?.has_plan && <PlanSummary plan={plan} dict={dict} />}
-      {!plan?.has_plan && (
-        <div className="rounded-2xl bg-elevated p-8 text-center shadow-sm">
-          <p className="text-base font-semibold text-ink mb-2">{dict.plan.noPlanTitle}</p>
-          <p className="text-sm text-ink-2">{dict.plan.noPlanDesc}</p>
-        </div>
+      {!loading && !loadError && (
+        <PlanGenerator
+          dict={dict}
+          hasPlan={plan?.has_plan ?? false}
+          onGenerated={(p) => setPlan(p)}
+        />
       )}
+      <PlanSummary
+        plan={plan?.has_plan ? plan : null}
+        loading={loading}
+        loadError={loadError}
+        onRetry={() => void reload()}
+        dict={dict}
+      />
     </div>
   )
 }

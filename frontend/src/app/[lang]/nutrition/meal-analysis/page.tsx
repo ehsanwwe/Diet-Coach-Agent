@@ -30,7 +30,7 @@ function MealAnalysisScreen({ locale, dict }: { locale: Locale; dict: Dictionary
         <p className="text-sm text-ink-2 mt-1">{dict.mealAnalysis.subtitle}</p>
       </div>
       {!result ? (
-        <MealAnalysisForm dict={dict} onResult={handleResult} />
+        <MealAnalysisForm dict={dict} locale={locale} onResult={handleResult} />
       ) : (
         <MealAnalysisResult result={result} dict={dict} onReset={() => setResult(null)} />
       )}
