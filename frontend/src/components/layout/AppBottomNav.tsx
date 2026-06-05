@@ -82,7 +82,7 @@ export default function AppBottomNav({ locale, dict }: Props) {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 pb-safe bg-elevated border-t border-line">
-      <div className="app-container min-h-0 flex-row flex items-stretch max-w-[430px] mx-auto">
+      <div className="w-full max-w-[430px] mx-auto flex flex-row items-stretch">
         {tabs.map((tab) => {
           const Icon = tab.icon
           const cls = [
