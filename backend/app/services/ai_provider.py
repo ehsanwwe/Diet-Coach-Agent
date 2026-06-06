@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -24,6 +24,24 @@ class AIProviderResult:
     is_mock: bool = False
 
 
+@dataclass
+class AIToolCall:
+    id: str
+    name: str
+    arguments: dict[str, Any]
+
+
+@dataclass
+class AIToolCallResult:
+    assistant_message: str
+    tool_calls: list["AIToolCall"]
+    provider: str
+    model: str
+    finish_reason: str | None = None
+    is_mock: bool = False
+    raw_tool_calls: list[dict[str, Any]] | None = None
+
+
 class AIProvider(ABC):
     @abstractmethod
     def generate_text(
@@ -33,6 +51,19 @@ class AIProvider(ABC):
         max_tokens: int | None = None,
     ) -> AIProviderResult:
         ...
+
+    @property
+    def supports_tools(self) -> bool:
+        return False
+
+    def generate_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> "AIToolCallResult":
+        raise NotImplementedError("This provider does not support tool calling")
 
 
 class AIProviderError(Exception):

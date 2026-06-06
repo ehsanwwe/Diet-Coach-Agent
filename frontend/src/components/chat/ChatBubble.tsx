@@ -4,9 +4,10 @@ interface Props {
   message: ChatHistoryItem
   youLabel: string
   coachLabel: string
+  actions?: string[]
 }
 
-export default function ChatBubble({ message, youLabel, coachLabel }: Props) {
+export default function ChatBubble({ message, youLabel, coachLabel, actions }: Props) {
   const isUser = message.role === 'user'
   return (
     <div className={`flex flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
@@ -23,6 +24,15 @@ export default function ChatBubble({ message, youLabel, coachLabel }: Props) {
       >
         {message.content}
       </div>
+      {!isUser && actions && actions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2 max-w-[80%]">
+          {actions.map((a, i) => (
+            <span key={i} className="text-xs bg-brand-muted text-ink-2 px-2.5 py-1 rounded-full">
+              {a}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

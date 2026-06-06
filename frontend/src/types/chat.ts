@@ -5,6 +5,8 @@ export interface ChatMessageResponse {
   provider: string
   is_mock: boolean
   created_at: string
+  actions_summary?: string[] | null
+  tool_calls_executed?: number | null
 }
 
 export interface ChatHistoryItem {

@@ -21,6 +21,8 @@ class ChatMessageResponse(BaseModel):
     provider: str
     is_mock: bool
     created_at: datetime
+    actions_summary: list[str] | None = None
+    tool_calls_executed: int | None = None
 
 
 class ChatHistoryItem(BaseModel):

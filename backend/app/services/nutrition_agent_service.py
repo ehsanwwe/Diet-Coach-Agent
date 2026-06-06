@@ -149,9 +149,10 @@ class NutritionAgentService:
         self,
         ctx: NutritionMemoryContext,
         locale: str,
+        extra_context: str | None = None,
     ) -> tuple[dict, AIProviderResult]:
         """Generate a 7-day meal plan in the given locale."""
-        prompt = for_generate_week_plan(ctx, locale)
+        prompt = for_generate_week_plan(ctx, locale, extra_context=extra_context)
         parsed, result = self._call(prompt)
         # Validate structure: must have 'days' list with at least 7 entries
         if not isinstance(parsed.get("days"), list) or len(parsed["days"]) < 7:

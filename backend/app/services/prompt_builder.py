@@ -211,7 +211,7 @@ _LOCALE_SAFETY_MAP = {
 }
 
 
-def for_generate_week_plan(ctx: NutritionMemoryContext, locale: str) -> PromptData:
+def for_generate_week_plan(ctx: NutritionMemoryContext, locale: str, extra_context: str | None = None) -> PromptData:
     task_tag = _LOCALE_TASK_MAP.get(locale, TASK_GENERATE_WEEK_FA)
     lang_instruction = _LOCALE_LANG_MAP.get(locale, _LOCALE_LANG_MAP["fa"])
     safety = _LOCALE_SAFETY_MAP.get(locale, _LOCALE_SAFETY_MAP["fa"])
@@ -262,6 +262,8 @@ def for_generate_week_plan(ctx: NutritionMemoryContext, locale: str) -> PromptDa
         "}\n"
         f"All string values must be written in {locale} language only."
     )
+    if extra_context:
+        user = f"Special instruction for this request: {extra_context}\n\n" + user
     return PromptData(task_type=f"generate_week_{locale}", system=system, user=user)
 
 

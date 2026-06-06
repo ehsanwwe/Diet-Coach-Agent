@@ -20,6 +20,7 @@ export default function CompanionChat({ dict, locale }: Props) {
   routerRef.current = router
   const pathname = usePathname()
   const [messages, setMessages] = useState<ChatHistoryItem[]>([])
+  const [messageExtras, setMessageExtras] = useState<Record<string, { actions?: string[] }>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -70,6 +71,9 @@ export default function CompanionChat({ dict, locale }: Props) {
         created_at: resp.created_at,
       }
       setMessages((prev) => [...prev, assistant])
+      if (resp.actions_summary?.length) {
+        setMessageExtras(prev => ({ ...prev, [resp.message_id]: { actions: resp.actions_summary! } }))
+      }
     } catch (err) {
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
         const loginPath = `/${locale}/login`
@@ -191,6 +195,7 @@ export default function CompanionChat({ dict, locale }: Props) {
             message={msg}
             youLabel={dict.companionChat.you}
             coachLabel={dict.companionChat.coach}
+            actions={messageExtras[msg.message_id]?.actions}
           />
         ))}
         {typing && (

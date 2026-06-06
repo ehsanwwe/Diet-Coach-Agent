@@ -266,6 +266,7 @@ def regenerate_day(
     user: User,
     locale: str,
     plan_date: date,
+    reason: str | None = None,
 ) -> RegenerateDayResponse:
     existing = calendar_repository.get_day_by_date(db, user.id, plan_date, locale)
     if existing:
@@ -273,7 +274,7 @@ def regenerate_day(
 
     ctx = nutrition_memory_service.build(db, user)
     agent = NutritionAgentService()
-    plan_data, _ = agent.generate_week_plan(ctx, locale)
+    plan_data, _ = agent.generate_week_plan(ctx, locale, extra_context=reason)
 
     days_raw: list[dict] = plan_data.get("days") or []
     day_raw = days_raw[0] if days_raw else {}

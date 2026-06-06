@@ -10,13 +10,14 @@ the proxy URL and percent-encoded. The password is never logged.
 """
 from __future__ import annotations
 
+import json
 import logging
 from typing import Any
 from urllib.parse import quote, urlsplit, urlunsplit
 
 import httpx
 
-from app.services.ai_provider import AIProvider, AIProviderError, AIProviderResult
+from app.services.ai_provider import AIProvider, AIProviderError, AIProviderResult, AIToolCall, AIToolCallResult
 
 logger = logging.getLogger(__name__)
 
@@ -188,3 +189,125 @@ class OpenAIProvider(AIProvider):
                 break
 
         raise AIProviderError(f"OpenAI provider failed after retries: {last_error}")
+
+    @property
+    def supports_tools(self) -> bool:
+        return True
+
+    def generate_with_tools(
+        self,
+        messages: list[dict],
+        tools: list[dict],
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> AIToolCallResult:
+        temp = temperature if temperature is not None else self._default_temperature
+        tokens = max_tokens if max_tokens is not None else self._default_max_tokens
+
+        headers: dict[str, Any] = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self._api_key}",
+        }
+        payload: dict[str, Any] = {
+            "model": self._model,
+            "messages": messages,
+            "temperature": temp,
+            "max_completion_tokens": tokens,
+            "tools": tools,
+            "tool_choice": "auto",
+        }
+
+        client_kwargs: dict[str, Any] = {"timeout": self._timeout}
+        if self._proxy_url:
+            client_kwargs["proxy"] = self._proxy_url
+
+        last_error: Exception | None = None
+        for attempt in range(self._max_retries + 1):
+            try:
+                with httpx.Client(**client_kwargs) as client:
+                    response = client.post(self._url, headers=headers, json=payload)
+
+                if response.status_code in _RETRYABLE_HTTP_STATUSES and attempt < self._max_retries:
+                    logger.warning(
+                        "OpenAI (tools) HTTP %d on attempt %d — retrying",
+                        response.status_code,
+                        attempt + 1,
+                    )
+                    last_error = httpx.HTTPStatusError(
+                        message=f"HTTP {response.status_code}",
+                        request=response.request,
+                        response=response,
+                    )
+                    continue
+
+                if response.status_code == 401:
+                    raise AIProviderError("OpenAI authentication failed — check OPENAI_API_KEY")
+
+                response.raise_for_status()
+                data: dict[str, Any] = response.json()
+
+                choices = data.get("choices") or []
+                if not choices:
+                    raise AIProviderError("OpenAI returned an empty choices list")
+
+                choice = choices[0]
+                message = choice.get("message") or {}
+                content: str = message.get("content") or ""
+                finish_reason: str | None = choice.get("finish_reason")
+                raw_tool_calls: list[dict] = message.get("tool_calls") or []
+
+                tool_calls: list[AIToolCall] = []
+                for tc in raw_tool_calls:
+                    try:
+                        fn = tc.get("function") or {}
+                        args_str = fn.get("arguments") or "{}"
+                        args = json.loads(args_str) if isinstance(args_str, str) else args_str
+                        tool_calls.append(AIToolCall(
+                            id=tc.get("id", ""),
+                            name=fn.get("name", ""),
+                            arguments=args,
+                        ))
+                    except (json.JSONDecodeError, KeyError) as exc:
+                        logger.warning("Failed to parse tool call: %s", exc)
+
+                return AIToolCallResult(
+                    assistant_message=content,
+                    tool_calls=tool_calls,
+                    raw_tool_calls=raw_tool_calls if raw_tool_calls else None,
+                    provider="openai",
+                    model=data.get("model", self._model),
+                    finish_reason=finish_reason,
+                    is_mock=False,
+                )
+
+            except AIProviderError:
+                raise
+
+            except (httpx.TimeoutException, httpx.ConnectError) as exc:
+                last_error = exc
+                logger.warning("OpenAI (tools) network error on attempt %d", attempt + 1)
+                if attempt == self._max_retries:
+                    break
+
+            except httpx.HTTPStatusError as exc:
+                last_error = exc
+                status = exc.response.status_code
+                try:
+                    body = exc.response.json()
+                    error_msg = body.get("error", {}).get("message", exc.response.text[:300])
+                except Exception:
+                    error_msg = exc.response.text[:300]
+                logger.warning(
+                    "OpenAI (tools) HTTP %d on attempt %d — %s",
+                    status,
+                    attempt + 1,
+                    error_msg,
+                )
+                break
+
+            except (KeyError, ValueError) as exc:
+                last_error = exc
+                logger.warning("OpenAI (tools) response parse error: %s", exc)
+                break
+
+        raise AIProviderError(f"OpenAI provider (tools) failed after retries: {last_error}")
