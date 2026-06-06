@@ -73,6 +73,7 @@ export interface Dictionary {
     ar: string
     current: string
     change: string
+    backToSettings: string
   }
   errors: {
     notFound: string
@@ -444,6 +445,7 @@ export interface Dictionary {
   companionChat: {
     title: string
     subtitle: string
+    startChat: string
     inputPlaceholder: string
     sendBtn: string
     sending: string
@@ -455,6 +457,11 @@ export interface Dictionary {
     you: string
     coach: string
     typingIndicator: string
+    clearMemory: string
+    clearMemoryConfirmTitle: string
+    clearMemoryConfirm: string
+    clearMemoryCancel: string
+    memoryCleared: string
   }
   safety: {
     clinicalTitle: string
@@ -589,6 +596,7 @@ const fa: Dictionary = {
     ar: 'العربية',
     current: 'زبان فعلی',
     change: 'تغییر زبان',
+    backToSettings: 'بازگشت به تنظیمات',
   },
   errors: {
     notFound: 'صفحه مورد نظر یافت نشد',
@@ -959,6 +967,7 @@ const fa: Dictionary = {
   companionChat: {
     title: 'گفتگو با مربی',
     subtitle: 'سوال تغذیه‌ای دارید؟ بپرسید.',
+    startChat: 'شروع گفتگو با مربی تغذیه',
     inputPlaceholder: 'پیام خود را بنویسید...',
     sendBtn: 'ارسال',
     sending: 'در حال ارسال...',
@@ -970,6 +979,11 @@ const fa: Dictionary = {
     you: 'شما',
     coach: 'مربی',
     typingIndicator: 'مربی در حال نوشتن...',
+    clearMemory: 'پاک کردن حافظه گفتگو',
+    clearMemoryConfirmTitle: 'حافظه گفتگو پاک شود؟',
+    clearMemoryConfirm: 'بله، پاک کن',
+    clearMemoryCancel: 'لغو',
+    memoryCleared: 'حافظه گفتگو پاک شد',
   },
   safety: {
     clinicalTitle: 'توجه: مشاوره پزشکی توصیه می‌شود',

@@ -34,7 +34,7 @@ def send_message(db: Session, user: User, message: str) -> ChatMessageResponse:
     ]
 
     # Build nutrition memory context
-    ctx = nutrition_memory_service.build_context(db, user)
+    ctx = nutrition_memory_service.build(db, user)
 
     # Call AI
     agent = NutritionAgentService()
@@ -61,6 +61,12 @@ def send_message(db: Session, user: User, message: str) -> ChatMessageResponse:
         is_mock=getattr(result, "is_mock", True),
         created_at=assistant_msg.created_at,
     )
+
+
+def clear_session(db: Session, user: User) -> None:
+    """Delete the user's companion chat session and all messages."""
+    chat_repository.clear_companion_session(db, user.id)
+    db.commit()
 
 
 def get_history(db: Session, user: User) -> ChatHistoryResponse:

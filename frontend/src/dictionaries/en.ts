@@ -63,6 +63,7 @@ const en: Dictionary = {
     ar: 'العربية',
     current: 'Current language',
     change: 'Change language',
+    backToSettings: 'Back to settings',
   },
   errors: {
     notFound: 'Page not found',
@@ -423,6 +424,7 @@ const en: Dictionary = {
   companionChat: {
     title: 'Chat with Coach',
     subtitle: 'Have a nutrition question? Ask away.',
+    startChat: 'Start chat with nutrition coach',
     inputPlaceholder: 'Type your message...',
     sendBtn: 'Send',
     sending: 'Sending...',
@@ -434,6 +436,11 @@ const en: Dictionary = {
     you: 'You',
     coach: 'Coach',
     typingIndicator: 'Coach is typing...',
+    clearMemory: 'Clear chat memory',
+    clearMemoryConfirmTitle: 'Clear chat memory?',
+    clearMemoryConfirm: 'Yes, clear',
+    clearMemoryCancel: 'Cancel',
+    memoryCleared: 'Chat memory cleared',
   },
   safety: {
     clinicalTitle: 'Note: Medical Consultation Recommended',

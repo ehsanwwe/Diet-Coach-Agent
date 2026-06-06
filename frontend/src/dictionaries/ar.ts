@@ -63,6 +63,7 @@ const ar: Dictionary = {
     ar: 'العربية',
     current: 'اللغة الحالية',
     change: 'تغيير اللغة',
+    backToSettings: 'العودة إلى الإعدادات',
   },
   errors: {
     notFound: 'الصفحة غير موجودة',
@@ -423,6 +424,7 @@ const ar: Dictionary = {
   companionChat: {
     title: 'محادثة مع المدرب',
     subtitle: 'هل لديك سؤال غذائي؟ اسأل.',
+    startChat: 'بدء المحادثة مع مدرب التغذية',
     inputPlaceholder: 'اكتب رسالتك...',
     sendBtn: 'إرسال',
     sending: 'جارٍ الإرسال...',
@@ -434,6 +436,11 @@ const ar: Dictionary = {
     you: 'أنت',
     coach: 'المدرب',
     typingIndicator: 'المدرب يكتب...',
+    clearMemory: 'مسح ذاكرة المحادثة',
+    clearMemoryConfirmTitle: 'مسح ذاكرة المحادثة؟',
+    clearMemoryConfirm: 'نعم، امسح',
+    clearMemoryCancel: 'إلغاء',
+    memoryCleared: 'تم مسح ذاكرة المحادثة',
   },
   safety: {
     clinicalTitle: 'تنبيه: يُنصح باستشارة طبية',

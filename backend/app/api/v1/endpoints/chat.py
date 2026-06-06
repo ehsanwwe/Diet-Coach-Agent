@@ -16,7 +16,7 @@ from app.core.database import get_session
 from app.core.errors import AppError, raise_http_error
 from app.models.user import User
 from app.schemas.chat import ChatHistoryResponse, ChatMessageRequest, ChatMessageResponse
-from app.schemas.common import SuccessResponse
+from app.schemas.common import MessageResponse, SuccessResponse
 from app.services import chat_service
 
 router = APIRouter(tags=["chat"])
@@ -36,6 +36,21 @@ def send_message(
     except Exception as exc:
         raise_http_error(f"Chat service error: {exc}", status_code=500)
     return SuccessResponse(data=result)
+
+
+@router.post("/clear", response_model=MessageResponse)
+def clear_chat(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> MessageResponse:
+    """Clear the authenticated user's companion chat memory."""
+    try:
+        chat_service.clear_session(db, current_user)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code, detail=exc.detail)
+    except Exception as exc:
+        raise_http_error(f"Failed to clear chat: {exc}", status_code=500)
+    return MessageResponse(message="Chat memory cleared")
 
 
 @router.get("/history", response_model=SuccessResponse[ChatHistoryResponse])

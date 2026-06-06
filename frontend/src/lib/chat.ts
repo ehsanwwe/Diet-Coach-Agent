@@ -38,3 +38,15 @@ export async function getChatHistory(): Promise<ChatHistoryResponse> {
   const wrapped = await handleResponse<ApiSuccess<ChatHistoryResponse>>(res)
   return wrapped.data
 }
+
+export async function clearChatMemory(): Promise<void> {
+  const res = await fetch(`${BASE_URL}${BASE}/clear`, {
+    method: 'POST',
+    headers: { ...authHeaders() },
+  })
+  if (res.status === 401) throw new Error('UNAUTHORIZED')
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: 'Request failed' }))
+    throw new Error(err?.detail?.message ?? err?.message ?? 'Request failed')
+  }
+}

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
 import type { ChatHistoryItem } from '@/types/chat'
-import { getChatHistory, sendChatMessage } from '@/lib/chat'
+import { getChatHistory, sendChatMessage, clearChatMemory } from '@/lib/chat'
 import ChatBubble from './ChatBubble'
 import ChatComposer from './ChatComposer'
 
@@ -24,11 +24,17 @@ export default function CompanionChat({ dict, locale }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
   const [typing, setTyping] = useState(false)
+  const [started, setStarted] = useState(false)
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     getChatHistory()
-      .then((data) => setMessages(data.messages))
+      .then((data) => {
+        setMessages(data.messages)
+        if (data.messages.length > 0) setStarted(true)
+      })
       .catch((err) => {
         if (err instanceof Error && err.message === 'UNAUTHORIZED') {
           const loginPath = `/${locale}/login`
@@ -77,6 +83,20 @@ export default function CompanionChat({ dict, locale }: Props) {
     }
   }
 
+  async function handleClear() {
+    setClearing(true)
+    try {
+      await clearChatMemory()
+      setMessages([])
+      setStarted(false)
+      setShowClearConfirm(false)
+    } catch {
+      setShowClearConfirm(false)
+    } finally {
+      setClearing(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
@@ -99,7 +119,8 @@ export default function CompanionChat({ dict, locale }: Props) {
     )
   }
 
-  if (messages.length === 0) {
+  // Empty state — user hasn't started a conversation yet
+  if (messages.length === 0 && !started) {
     return (
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28">
         <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
@@ -108,14 +129,62 @@ export default function CompanionChat({ dict, locale }: Props) {
           </div>
           <h2 className="text-xl font-bold text-ink">{dict.companionChat.emptyTitle}</h2>
           <p className="text-sm text-ink-2 leading-relaxed">{dict.companionChat.emptyDesc}</p>
+          <button
+            type="button"
+            onClick={() => setStarted(true)}
+            className="mt-2 w-full py-3 px-5 rounded-2xl bg-brand text-elevated text-sm font-bold transition-opacity active:opacity-80"
+          >
+            {dict.companionChat.startChat}
+          </button>
         </div>
       </div>
     )
   }
 
+  // Active chat — started or has messages
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      {/* Clear memory row — only visible when there are messages */}
+      {messages.length > 0 && (
+        <div className="px-4 pt-2 pb-1 flex justify-end items-center gap-2 shrink-0">
+          {showClearConfirm ? (
+            <>
+              <span className="text-xs text-ink-3">{dict.companionChat.clearMemoryConfirmTitle}</span>
+              <button
+                type="button"
+                onClick={handleClear}
+                disabled={clearing}
+                className="text-xs text-error font-semibold disabled:opacity-50"
+              >
+                {clearing ? '...' : dict.companionChat.clearMemoryConfirm}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                className="text-xs text-ink-3"
+              >
+                {dict.companionChat.clearMemoryCancel}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowClearConfirm(true)}
+              className="text-xs text-ink-3 hover:text-error transition-colors py-1"
+            >
+              {dict.companionChat.clearMemory}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+        {messages.length === 0 && started && (
+          <div className="text-center py-6">
+            <p className="text-sm text-ink-3">{dict.companionChat.emptyDesc}</p>
+          </div>
+        )}
         {messages.map((msg) => (
           <ChatBubble
             key={msg.message_id}
@@ -136,6 +205,7 @@ export default function CompanionChat({ dict, locale }: Props) {
         )}
         <div ref={bottomRef} />
       </div>
+
       <ChatComposer dict={dict} onSend={handleSend} />
     </div>
   )
