@@ -1,0 +1,31 @@
+# Diet Coach Agent backend dependencies
+# Generated from backend/pyproject.toml and current backend imports.
+
+# Web framework / ASGI server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+
+# Database / migrations
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# Config / validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# Auth / security
+PyJWT>=2.8.0
+passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.1,<5.0.0
+
+# File upload / multipart form-data
+python-multipart>=0.0.9
+
+# HTTP client + SOCKS5 proxy support for OpenAI/OpenClaw providers
+httpx[socks]>=0.27.0
+socksio>=1.0.0
+
+# Tests
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
