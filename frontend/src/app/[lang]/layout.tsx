@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { isValidLocale, getDictionary, type Locale } from '@/lib/i18n'
+import DirectionSync from '@/components/layout/DirectionSync'
 
 type Props = {
   children: React.ReactNode
@@ -35,5 +36,10 @@ export default async function LangLayout({ children, params }: Props) {
     notFound()
   }
 
-  return <>{children}</>
+  return (
+    <>
+      <DirectionSync locale={lang as Locale} />
+      {children}
+    </>
+  )
 }
