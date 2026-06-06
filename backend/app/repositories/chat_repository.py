@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.chat import ChatMessage, ChatSession
@@ -64,11 +64,15 @@ def get_all_messages(db: Session, session_id: str) -> list[ChatMessage]:
 
 
 def clear_companion_session(db: Session, user_id: str) -> None:
-    """Delete all companion chat sessions for a user (messages cascade-delete)."""
-    stmt = select(ChatSession).where(
-        ChatSession.user_id == user_id, ChatSession.session_type == "companion"
-    )
-    sessions = db.execute(stmt).scalars().all()
-    for session in sessions:
-        db.delete(session)
+    """Delete all companion chat sessions for a user (messages deleted first to avoid lazy-raise)."""
+    session_ids = db.execute(
+        select(ChatSession.id).where(
+            ChatSession.user_id == user_id,
+            ChatSession.session_type == "companion",
+        )
+    ).scalars().all()
+
+    if session_ids:
+        db.execute(delete(ChatMessage).where(ChatMessage.session_id.in_(session_ids)))
+        db.execute(delete(ChatSession).where(ChatSession.id.in_(session_ids)))
     db.flush()

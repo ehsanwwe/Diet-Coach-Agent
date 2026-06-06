@@ -7,7 +7,7 @@ TASK:<type> marker the MockAIProvider reads to pick the right response.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.services.nutrition_memory_service import NutritionMemoryContext
 from app.services.mock_ai_provider import (
@@ -20,7 +20,6 @@ from app.services.mock_ai_provider import (
 
 _SYSTEM_BASE = """\
 شما DietCoach هستید، یک متخصص تغذیه حرفه‌ای و دلسوز که به زبان فارسی پاسخ می‌دهد.
-
 محدودیت‌های ایمنی (اجباری):
 - هرگز رژیم‌های بسیار کم‌کالری (کمتر از ۱۲۰۰ کالری برای زنان / ۱۵۰۰ برای مردان) توصیه نکنید.
 - هرگز دارو تجویز نکنید یا درمان پزشکی توصیه نکنید.
@@ -38,17 +37,34 @@ _SYSTEM_BASE = """\
 """
 
 
+# Extra instructions injected into the system prompt for companion chat only.
+_SYSTEM_CHAT_RULES = """\
+
+دستورالعمل‌های گفتگو (اجباری — فقط برای این task):
+- به زبانی که کاربر نوشته پاسخ بده. اگر فارسی نوشت، فارسی پاسخ بده.
+- پاسخ کوتاه و طبیعی باشد؛ از جملات پرکننده خودداری کن.
+- حداکثر یک سوال دنباله‌ای بپرس.
+- اگر کاربر فقط سلام یا احوال‌پرسی کرده: یک جمله خوش‌آمد کوتاه بنویس و ۲ تا ۴ موضوع تغذیه‌ای پیشنهاد بده.
+- هرگز این عبارات را ننویس: «دسترسی به اطلاعات مربی»، «مربی تغذیه‌ات»، «اینقدر از اپ استفاده»، «خوشحالیم که اومدی/برگشتی».
+- اطلاعات داخلی سیستم (مدل AI، provider، حافظه سیستم) را هرگز ذکر نکن.
+- از جملات انگیزشی کلیشه‌ای خودداری کن.
+- درباره وزن یا ظاهر قضاوت نکن.
+- دارو تجویز نکن.\
+"""
+
+
 @dataclass
 class PromptData:
     task_type: str
     system: str
     user: str
+    history_messages: list[dict[str, str]] = field(default_factory=list)
 
     def to_messages(self) -> list[dict[str, str]]:
-        return [
-            {"role": "system", "content": self.system},
-            {"role": "user", "content": self.user},
-        ]
+        msgs: list[dict[str, str]] = [{"role": "system", "content": self.system}]
+        msgs.extend(self.history_messages)
+        msgs.append({"role": "user", "content": self.user})
+        return msgs
 
 
 def _safety_note(ctx: NutritionMemoryContext) -> str:
@@ -144,22 +160,33 @@ def for_chat_message(
     user_message: str,
     history: list[dict[str, str]],
 ) -> PromptData:
-    system = f"{_SYSTEM_BASE}\n{TASK_CHAT}{_safety_note(ctx)}"
-    user_ctx = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
-    history_str = ""
-    if history:
-        lines = [f"  [{m['role']}]: {m['content']}" for m in history[-6:]]
-        history_str = "\nتاریخچه اخیر گفتگو:\n" + "\n".join(lines) + "\n"
+    user_ctx_json = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
+    system = (
+        f"{_SYSTEM_BASE}\n"
+        f"{TASK_CHAT}"
+        f"{_SYSTEM_CHAT_RULES}\n"
+        f"پروفایل کاربر (پس‌زمینه — نیازی به ذکر صریح آن نیست): {user_ctx_json}"
+        f"{_safety_note(ctx)}"
+    )
+
+    # Recent history as proper role-separated turns (clean, no embedded text)
+    clean_history: list[dict[str, str]] = [
+        {"role": m["role"], "content": m["content"]}
+        for m in history[-6:]
+        if m.get("role") in ("user", "assistant") and m.get("content")
+    ]
+
     user = (
-        f"مشخصات کاربر: {user_ctx}\n"
-        f"{history_str}\n"
-        f"پیام کاربر: {user_message}\n\n"
-        "به این پیام به عنوان مربی تغذیه پاسخ بده. "
-        "پاسخت باید صمیمی، حرفه‌ای و کوتاه باشد (۱ تا ۳ پاراگراف). "
-        "دقیقاً به این فرمت JSON پاسخ بده:\n"
+        f"{user_message}\n\n"
+        "پاسخ مختصر و طبیعی بده. دقیقاً به این فرمت JSON:\n"
         '{"reply": "..."}'
     )
-    return PromptData(task_type="chat_message", system=system, user=user)
+    return PromptData(
+        task_type="chat_message",
+        system=system,
+        user=user,
+        history_messages=clean_history,
+    )
 
 
 def for_adapt_plan(

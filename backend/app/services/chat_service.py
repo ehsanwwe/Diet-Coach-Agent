@@ -7,6 +7,7 @@ Stores messages in ChatSession / ChatMessage via chat_repository.
 from __future__ import annotations
 
 import logging
+import re
 
 from sqlalchemy.orm import Session
 
@@ -18,12 +19,50 @@ from app.services.nutrition_agent_service import NutritionAgentService
 
 logger = logging.getLogger(__name__)
 
+# Greeting detection: short pure-greeting messages that don't need AI reasoning.
+_GREETING_RE = re.compile(
+    r"^[\s]*"
+    r"(?:سلام|درود|خوبی[؟?]?|چطوری[؟?]?|چطورید[؟?]?|خوب هستی[؟?]?|"
+    r"صبح بخیر|عصر بخیر|شب بخیر|وقت بخیر|"
+    r"hi|hello|hey|good\s+morning|good\s+evening|good\s+night|howdy)"
+    r"[\s!؟?🌿🌱✨🍃،.]*$",
+    re.IGNORECASE | re.UNICODE,
+)
+
+_GREETING_REPLY = (
+    "سلام، خوش اومدی 🌿\n"
+    "امروز می‌تونم در کدوم موضوع کمکت کنم؟\n"
+    "• برنامه غذایی یا تنظیم وعده‌ها\n"
+    "• انتخاب غذا یا هوس خوردنی الان\n"
+    "• پیشرفت هدف و وضعیت بدن��\n"
+    "• سوال درباره مواد مغذی یا ترکیب غذا"
+)
+
+
+def _is_simple_greeting(message: str) -> bool:
+    return bool(_GREETING_RE.match(message.strip()))
+
 
 def send_message(db: Session, user: User, message: str) -> ChatMessageResponse:
     session = chat_repository.get_or_create_companion_session(db, user.id)
 
     # Store user message
     user_msg = chat_repository.create_message(db, session.id, "user", message)
+
+    # Greeting bypass: return deterministic response without an AI call
+    if _is_simple_greeting(message):
+        assistant_msg = chat_repository.create_message(
+            db, session.id, "assistant", _GREETING_REPLY
+        )
+        db.commit()
+        return ChatMessageResponse(
+            message_id=assistant_msg.id,
+            role="assistant",
+            content=_GREETING_REPLY,
+            provider="local",
+            is_mock=True,
+            created_at=assistant_msg.created_at,
+        )
 
     # Build history for context (last 10 messages before this one)
     recent = chat_repository.get_recent_messages(db, session.id, limit=11)
