@@ -19,8 +19,8 @@ dependencies = [
     "PyJWT>=2.8.0",
     # File upload (for audio)
     "python-multipart>=0.0.9",
-    # HTTP client (for OpenClaw AI provider)
-    "httpx>=0.27.0",
+    # HTTP client (for OpenAI provider); [socks] adds socksio for SOCKS5 proxy support
+    "httpx[socks]>=0.27.0",
     # Password hashing (future auth hardening)
     "passlib[bcrypt]>=1.7.4",
 ]

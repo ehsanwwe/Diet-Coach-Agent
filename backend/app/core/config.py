@@ -56,12 +56,32 @@ class Settings(BaseSettings):
     OTP_EXPIRE_MINUTES: int = 5
     SMS_PROVIDER: str = "mock"
 
-    # AI provider selection (Phase 7)
-    # Values: "mock" (default) | "openclaw"
-    # App falls back to mock if "openclaw" is selected but OPENCLAW_BASE_URL is empty.
+    # AI provider selection.
+    # Values: "mock" (default, no API key needed) | "openai" (production)
+    # "openclaw" is deprecated — falls back to mock with a warning.
     AI_PROVIDER: str = "mock"
 
-    # OpenClaw AI provider (all 10 vars: OC-02, INFRA-03)
+    # ── OpenAI provider ──────────────────────────────────────────────────────
+    # Required only when AI_PROVIDER=openai.
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-5.4-nano"
+    OPENAI_TIMEOUT_SECONDS: int = 120
+    OPENAI_MAX_RETRIES: int = 2
+    OPENAI_TEMPERATURE: float = 0.3
+    OPENAI_MAX_TOKENS: int = 2048
+    OPENAI_CONTEXT_MAX_MESSAGES: int = 24
+
+    # SOCKS5 proxy enforcement.
+    # When OPENAI_REQUIRE_PROXY=true (default), OpenAI requests are blocked unless
+    # OPENAI_PROXY_URL is set to a valid socks5:// or socks5h:// URL.
+    OPENAI_REQUIRE_PROXY: bool = True
+    OPENAI_PROXY_URL: str = ""
+
+    # ── OpenClaw provider (DEPRECATED — no longer active) ────────────────────
+    # These vars are kept so existing .env files with OPENCLAW_* do not cause
+    # startup errors. No production code reads them; AI_PROVIDER=openclaw now
+    # falls back to mock with a deprecation warning.
     OPENCLAW_BASE_URL: str = ""
     OPENCLAW_API_KEY: str = ""
     OPENCLAW_MODEL: str = "gpt-4o"

@@ -74,7 +74,7 @@ class NutritionAgentService:
     def __init__(self) -> None:
         self._provider: AIProvider = get_ai_provider()
         self._ctx_manager = ConversationContextManager(
-            max_messages=settings.OPENCLAW_CONTEXT_MAX_MESSAGES
+            max_messages=settings.OPENAI_CONTEXT_MAX_MESSAGES
         )
 
     def _call(
@@ -87,8 +87,8 @@ class NutritionAgentService:
         try:
             result = self._provider.generate_text(
                 messages,
-                temperature=settings.OPENCLAW_TEMPERATURE,
-                max_tokens=settings.OPENCLAW_MAX_TOKENS,
+                temperature=settings.OPENAI_TEMPERATURE,
+                max_tokens=settings.OPENAI_MAX_TOKENS,
             )
         except AIProviderError as exc:
             logger.warning("AI provider failed (%s), using mock fallback: %s", task_type, exc)

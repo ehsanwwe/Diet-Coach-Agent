@@ -1,13 +1,17 @@
 """
 AIProvider abstract base class, result type, and provider factory.
 
-All providers (mock, openclaw) implement the AIProvider interface.
+Supported providers: "mock" (default), "openai".
+"openclaw" is deprecated and routes to mock with a warning.
 """
 from __future__ import annotations
 
+import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,15 +40,33 @@ class AIProviderError(Exception):
 
 
 def get_ai_provider() -> AIProvider:
-    """Return the configured provider, falling back to mock if unconfigured or unavailable."""
+    """Return the configured AI provider, falling back to mock on misconfiguration."""
     from app.core.config import settings
     from app.services.mock_ai_provider import MockAIProvider
 
     provider_name = settings.AI_PROVIDER.strip().lower()
-    if provider_name == "openclaw" and settings.OPENCLAW_BASE_URL.strip():
-        try:
-            from app.services.openclaw_provider import OpenClawProvider
-            return OpenClawProvider(settings)
-        except Exception:
+
+    if provider_name == "openai":
+        if not settings.OPENAI_API_KEY.strip():
+            logger.error(
+                "AI_PROVIDER=openai but OPENAI_API_KEY is not set — falling back to mock"
+            )
             return MockAIProvider()
+        try:
+            from app.services.openai_provider import OpenAIProvider
+            return OpenAIProvider(settings)
+        except AIProviderError as exc:
+            logger.error("OpenAI provider configuration error: %s — falling back to mock", exc)
+            return MockAIProvider()
+        except Exception as exc:
+            logger.error("OpenAI provider init failed: %s — falling back to mock", exc)
+            return MockAIProvider()
+
+    if provider_name == "openclaw":
+        logger.warning(
+            "AI_PROVIDER=openclaw is deprecated and no longer active. "
+            "Use AI_PROVIDER=openai or AI_PROVIDER=mock. Falling back to mock."
+        )
+        return MockAIProvider()
+
     return MockAIProvider()

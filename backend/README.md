@@ -17,7 +17,8 @@ cp .env.example .env
 
 Edit `.env` and set:
 - `SECRET_KEY` — generate with: `python -c "import secrets; print(secrets.token_hex(32))"`
-- `OPENCLAW_BASE_URL` — leave empty to use MockAIProvider (no AI key required for development)
+- `AI_PROVIDER` — `mock` (default, no API key needed) or `openai` (production)
+- For `AI_PROVIDER=openai`: set `OPENAI_API_KEY` and `OPENAI_PROXY_URL` (SOCKS5 proxy required)
 
 ### 2. Install dependencies
 
@@ -74,9 +75,20 @@ See `backend/.env.example` for all variables with descriptions.
 
 Key variables:
 - `SECRET_KEY` — **Required.** App refuses to start without it.
-- `OPENCLAW_BASE_URL` — Optional. Leave empty for MockAIProvider.
+- `AI_PROVIDER` — `mock` (default) or `openai`. Mock needs no API key.
+- `OPENAI_API_KEY` — Required only when `AI_PROVIDER=openai`.
+- `OPENAI_PROXY_URL` — **Required** when `AI_PROVIDER=openai` (SOCKS5 only, e.g. `socks5://127.0.0.1:1080`). Without a valid proxy, the backend will not send requests to OpenAI.
+- `OPENAI_MODEL` — Defaults to `gpt-5.4-nano` (low cost/latency, good for nutrition coaching).
 - `DATABASE_URL` — Defaults to `sqlite+pysqlite:///./app.db`
 - `CORS_ORIGINS` — Comma-separated frontend origins
+
+### AI provider modes
+
+| `AI_PROVIDER` | Behaviour |
+|---------------|-----------|
+| `mock` | Deterministic Persian responses. No API key or network required. Safe for offline/dev. |
+| `openai` | Real AI via OpenAI API. Requires `OPENAI_API_KEY` **and** a SOCKS5 proxy (`OPENAI_PROXY_URL`). Without the proxy the backend falls back to mock and logs an error. |
+| `openclaw` | **Deprecated.** Falls back to mock with a warning. |
 
 ## Project Structure
 
