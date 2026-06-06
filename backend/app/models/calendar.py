@@ -65,7 +65,10 @@ class NutritionPlanCalendar(Base):
         "User", back_populates="nutrition_calendars", lazy="raise"
     )
     days: Mapped[list["NutritionPlanDay"]] = relationship(
-        "NutritionPlanDay", back_populates="calendar", lazy="raise"
+        "NutritionPlanDay",
+        back_populates="calendar",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
 
     def __repr__(self) -> str:
@@ -118,7 +121,10 @@ class NutritionPlanDay(Base):
         "User", back_populates="plan_days", lazy="raise"
     )
     meals: Mapped[list["NutritionPlanDayMeal"]] = relationship(
-        "NutritionPlanDayMeal", back_populates="plan_day", lazy="raise"
+        "NutritionPlanDayMeal",
+        back_populates="plan_day",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
 
     def __repr__(self) -> str:

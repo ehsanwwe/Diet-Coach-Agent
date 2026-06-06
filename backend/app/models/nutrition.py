@@ -144,7 +144,10 @@ class NutritionPlan(Base):
         "User", back_populates="nutrition_plans", lazy="raise"
     )
     meals: Mapped[list["NutritionPlanMeal"]] = relationship(
-        "NutritionPlanMeal", back_populates="plan", lazy="raise"
+        "NutritionPlanMeal",
+        back_populates="plan",
+        cascade="all, delete-orphan",
+        lazy="raise",
     )
 
     def __repr__(self) -> str:

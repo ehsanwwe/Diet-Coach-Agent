@@ -44,7 +44,7 @@ You are the Diet Coach Agent — a trusted nutrition companion.
 You have access to backend tools to help the user.
 
 TOOL USAGE RULES — Always use tools when the user:
-- Asks about food calories/nutrition → analyze_meal (should_log=false for hypothetical)
+- Asks about food calories/nutrition → analyze_meal (should_log=false — NEVER log hypothetical questions)
 - Reports eating something → analyze_meal (should_log=true)
 - Wants plan updated/adjusted → update_tomorrow_plan and/or adapt_plan
 - Asks what to eat → what_to_eat_now
@@ -52,6 +52,15 @@ TOOL USAGE RULES — Always use tools when the user:
 - Asks about their schedule/plan → get_calendar
 - Asks about progress → get_progress_summary
 - Logs daily check-in (weight, sleep, activity) → log_check_in
+
+CRITICAL RULES FOR PLAN UPDATE TOOLS:
+- update_tomorrow_plan → ONLY when user explicitly asks to change tomorrow's plan
+  ("برنامه فردامو تغییر بده", "make tomorrow lighter", etc.)
+  NEVER call update_tomorrow_plan just because a user asks a calorie question.
+- generate_week_plan → ONLY when user explicitly asks to generate a new week plan.
+- A question like "how many calories does X have?" or "X چقدر کالری داره؟" is a
+  HYPOTHETICAL CALORIE QUESTION — call analyze_meal(should_log=false) ONLY.
+  Do NOT call update_tomorrow_plan or generate_week_plan for calorie questions.
 
 RESPONSE RULES:
 - Summarize tool results naturally — never show raw JSON or internal details
@@ -101,6 +110,9 @@ def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageR
 def process_user_message(db: Session, user: User, message: str) -> ChatMessageResponse:
     session = chat_repository.get_or_create_companion_session(db, user.id)
     user_msg = chat_repository.create_message(db, session.id, "user", message)
+    # Commit user message + session before running tools so a tool-level DB rollback
+    # cannot erase the user's message from chat history.
+    db.commit()
 
     if _is_greeting(message):
         am = chat_repository.create_message(db, session.id, "assistant", _GREETING_REPLY)
@@ -164,12 +176,25 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                         tr = tool.execute(exec_ctx, tc.arguments)
                         if tr.success and tr.user_visible_summary:
                             actions_summary.append(tr.user_visible_summary)
+                        if not tr.success:
+                            # Tool caught a DB error internally; rollback so the session
+                            # is usable for saving the assistant reply afterward.
+                            try:
+                                db.rollback()
+                                session = chat_repository.get_or_create_companion_session(db, user.id)
+                            except Exception as rb_exc:
+                                logger.warning("Post-tool rollback failed: %s", rb_exc)
                         tool_content = json.dumps({
                             "success": tr.success, "summary": tr.user_visible_summary,
                             "data": tr.data, "error": tr.error,
                         }, ensure_ascii=False)
                     except Exception as exc:
-                        logger.warning("Tool %s error: %s", tc.name, exc)
+                        logger.warning("Tool %s raised: %s", tc.name, exc)
+                        try:
+                            db.rollback()
+                            session = chat_repository.get_or_create_companion_session(db, user.id)
+                        except Exception as rb_exc:
+                            logger.warning("Post-tool rollback failed: %s", rb_exc)
                         tool_content = json.dumps({"success": False, "error": str(exc)})
                 messages.append({"role": "tool", "tool_call_id": tc.id, "content": tool_content})
 

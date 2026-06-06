@@ -1,4 +1,5 @@
 import type { ChatHistoryItem } from '@/types/chat'
+import MarkdownMessage from './MarkdownMessage'
 
 interface Props {
   message: ChatHistoryItem
@@ -22,7 +23,11 @@ export default function ChatBubble({ message, youLabel, coachLabel, actions }: P
             : 'bg-elevated text-ink rounded-es-sm shadow-sm',
         ].join(' ')}
       >
-        {message.content}
+        {isUser ? (
+          message.content
+        ) : (
+          <MarkdownMessage content={message.content} />
+        )}
       </div>
       {!isUser && actions && actions.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2 max-w-[80%]">
