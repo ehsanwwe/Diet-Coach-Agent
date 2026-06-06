@@ -34,5 +34,12 @@ class AgentTool(ABC):
     input_schema: dict[str, Any] = {}
     requires_confirmation: bool = False
 
+    def needs_confirmation(self, arguments: dict[str, Any]) -> bool:
+        """Return True if this specific call requires user confirmation before executing.
+
+        Override in subclasses to make the check argument-dependent (e.g. force=true).
+        """
+        return self.requires_confirmation
+
     @abstractmethod
     def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult: ...

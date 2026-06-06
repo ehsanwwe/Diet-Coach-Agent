@@ -154,7 +154,7 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                 tool = _TOOL_REGISTRY.get(tc.name)
                 if tool is None:
                     tool_content = json.dumps({"error": f"Unknown tool: {tc.name}"})
-                elif tool.requires_confirmation:
+                elif tool.needs_confirmation(tc.arguments):
                     tool_content = json.dumps({
                         "success": False, "requires_confirmation": True,
                         "message": "این عمل نیاز به تأیید کاربر دارد. از دکمه مربوطه در رابط کاربری استفاده کنید."

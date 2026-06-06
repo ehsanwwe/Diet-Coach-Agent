@@ -144,7 +144,9 @@ class GenerateWeekPlanTool(AgentTool):
     name = "generate_week_plan"
     description = (
         "Generate a 7-day meal plan. Use when user asks to create a plan for next week or future days. "
-        "Does not overwrite existing days unless force=true."
+        "Skips days that already have a plan (safe append). "
+        "force=true overwrites existing plan days — this is a destructive operation that REQUIRES "
+        "explicit user confirmation via the UI; do NOT call with force=true from chat."
     )
     input_schema = {
         "type": "object",
@@ -152,19 +154,39 @@ class GenerateWeekPlanTool(AgentTool):
             "force": {
                 "type": "boolean",
                 "default": False,
-                "description": "If true, overwrite existing days",
+                "description": (
+                    "Overwrite existing plan days. REQUIRES user confirmation — "
+                    "never set true unless user explicitly confirmed replacement."
+                ),
             },
         },
         "required": [],
     }
 
+    def needs_confirmation(self, arguments: dict[str, Any]) -> bool:
+        return bool(arguments.get("force"))
+
     def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
         from app.services import calendar_service
 
         force: bool = arguments.get("force", False)
+
+        # Defense-in-depth: should never reach here with force=True because the orchestrator
+        # intercepts needs_confirmation=True before calling execute(). Reject anyway.
+        if force:
+            return AgentToolResult(
+                tool_name=self.name,
+                success=False,
+                user_visible_summary=(
+                    "بازنویسی برنامه موجود نیاز به تأیید کاربر دارد. "
+                    "از دکمه مربوطه در رابط کاربری استفاده کنید."
+                ),
+                error="confirmation_required",
+            )
+
         try:
             result = calendar_service.generate_week(
-                context.db, context.user, context.locale, start_date=None, force=force
+                context.db, context.user, context.locale, start_date=None, force=False
             )
             summary = f"برنامه {result.generated_days} روز آینده ساخته شد."
             if result.skipped_days:
