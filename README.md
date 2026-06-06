@@ -17,8 +17,6 @@
 
 ## Overview
 
-Repository: `https://github.com/ehsanwwe/Diet-Coach-Agent`
-
 **Diet Coach Agent** is a production-oriented multilingual nutrition and wellness companion designed to help users build healthier eating habits, complete a structured nutrition onboarding flow, record personal health context, and receive safe, adaptive guidance through a modern mobile-first experience.
 
 The project is built with a clear separation between backend and frontend, migration-managed data models, authenticated user flows, multilingual UI, RTL/LTR support, and a scalable architecture prepared for future nutrition intelligence, voice input, meal analysis, progress tracking, and professional review workflows.
