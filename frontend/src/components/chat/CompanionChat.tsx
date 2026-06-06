@@ -183,7 +183,7 @@ export default function CompanionChat({ dict, locale }: Props) {
       )}
 
       {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && started && (
           <div className="text-center py-6">
             <p className="text-sm text-ink-3">{dict.companionChat.emptyDesc}</p>

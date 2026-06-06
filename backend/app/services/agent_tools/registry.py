@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 class AnalyzeMealTool(AgentTool):
     name = "analyze_meal"
     description = (
-        "Analyze a food or meal. Use for calorie/nutrition questions OR when user reports eating. "
-        "Set should_log=true when user reports eating something, should_log=false for hypothetical "
-        "questions like 'how many calories does onion have?'."
+        "Analyze a food or meal for nutrition info. CALL THIS for every calorie question and every food event.\n"
+        "should_log=false: user is asking about a food hypothetically (calorie lookup, nutrition question)\n"
+        "should_log=true: user actually ate/drank something and is reporting it (log the event)\n"
+        "Examples: 'لوبیا پلو چقدر کالری داره' → should_log=false; "
+        "'امشب نون خامه‌ای خوردم' → should_log=true"
     )
     input_schema = {
         "type": "object",
@@ -143,10 +145,12 @@ class WhatToEatNowTool(AgentTool):
 class GenerateWeekPlanTool(AgentTool):
     name = "generate_week_plan"
     description = (
-        "Generate a 7-day meal plan. Use when user asks to create a plan for next week or future days. "
+        "Generate a 7-day meal plan. Call ONLY when user EXPLICITLY asks for a new week plan or future days.\n"
+        "Explicit triggers: 'برنامه هفته بعد رو بساز', 'یه برنامه ۷ روزه بده', "
+        "'build a week plan', 'create a meal plan'\n"
         "Skips days that already have a plan (safe append). "
-        "force=true overwrites existing plan days — this is a destructive operation that REQUIRES "
-        "explicit user confirmation via the UI; do NOT call with force=true from chat."
+        "force=true overwrites existing plan days — REQUIRES explicit user confirmation via the UI; "
+        "do NOT call with force=true from chat."
     )
     input_schema = {
         "type": "object",
@@ -210,8 +214,11 @@ class GenerateWeekPlanTool(AgentTool):
 class GetCalendarTool(AgentTool):
     name = "get_calendar"
     description = (
-        "Retrieve the user's meal plan calendar. Use when user asks about their planned meals, "
-        "schedule, or what to eat this week."
+        "Get the user's meal plan calendar. Use when:\n"
+        "  - User reports a food event (compare against today's planned meals)\n"
+        "  - User asks about their plan for today/tomorrow/this week\n"
+        "  - Before calling update_tomorrow_plan\n"
+        "  - User asks what to eat according to their schedule"
     )
     input_schema = {
         "type": "object",
@@ -270,9 +277,13 @@ class GetCalendarTool(AgentTool):
 class UpdateTomorrowPlanTool(AgentTool):
     name = "update_tomorrow_plan"
     description = (
-        "Regenerate tomorrow's meal plan. Use when user ate off-plan and wants tomorrow adjusted, "
-        "or asks to make tomorrow lighter. NEVER generate extreme restriction or punishment. "
-        "intensity='light' means lighter portions and more fiber/hydration, NOT starvation."
+        "Regenerate tomorrow's meal plan. Call ONLY when user EXPLICITLY asks to adjust, lighten, "
+        "or compensate tomorrow's plan.\n"
+        "Explicit triggers: 'برنامه فردامو سبک‌تر کن', 'make tomorrow lighter', "
+        "'فردامو تنظیم کن', 'برنامه فردا رو عوض کن'\n"
+        "NEVER call this just because user ate something — only when they explicitly request it.\n"
+        "NEVER recommend starvation. Minimum 1500 kcal. "
+        "intensity='light' = smaller portions + more vegetables/fiber, NOT starvation."
     )
     input_schema = {
         "type": "object",

@@ -8,19 +8,26 @@ interface Props {
   actions?: string[]
 }
 
+function trimChip(text: string): string {
+  return text.length > 32 ? text.slice(0, 30) + '…' : text
+}
+
 export default function ChatBubble({ message, youLabel, coachLabel, actions }: Props) {
   const isUser = message.role === 'user'
+
   return (
-    <div className={`flex flex-col gap-1 ${isUser ? 'items-end' : 'items-start'}`}>
-      <span className="text-xs text-ink-3 px-1">
-        {isUser ? youLabel : coachLabel}
-      </span>
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+      {/* Coach label — assistant only, very subtle */}
+      {!isUser && (
+        <span className="text-[10px] text-ink-3 px-1.5 mb-0.5">{coachLabel}</span>
+      )}
+
       <div
         className={[
-          'max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed',
+          'px-3.5 py-2.5 text-sm leading-relaxed break-words',
           isUser
-            ? 'bg-brand text-elevated rounded-ee-sm'
-            : 'bg-elevated text-ink rounded-es-sm shadow-sm',
+            ? 'max-w-[82%] bg-brand text-elevated rounded-2xl rounded-ee-sm'
+            : 'max-w-[90%] bg-elevated text-ink rounded-2xl rounded-es-sm shadow-sm border border-black/[0.06]',
         ].join(' ')}
       >
         {isUser ? (
@@ -29,11 +36,16 @@ export default function ChatBubble({ message, youLabel, coachLabel, actions }: P
           <MarkdownMessage content={message.content} />
         )}
       </div>
+
+      {/* Action chips — assistant only */}
       {!isUser && actions && actions.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-2 max-w-[80%]">
+        <div className="flex flex-wrap gap-1 mt-1.5 px-0.5">
           {actions.map((a, i) => (
-            <span key={i} className="text-xs bg-brand-muted text-ink-2 px-2.5 py-1 rounded-full">
-              {a}
+            <span
+              key={i}
+              className="text-[10px] bg-brand-muted text-ink-3 px-2 py-0.5 rounded-full leading-snug"
+            >
+              {trimChip(a)}
             </span>
           ))}
         </div>
