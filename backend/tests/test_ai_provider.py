@@ -25,6 +25,8 @@ def _fake_settings(**overrides) -> MagicMock:
     s.OPENAI_MAX_TOKENS = 512
     s.OPENAI_REQUIRE_PROXY = True
     s.OPENAI_PROXY_URL = ""
+    s.OPENAI_PROXY_USER = ""
+    s.OPENAI_PROXY_PASS = ""
     for k, v in overrides.items():
         setattr(s, k, v)
     return s
@@ -190,3 +192,114 @@ class TestOpenAIProviderInit:
 
         assert captured_kwargs, "httpx.Client was never constructed"
         assert captured_kwargs[0].get("proxy") == "socks5://127.0.0.1:1080"
+
+
+# ---------------------------------------------------------------------------
+# Credential injection tests
+# ---------------------------------------------------------------------------
+
+class TestCredentialInjection:
+    """Tests for _inject_credentials — URL construction and encoding."""
+
+    def test_credentials_injected_into_proxy_url(self):
+        from app.services.openai_provider import _inject_credentials
+
+        auth_url, _ = _inject_credentials("socks5://host:1080", "alice", "secret")
+        assert auth_url == "socks5://alice:secret@host:1080"
+
+    def test_special_chars_in_password_are_encoded(self):
+        """Password containing / must be percent-encoded so it is not parsed as a path."""
+        from app.services.openai_provider import _inject_credentials
+
+        auth_url, _ = _inject_credentials("socks5://host:1080", "ehsan", "Pass/word9")
+        assert "Pass%2Fword9" in auth_url
+        assert "Pass/word9" not in auth_url
+
+    def test_at_sign_in_password_is_encoded(self):
+        from app.services.openai_provider import _inject_credentials
+
+        auth_url, _ = _inject_credentials("socks5://host:1080", "user", "p@ss")
+        assert "p%40ss" in auth_url
+
+    def test_safe_url_redacts_password(self):
+        from app.services.openai_provider import _inject_credentials
+
+        _, safe_url = _inject_credentials("socks5://host:1080", "testuser", "S3cr3t/Pass")
+        assert "***" in safe_url
+        assert "S3cr3t" not in safe_url
+
+    def test_no_credentials_returns_url_unchanged(self):
+        from app.services.openai_provider import _inject_credentials
+
+        auth_url, safe_url = _inject_credentials("socks5://host:1080", "", "")
+        assert auth_url == "socks5://host:1080"
+        assert safe_url == "socks5://host:1080"
+
+    def test_partial_credentials_skipped(self):
+        """Only user set, no password — credentials should not be injected."""
+        from app.services.openai_provider import _inject_credentials
+
+        auth_url, _ = _inject_credentials("socks5://host:1080", "user", "")
+        assert "@" not in auth_url
+
+    def test_provider_stores_authenticated_proxy_url(self):
+        from app.services.openai_provider import OpenAIProvider
+
+        s = _fake_settings(
+            AI_PROVIDER="openai",
+            OPENAI_API_KEY="sk-test",
+            OPENAI_REQUIRE_PROXY=True,
+            OPENAI_PROXY_URL="socks5://proxy.example.com:10810",
+            OPENAI_PROXY_USER="testuser",
+            OPENAI_PROXY_PASS="Secret/Pass9",
+        )
+        provider = OpenAIProvider(s)
+        assert provider._proxy_url is not None
+        assert "testuser" in provider._proxy_url
+        assert "Secret%2FPass9" in provider._proxy_url
+        assert "proxy.example.com:10810" in provider._proxy_url
+
+    def test_provider_safe_url_does_not_contain_password(self):
+        from app.services.openai_provider import OpenAIProvider
+
+        s = _fake_settings(
+            AI_PROVIDER="openai",
+            OPENAI_API_KEY="sk-test",
+            OPENAI_REQUIRE_PROXY=True,
+            OPENAI_PROXY_URL="socks5://proxy.example.com:10810",
+            OPENAI_PROXY_USER="testuser",
+            OPENAI_PROXY_PASS="Secret/Pass9",
+        )
+        provider = OpenAIProvider(s)
+        assert "Secret" not in provider._proxy_safe_url
+        assert "***" in provider._proxy_safe_url
+
+    def test_httpx_client_receives_authenticated_proxy_url(self, monkeypatch):
+        """Verify the authenticated URL (with encoded credentials) reaches httpx.Client."""
+        import httpx
+        from app.services.openai_provider import OpenAIProvider
+
+        captured_kwargs: list[dict] = []
+
+        def mock_client_init(self_inner, **kwargs):
+            captured_kwargs.append(dict(kwargs))
+            raise RuntimeError("intercepted")
+
+        monkeypatch.setattr(httpx.Client, "__init__", mock_client_init)
+
+        s = _fake_settings(
+            AI_PROVIDER="openai",
+            OPENAI_API_KEY="sk-test",
+            OPENAI_REQUIRE_PROXY=True,
+            OPENAI_PROXY_URL="socks5://proxy.example.com:10810",
+            OPENAI_PROXY_USER="testuser",
+            OPENAI_PROXY_PASS="Secret/Pass9",
+        )
+        provider = OpenAIProvider(s)
+        with pytest.raises(RuntimeError, match="intercepted"):
+            provider.generate_text([{"role": "user", "content": "ping"}])
+
+        proxy_used = captured_kwargs[0].get("proxy", "")
+        assert "testuser" in proxy_used
+        assert "Secret%2FPass9" in proxy_used
+        assert "Secret/Pass9" not in proxy_used  # raw password must never reach httpx

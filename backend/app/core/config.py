@@ -77,6 +77,11 @@ class Settings(BaseSettings):
     # OPENAI_PROXY_URL is set to a valid socks5:// or socks5h:// URL.
     OPENAI_REQUIRE_PROXY: bool = True
     OPENAI_PROXY_URL: str = ""
+    # Optional SOCKS5 credentials. When both are set, the provider injects them
+    # into the proxy URL as socks5://user:pass@host:port.
+    # Special characters in the password are percent-encoded automatically.
+    OPENAI_PROXY_USER: str = ""
+    OPENAI_PROXY_PASS: str = ""
 
     # ── OpenClaw provider (DEPRECATED — no longer active) ────────────────────
     # These vars are kept so existing .env files with OPENCLAW_* do not cause

@@ -4,11 +4,15 @@ OpenAIProvider: Chat completions via OpenAI API, routed through a SOCKS5 proxy.
 All config from OPENAI_* env vars only. If OPENAI_REQUIRE_PROXY=true and
 OPENAI_PROXY_URL is absent or not a socks5:// / socks5h:// URL, this provider
 raises AIProviderError at construction time — it never attempts a direct call.
+
+SOCKS5 credentials (OPENAI_PROXY_USER / OPENAI_PROXY_PASS) are injected into
+the proxy URL and percent-encoded. The password is never logged.
 """
 from __future__ import annotations
 
 import logging
 from typing import Any
+from urllib.parse import quote, urlsplit, urlunsplit
 
 import httpx
 
@@ -17,6 +21,33 @@ from app.services.ai_provider import AIProvider, AIProviderError, AIProviderResu
 logger = logging.getLogger(__name__)
 
 _RETRYABLE_HTTP_STATUSES = {429, 500, 502, 503, 504}
+
+
+def _inject_credentials(proxy_url: str, user: str, password: str) -> tuple[str, str]:
+    """Return (authenticated_url, safe_url_for_logging).
+
+    Percent-encodes both user and password so special characters (e.g. '/', '@', ':')
+    are transmitted correctly by the SOCKS5 handshake.
+    The safe URL replaces the password with *** for log output.
+    If either credential is empty, the original URL is returned unchanged.
+    """
+    if not (user and password):
+        return proxy_url, proxy_url
+
+    parsed = urlsplit(proxy_url)
+    encoded_user = quote(user, safe="")
+    encoded_pass = quote(password, safe="")
+
+    host = parsed.hostname or ""
+    netloc_auth = f"{encoded_user}:{encoded_pass}@{host}"
+    netloc_safe = f"{encoded_user}:***@{host}"
+    if parsed.port:
+        netloc_auth = f"{netloc_auth}:{parsed.port}"
+        netloc_safe = f"{netloc_safe}:{parsed.port}"
+
+    auth_url = urlunsplit((parsed.scheme, netloc_auth, parsed.path, parsed.query, parsed.fragment))
+    safe_url = urlunsplit((parsed.scheme, netloc_safe, parsed.path, parsed.query, parsed.fragment))
+    return auth_url, safe_url
 
 
 class OpenAIProvider(AIProvider):
@@ -47,7 +78,15 @@ class OpenAIProvider(AIProvider):
                     "Only socks5:// or socks5h:// are accepted."
                 )
 
-        self._proxy_url: str | None = proxy_url if proxy_url else None
+        if proxy_url:
+            user = settings.OPENAI_PROXY_USER.strip()
+            password = settings.OPENAI_PROXY_PASS.strip()
+            auth_url, safe_url = _inject_credentials(proxy_url, user, password)
+            self._proxy_url: str | None = auth_url
+            self._proxy_safe_url: str = safe_url
+        else:
+            self._proxy_url = None
+            self._proxy_safe_url = ""
 
     def generate_text(
         self,
