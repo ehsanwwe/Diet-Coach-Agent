@@ -94,3 +94,58 @@ export interface WhatToEatNowResponse {
   provider: string
   is_mock: boolean
 }
+
+// ─── Calendar types ───────────────────────────────────────────────────────────
+
+export interface CalendarMeal {
+  id: string
+  meal_type: string
+  title: string
+  description: string | null
+  portion_guidance: string | null
+  alternatives: string[]
+  preparation_notes: string | null
+}
+
+export interface PlanDay {
+  id: string
+  plan_date: string
+  day_index: number
+  title: string
+  summary: string | null
+  hydration_goal: string | null
+  notes: string | null
+  warnings: string[]
+  meals: CalendarMeal[]
+}
+
+export interface CoverageInfo {
+  planned_days_count: number
+  missing_days_count: number
+  next_unplanned_date: string | null
+}
+
+export interface RenewalStatus {
+  should_prompt_next_week: boolean
+  prompt_level: 'none' | 'info' | 'warning'
+  current_week_day_number: number | null
+  next_week_start_date: string | null
+  next_week_end_date: string | null
+}
+
+export interface CalendarResponse {
+  calendar_id: string | null
+  locale: string
+  start_date: string | null
+  end_date: string | null
+  days: PlanDay[]
+  coverage: CoverageInfo
+  renewal_status: RenewalStatus
+}
+
+export interface GenerateWeekResponse {
+  locale: string
+  generated_days: number
+  skipped_days: number
+  days: PlanDay[]
+}

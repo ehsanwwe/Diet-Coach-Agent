@@ -16,6 +16,9 @@ from app.services.mock_ai_provider import (
     TASK_WHAT_TO_EAT,
     TASK_ADAPT_PLAN,
     TASK_CHAT,
+    TASK_GENERATE_WEEK_FA,
+    TASK_GENERATE_WEEK_EN,
+    TASK_GENERATE_WEEK_AR,
 )
 
 _SYSTEM_BASE = """\
@@ -187,6 +190,79 @@ def for_chat_message(
         user=user,
         history_messages=clean_history,
     )
+
+
+_LOCALE_TASK_MAP = {
+    "fa": TASK_GENERATE_WEEK_FA,
+    "en": TASK_GENERATE_WEEK_EN,
+    "ar": TASK_GENERATE_WEEK_AR,
+}
+
+_LOCALE_LANG_MAP = {
+    "fa": "Persian (فارسی). All user-facing text MUST be in Persian.",
+    "en": "English. All user-facing text MUST be in English. Food names may use transliterations (e.g. ghormeh sabzi, kabob, doogh).",
+    "ar": "Arabic (العربية). All user-facing text MUST be in Arabic. Food names may use transliterations.",
+}
+
+_LOCALE_SAFETY_MAP = {
+    "fa": "در صورت بررسی پزشکی لازم، برنامه کلی و ایمن ارائه دهید و هشدار مشاوره متخصص اضافه کنید.",
+    "en": "If clinical_review_required, generate a general wellness-safe plan only and include a warning recommending specialist review.",
+    "ar": "إذا كان المستخدم يحتاج مراجعة طبية، قدم خطة عامة وآمنة فقط وأضف تحذيراً بضرورة استشارة متخصص.",
+}
+
+
+def for_generate_week_plan(ctx: NutritionMemoryContext, locale: str) -> PromptData:
+    task_tag = _LOCALE_TASK_MAP.get(locale, TASK_GENERATE_WEEK_FA)
+    lang_instruction = _LOCALE_LANG_MAP.get(locale, _LOCALE_LANG_MAP["fa"])
+    safety = _LOCALE_SAFETY_MAP.get(locale, _LOCALE_SAFETY_MAP["fa"])
+    safety_note = _safety_note(ctx)
+
+    system = (
+        f"You are DietCoach, a professional nutrition expert.\n"
+        f"Output language: {lang_instruction}\n"
+        f"Safety rules:\n"
+        f"- Never recommend extremely low-calorie diets (<1200 kcal for women / <1500 for men).\n"
+        f"- Never prescribe medication or medical treatment.\n"
+        f"- Never body-shame.\n"
+        f"- {safety}\n"
+        f"Cultural priority: Use Iranian/Persian food culture. Include kebab, rice, stew, yogurt, bread, legumes.\n"
+        f"Output: Return JSON ONLY. No markdown. No explanations outside JSON.\n"
+        f"{task_tag}{safety_note}"
+    )
+
+    user_ctx = json.dumps(ctx.to_compact_dict(), ensure_ascii=False, indent=2)
+    user = (
+        f"User profile:\n{user_ctx}\n\n"
+        f"Generate exactly 7 days of meal plan in {locale} language.\n"
+        f"Repetition of meals between days is allowed.\n"
+        f"Each day must have exactly 4 meals: breakfast, lunch, dinner, snack.\n"
+        f"Return JSON only, matching this exact structure:\n"
+        "{\n"
+        f'  "locale": "{locale}",\n'
+        '  "days": [\n'
+        '    {\n'
+        '      "day_index": 1,\n'
+        '      "title": "...",\n'
+        '      "summary": "...",\n'
+        '      "hydration_goal": "...",\n'
+        '      "notes": "...",\n'
+        '      "warnings": [],\n'
+        '      "meals": [\n'
+        '        {\n'
+        '          "meal_type": "breakfast",\n'
+        '          "title": "...",\n'
+        '          "description": "...",\n'
+        '          "portion_guidance": "...",\n'
+        '          "alternatives": ["..."],\n'
+        '          "preparation_notes": null\n'
+        '        }\n'
+        '      ]\n'
+        '    }\n'
+        '  ]\n'
+        "}\n"
+        f"All string values must be written in {locale} language only."
+    )
+    return PromptData(task_type=f"generate_week_{locale}", system=system, user=user)
 
 
 def for_adapt_plan(

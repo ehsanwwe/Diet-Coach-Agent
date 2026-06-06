@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from app.models.auth import AuthOTP
     from app.models.chat import AudioMessage, ChatSession, MealEntry
     from app.models.lifestyle import BehaviorProfile, FoodPreference, LifestyleProfile
+    from app.models.calendar import NutritionPlanCalendar, NutritionPlanDay
     from app.models.nutrition import (
         NutritionGoal,
         NutritionPlan,
@@ -94,6 +95,12 @@ class User(Base):
     )
     nutrition_plans: Mapped[list["NutritionPlan"]] = relationship(
         "NutritionPlan", back_populates="user", lazy="raise"
+    )
+    nutrition_calendars: Mapped[list["NutritionPlanCalendar"]] = relationship(
+        "NutritionPlanCalendar", back_populates="user", lazy="raise"
+    )
+    plan_days: Mapped[list["NutritionPlanDay"]] = relationship(
+        "NutritionPlanDay", back_populates="user", lazy="raise"
     )
     chat_sessions: Mapped[list["ChatSession"]] = relationship(
         "ChatSession", back_populates="user", lazy="raise"

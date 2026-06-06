@@ -5,27 +5,31 @@ import { useParams, useRouter } from 'next/navigation'
 import { isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
 import AuthGuard from '@/components/auth/AuthGuard'
 import AppBottomNav from '@/components/layout/AppBottomNav'
-import PlanSummary from '@/components/nutrition/PlanSummary'
-import PlanGenerator from '@/components/nutrition/PlanGenerator'
+import MealCalendar from '@/components/nutrition/MealCalendar'
 import ClinicalReviewState from '@/components/nutrition/ClinicalReviewState'
-import { getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
-import type { NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
+import { getMealPlanCalendar, generateMealPlanWeek, getNutritionProfile } from '@/lib/nutrition'
+import type { CalendarResponse, NutritionProfileResponse } from '@/types/nutrition'
 
 function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const router = useRouter()
   const routerRef = useRef(router)
   routerRef.current = router
-  const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
+  const [calendar, setCalendar] = useState<CalendarResponse | null>(null)
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [genError, setGenError] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
     setLoading(true)
     setLoadError(null)
     try {
-      const [pl, pr] = await Promise.all([getNutritionPlan(), getNutritionProfile()])
-      setPlan(pl)
+      const [cal, pr] = await Promise.all([
+        getMealPlanCalendar({ locale, days: 30 }),
+        getNutritionProfile(),
+      ])
+      setCalendar(cal)
       setProfile(pr)
     } catch (err) {
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
@@ -40,32 +44,85 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
 
   useEffect(() => { void reload() }, [reload])
 
-  return (
-    <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-ink">{dict.plan.title}</h1>
-        <p className="text-sm text-ink-2 mt-1">{dict.plan.subtitle}</p>
+  const handleGenerate = useCallback(async () => {
+    setGenerating(true)
+    setGenError(null)
+    try {
+      await generateMealPlanWeek({ locale })
+      await reload()
+    } catch {
+      setGenError(dict.calendar.generationError)
+    } finally {
+      setGenerating(false)
+    }
+  }, [locale, reload, dict.calendar.generationError])
+
+  const d = dict.calendar
+
+  if (loading) {
+    return (
+      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+        <div role="status" aria-label={dict.common.loading}
+          className="w-8 h-8 rounded-full border-2 border-brand border-t-transparent animate-spin" />
       </div>
-      {!loading && !loadError && profile?.clinical_review_required && (
-        <ClinicalReviewState dict={dict} compact variant="clinical" />
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex-1 px-5 pt-6 pb-28">
+        <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-3">
+          <p className="text-sm text-error">{loadError}</p>
+          <button type="button" onClick={() => void reload()}
+            className="px-4 py-2 rounded-2xl bg-brand text-elevated font-bold text-sm">
+            {dict.common.retry}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const hasDays = (calendar?.days.length ?? 0) > 0
+  const isClinical = profile?.clinical_review_required ?? false
+  const isHighRisk = !isClinical && profile?.risk_level === 'high'
+
+  return (
+    <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28 space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold text-ink">{d.title}</h1>
+        <p className="text-sm text-ink-2 mt-1">{d.subtitle}</p>
+      </div>
+
+      {isClinical && <ClinicalReviewState dict={dict} compact variant="clinical" />}
+      {isHighRisk && <ClinicalReviewState dict={dict} compact variant="high_risk" />}
+
+      {genError && (
+        <div className="rounded-xl bg-error/5 border border-error/20 px-4 py-3">
+          <p className="text-sm text-error">{genError}</p>
+        </div>
       )}
-      {!loading && !loadError && !profile?.clinical_review_required && profile?.risk_level === 'high' && (
-        <ClinicalReviewState dict={dict} compact variant="high_risk" />
-      )}
-      {!loading && !loadError && (
-        <PlanGenerator
+
+      {!hasDays ? (
+        <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
+          <div className="mx-auto w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center">
+            <span className="text-3xl">📅</span>
+          </div>
+          <h2 className="text-xl font-bold text-ink">{d.noPlanTitle}</h2>
+          <p className="text-sm text-ink-2 leading-relaxed">{d.noPlanDesc}</p>
+          <button type="button" disabled={generating} onClick={handleGenerate}
+            className="w-full py-4 rounded-2xl bg-brand text-elevated font-semibold text-sm disabled:opacity-60">
+            {generating ? d.generationLoading : d.generateInitialWeek}
+          </button>
+        </div>
+      ) : (
+        <MealCalendar
+          calendar={calendar!}
           dict={dict}
-          hasPlan={plan?.has_plan ?? false}
-          onGenerated={(p) => setPlan(p)}
+          locale={locale}
+          onGenerateNextWeek={handleGenerate}
+          generating={generating}
         />
       )}
-      <PlanSummary
-        plan={plan?.has_plan ? plan : null}
-        loading={loading}
-        loadError={loadError}
-        onRetry={() => void reload()}
-        dict={dict}
-      />
     </div>
   )
 }

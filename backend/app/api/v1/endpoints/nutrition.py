@@ -6,13 +6,22 @@ No anonymous access.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from datetime import date
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
 from app.core.database import get_session
 from app.core.errors import AppError, raise_http_error
 from app.models.user import User
+from app.schemas.calendar import (
+    CalendarResponse,
+    GenerateWeekRequest,
+    GenerateWeekResponse,
+    RegenerateDayRequest,
+    RegenerateDayResponse,
+)
 from app.schemas.nutrition import (
     AdaptPlanRequest,
     AdaptPlanResponse,
@@ -24,7 +33,7 @@ from app.schemas.nutrition import (
     WhatToEatNowRequest,
     WhatToEatNowResponse,
 )
-from app.services import nutrition_service
+from app.services import calendar_service, nutrition_service
 
 router = APIRouter(tags=["nutrition"])
 
@@ -112,6 +121,74 @@ def what_to_eat_now(
         raise_http_error(exc.message, status_code=exc.status_code)
     except Exception as exc:
         raise_http_error(f"Failed to get food suggestions: {exc}", status_code=500)
+
+
+@router.get("/calendar", response_model=CalendarResponse)
+def get_calendar(
+    start_date: str | None = Query(default=None, description="ISO date YYYY-MM-DD"),
+    days: int = Query(default=30, ge=1, le=90),
+    locale: str | None = Query(default=None, description="fa | en | ar"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> CalendarResponse:
+    """Return the user's rolling meal plan calendar for the requested locale."""
+    try:
+        effective_locale = calendar_service.resolve_locale(db, current_user, locale)
+        parsed_start: date | None = None
+        if start_date:
+            try:
+                parsed_start = date.fromisoformat(start_date)
+            except ValueError:
+                raise_http_error("Invalid start_date format. Use YYYY-MM-DD.", status_code=422)
+        return calendar_service.get_calendar(db, current_user, effective_locale, parsed_start, days)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to retrieve calendar: {exc}", status_code=500)
+
+
+@router.post("/calendar/generate-week", response_model=GenerateWeekResponse, status_code=201)
+def generate_calendar_week(
+    body: GenerateWeekRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> GenerateWeekResponse:
+    """Generate next 7 plan days for the user in the requested locale."""
+    try:
+        effective_locale = calendar_service.resolve_locale(db, current_user, body.locale)
+        parsed_start: date | None = None
+        if body.start_date:
+            try:
+                parsed_start = date.fromisoformat(body.start_date)
+            except ValueError:
+                raise_http_error("Invalid start_date format. Use YYYY-MM-DD.", status_code=422)
+        return calendar_service.generate_week(
+            db, current_user, effective_locale, parsed_start, body.force
+        )
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to generate week plan: {exc}", status_code=500)
+
+
+@router.post("/calendar/regenerate-day", response_model=RegenerateDayResponse, status_code=201)
+def regenerate_calendar_day(
+    body: RegenerateDayRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> RegenerateDayResponse:
+    """Regenerate a single planned day in the requested locale."""
+    try:
+        effective_locale = calendar_service.resolve_locale(db, current_user, body.locale)
+        try:
+            plan_date = date.fromisoformat(body.plan_date)
+        except ValueError:
+            raise_http_error("Invalid plan_date format. Use YYYY-MM-DD.", status_code=422)
+        return calendar_service.regenerate_day(db, current_user, effective_locale, plan_date)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to regenerate day: {exc}", status_code=500)
 
 
 @router.post("/adapt-plan", response_model=AdaptPlanResponse)

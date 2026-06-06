@@ -5,8 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
-import type { NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
-import { getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
+import type { CalendarResponse, NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
+import { getMealPlanCalendar, generateMealPlanWeek, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
 import ClinicalReviewState from './ClinicalReviewState'
 
 interface Props {
@@ -32,6 +32,8 @@ export default function NutritionDashboard({ dict, locale }: Props) {
   routerRef.current = router
   const [profile, setProfile] = useState<NutritionProfileResponse | null>(null)
   const [plan, setPlan] = useState<NutritionPlanResponse | null>(null)
+  const [calendar, setCalendar] = useState<CalendarResponse | null>(null)
+  const [generating, setGenerating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
 
@@ -39,9 +41,14 @@ export default function NutritionDashboard({ dict, locale }: Props) {
     setLoading(true)
     setLoadError(null)
     try {
-      const [p, pl] = await Promise.all([getNutritionProfile(), getNutritionPlan()])
+      const [p, pl, cal] = await Promise.all([
+        getNutritionProfile(),
+        getNutritionPlan(),
+        getMealPlanCalendar({ locale, days: 14 }),
+      ])
       setProfile(p)
       setPlan(pl)
+      setCalendar(cal)
     } catch (err) {
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
         routerRef.current.replace(`/${locale}/login`)
@@ -86,6 +93,18 @@ export default function NutritionDashboard({ dict, locale }: Props) {
 
   const isClinical = profile?.clinical_review_required ?? false
   const riskLevel = profile?.risk_level ?? 'low'
+  const renewal = calendar?.renewal_status
+
+  async function handleGenerateNextWeek() {
+    setGenerating(true)
+    try {
+      await generateMealPlanWeek({ locale })
+      const cal = await getMealPlanCalendar({ locale, days: 14 })
+      setCalendar(cal)
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   return (
     <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28 space-y-6">
@@ -96,6 +115,23 @@ export default function NutritionDashboard({ dict, locale }: Props) {
         </h1>
         <p className="text-sm text-ink-2 mt-1">{dict.dashboard.subtitle}</p>
       </div>
+
+      {/* Next-week renewal banner */}
+      {renewal?.should_prompt_next_week && (
+        <div className={[
+          'rounded-2xl p-4 space-y-3',
+          renewal.prompt_level === 'warning' ? 'bg-warm-muted border border-warm/30' : 'bg-brand-muted border border-brand/20',
+        ].join(' ')}>
+          <div>
+            <p className="text-sm font-semibold text-ink">{dict.calendar.nextWeekPromptTitle}</p>
+            <p className="text-xs text-ink-2 mt-1">{dict.calendar.nextWeekPromptDescription}</p>
+          </div>
+          <button type="button" disabled={generating} onClick={() => void handleGenerateNextWeek()}
+            className="w-full py-3 rounded-xl bg-brand text-elevated font-semibold text-sm disabled:opacity-60">
+            {generating ? dict.calendar.generationLoading : dict.calendar.nextWeekPromptCta}
+          </button>
+        </div>
+      )}
 
       {/* Clinical alert */}
       {isClinical && (

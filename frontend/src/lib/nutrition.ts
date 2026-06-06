@@ -1,5 +1,7 @@
 import { getToken } from './storage'
 import type {
+  CalendarResponse,
+  GenerateWeekResponse,
   MealAnalysisResponse,
   MealAnalyzeRequest,
   NutritionPlanResponse,
@@ -69,4 +71,49 @@ export async function whatToEatNow(
     body: JSON.stringify(body),
   })
   return handleResponse<WhatToEatNowResponse>(res)
+}
+
+export async function getMealPlanCalendar(params?: {
+  start_date?: string
+  days?: number
+  locale?: string
+}): Promise<CalendarResponse> {
+  const qs = new URLSearchParams()
+  if (params?.start_date) qs.set('start_date', params.start_date)
+  if (params?.days != null) qs.set('days', String(params.days))
+  if (params?.locale) qs.set('locale', params.locale)
+  const query = qs.toString() ? `?${qs.toString()}` : ''
+  const res = await fetch(`${BASE_URL}${BASE}/calendar${query}`, {
+    headers: { ...authHeaders() },
+  })
+  return handleResponse<CalendarResponse>(res)
+}
+
+export async function generateMealPlanWeek(params?: {
+  start_date?: string
+  locale?: string
+  force?: boolean
+}): Promise<GenerateWeekResponse> {
+  const res = await fetch(`${BASE_URL}${BASE}/calendar/generate-week`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({
+      start_date: params?.start_date ?? null,
+      locale: params?.locale ?? null,
+      force: params?.force ?? false,
+    }),
+  })
+  return handleResponse<GenerateWeekResponse>(res)
+}
+
+export async function regenerateMealPlanDay(params: {
+  plan_date: string
+  locale?: string
+}): Promise<{ locale: string; plan_date: string; day: import('@/types/nutrition').PlanDay }> {
+  const res = await fetch(`${BASE_URL}${BASE}/calendar/regenerate-day`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({ plan_date: params.plan_date, locale: params.locale ?? null }),
+  })
+  return handleResponse(res)
 }

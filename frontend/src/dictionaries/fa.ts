@@ -471,6 +471,37 @@ export interface Dictionary {
     highRiskMessage: string
     notADoctorNote: string
   }
+  calendar: {
+    title: string
+    subtitle: string
+    noPlanTitle: string
+    noPlanDesc: string
+    generateInitialWeek: string
+    generateNextWeek: string
+    nextWeekPromptTitle: string
+    nextWeekPromptDescription: string
+    nextWeekPromptCta: string
+    plannedDays: string
+    missingDays: string
+    nextUnplannedDate: string
+    breakfast: string
+    lunch: string
+    dinner: string
+    snack: string
+    today: string
+    day: string
+    week: string
+    planDate: string
+    generationLoading: string
+    generationSuccess: string
+    generationError: string
+    warnings: string
+    hydrationGoal: string
+    notes: string
+    alternatives: string
+    prepNotes: string
+    portionGuidance: string
+  }
   progress: {
     title: string
     subtitle: string
@@ -995,6 +1026,37 @@ const fa: Dictionary = {
     highRiskMessage:
       'با توجه به وضعیت سلامتی شما، برنامه ارائه‌شده محافظه‌کارانه و کلی است. مشاوره با متخصص تغذیه توصیه می‌شود.',
     notADoctorNote: 'این اطلاعات آموزشی است و جایگزین تشخیص و درمان پزشکی نمی‌شود.',
+  },
+  calendar: {
+    title: 'تقویم غذایی',
+    subtitle: 'برنامه غذایی هفتگی شما',
+    noPlanTitle: 'هنوز برنامه‌ای ندارید',
+    noPlanDesc: 'برنامه ۷ روزه اول خود را بسازید.',
+    generateInitialWeek: 'ساخت برنامه ۷ روزه',
+    generateNextWeek: 'ساخت هفته بعد',
+    nextWeekPromptTitle: 'برنامه هفته بعد آماده‌سازی می‌خواهد',
+    nextWeekPromptDescription: 'برای اینکه تقویم غذایی‌ات قطع نشود، برنامه ۷ روز آینده را بساز.',
+    nextWeekPromptCta: 'ساخت برنامه هفته بعد',
+    plannedDays: 'روزهای برنامه‌ریزی‌شده',
+    missingDays: 'روزهای بدون برنامه',
+    nextUnplannedDate: 'اولین روز بدون برنامه',
+    breakfast: 'صبحانه',
+    lunch: 'ناهار',
+    dinner: 'شام',
+    snack: 'میان‌وعده',
+    today: 'امروز',
+    day: 'روز',
+    week: 'هفته',
+    planDate: 'تاریخ',
+    generationLoading: 'در حال ساخت برنامه...',
+    generationSuccess: 'برنامه با موفقیت ساخته شد',
+    generationError: 'ساخت برنامه ناموفق بود. دوباره تلاش کنید.',
+    warnings: 'هشدارها',
+    hydrationGoal: 'هدف آب‌رسانی',
+    notes: 'یادداشت',
+    alternatives: 'جایگزین‌ها',
+    prepNotes: 'نکات آماده‌سازی',
+    portionGuidance: 'راهنمای حجم',
   },
   progress: {
     title: 'پیشرفت',

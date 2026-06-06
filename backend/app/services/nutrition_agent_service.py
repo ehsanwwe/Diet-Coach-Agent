@@ -21,6 +21,7 @@ from app.services.prompt_builder import (
     for_analyze_meal,
     for_chat_message,
     for_generate_plan,
+    for_generate_week_plan,
     for_what_to_eat_now,
 )
 
@@ -143,6 +144,34 @@ class NutritionAgentService:
     ) -> tuple[dict, AIProviderResult]:
         prompt = for_chat_message(ctx, user_message, history)
         return self._call(prompt)
+
+    def generate_week_plan(
+        self,
+        ctx: NutritionMemoryContext,
+        locale: str,
+    ) -> tuple[dict, AIProviderResult]:
+        """Generate a 7-day meal plan in the given locale."""
+        prompt = for_generate_week_plan(ctx, locale)
+        parsed, result = self._call(prompt)
+        # Validate structure: must have 'days' list with at least 7 entries
+        if not isinstance(parsed.get("days"), list) or len(parsed["days"]) < 7:
+            logger.warning(
+                "Week plan response invalid (locale=%s, days=%s), falling back to mock",
+                locale,
+                len(parsed.get("days") or []),
+            )
+            from app.services.mock_ai_provider import (
+                _MOCK_WEEK_FA, _MOCK_WEEK_EN, _MOCK_WEEK_AR,
+            )
+            mock_map = {"fa": _MOCK_WEEK_FA, "en": _MOCK_WEEK_EN, "ar": _MOCK_WEEK_AR}
+            parsed = mock_map.get(locale, _MOCK_WEEK_FA)
+            result = AIProviderResult(
+                content=json.dumps(parsed, ensure_ascii=False),
+                provider="mock_fallback",
+                model="mock",
+                is_mock=True,
+            )
+        return parsed, result
 
     def adapt_plan(
         self,
