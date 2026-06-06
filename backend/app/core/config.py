@@ -65,7 +65,7 @@ class Settings(BaseSettings):
     # Required only when AI_PROVIDER=openai.
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    OPENAI_MODEL: str = "gpt-5.4-nano"
+    OPENAI_MODEL: str = "gpt-4.1-nano"
     OPENAI_TIMEOUT_SECONDS: int = 120
     OPENAI_MAX_RETRIES: int = 2
     OPENAI_TEMPERATURE: float = 0.3

@@ -105,7 +105,7 @@ class OpenAIProvider(AIProvider):
             "model": self._model,
             "messages": messages,
             "temperature": temp,
-            "max_tokens": tokens,
+            "max_completion_tokens": tokens,
         }
 
         client_kwargs: dict[str, Any] = {"timeout": self._timeout}
@@ -168,10 +168,17 @@ class OpenAIProvider(AIProvider):
 
             except httpx.HTTPStatusError as exc:
                 last_error = exc
+                status = exc.response.status_code
+                try:
+                    body = exc.response.json()
+                    error_msg = body.get("error", {}).get("message", exc.response.text[:300])
+                except Exception:
+                    error_msg = exc.response.text[:300]
                 logger.warning(
-                    "OpenAI HTTP %d on attempt %d",
-                    exc.response.status_code,
+                    "OpenAI HTTP %d on attempt %d — %s",
+                    status,
                     attempt + 1,
+                    error_msg,
                 )
                 break
 
