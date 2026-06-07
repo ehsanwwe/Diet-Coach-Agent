@@ -39,59 +39,94 @@ _GREETING_REPLY = (
     "• سوال درباره مواد مغذی یا ترکیب غذا"
 )
 
+# Structural signal: last assistant turn ended with a question.
+_FOLLOWUP_QUESTION_RE = re.compile(r"[؟?]\s*$")
+
 _ORCHESTRATOR_SYSTEM = """\
 You are the Diet Coach Agent — a personal nutrition companion. You MUST use tools for nutrition tasks.
 
 MANDATORY TOOL RULES:
 
 1. CALORIE / NUTRITION QUESTION → analyze_meal(should_log=false)
-   When: user asks about calories, macros, or nutritional value of ANY food
-   Examples: "لوبیا پلو چقدر کالری داره؟", "پیاز چقدر کالری دارد؟", "how many calories in onion?"
+   When: user asks about calories, macros, or nutritional value of ANY food.
    Rule: NEVER answer a calorie question from memory alone — always call analyze_meal.
 
 2. USER REPORTS EATING SOMETHING → analyze_meal(should_log=true) + get_calendar
-   When: user says they ate/drank something (past tense), or reports breaking their diet
-   Examples: "امشب ۱۰ تا نون خامه‌ای خوردم", "ناهار پیتزا خوردم", "رژیمم رو شکستم ۲ تا شیرینی خوردم"
-   After tools: NEVER shame the user. Ask ONE supportive follow-up question, e.g.:
-     "آیا بقیه وعده‌های امروز هم طبق برنامه بود؟ می‌خوای برنامه فردا رو تنظیم کنم؟"
-   Do NOT update tomorrow unless user explicitly asks for it.
+   When: user says they ate/drank something (past tense), or reports a food event today.
+   After tools: NEVER shame the user. Ask ONE supportive follow-up question.
+   IMPORTANT: Do NOT call update_tomorrow_plan just because the user ate something.
+   Only call update_tomorrow_plan if the user EXPLICITLY asks to adjust tomorrow's plan.
 
-3. EXPLICIT PLAN UPDATE REQUEST → analyze_meal(if food mentioned, should_log=true) + get_calendar + update_tomorrow_plan
-   When: user explicitly asks to change, lighten, or adjust tomorrow's plan
-   Trigger phrases: "برنامه فردامو سبک‌تر کن", "فردامو تنظیم کن", "make tomorrow lighter", "adjust my plan for tomorrow"
+3. EXPLICIT PLAN UPDATE REQUEST → get_calendar + update_tomorrow_plan
+   (also call analyze_meal first if food is mentioned in the same message)
+   When: user explicitly asks to change, lighten, or adjust tomorrow's plan.
+   Trigger phrases: "برنامه فردامو سبک‌تر کن", "فردامو تنظیم کن", "make tomorrow lighter".
    Rule: ONLY say plan was updated if update_tomorrow_plan returns success=true.
-   If success=false → say "متأسفانه به‌روزرسانی برنامه فردا انجام نشد" — NEVER claim success on failure.
+   If success=false → apologize, never claim success.
 
 4. WEEK PLAN REQUEST → generate_week_plan
-   When: user asks for a plan for next week or multiple future days
-   Trigger phrases: "برنامه هفته بعد", "یه برنامه ۷ روزه بده", "build a week plan"
+   When: user asks for a plan for next week or multiple future days.
 
 5. WHAT TO EAT NOW → what_to_eat_now
-   When: user asks for meal suggestions or what to eat right now
+   When: user asks for meal suggestions or what to eat right now.
 
 6. PROGRESS / CHECK-IN → log_check_in or get_progress_summary
-   When: user mentions weight, sleep, activity, stress, or asks about their progress
+   When: user mentions weight, sleep, activity, stress, or asks about their progress.
 
-7. OFF-DOMAIN QUESTION → NO TOOLS — one brief sentence, then redirect to nutrition
-   When: user asks about non-nutrition/non-health topics
-   Example: "قیمت طلا چقدره؟" → "طلا معمولاً گران‌تر از آهن است؛ اما من اینجا برای راهنمایی تغذیه و سلامت هستم."
+7. OFF-DOMAIN QUESTION → NO TOOLS — one brief sentence, then redirect to nutrition.
    Rule: do NOT become a general assistant — keep answer brief and pivot back to nutrition.
 
 8. MULTI-TASK → call all relevant tools in parallel, give ONE combined final response.
 
+9. FOLLOW-UP ANSWER DETECTION — read CONVERSATION_STATE before deciding
+   If CONVERSATION_STATE reports FOLLOW_UP_PENDING=true:
+   • The user's current message is answering the question the assistant just asked.
+   • If the message is ONLY providing information (food, time, quantity, context):
+     treat it as context. Provide guidance. Do NOT call update_tomorrow_plan.
+   • If the message contains an explicit action command ("کن", "بکن", "تنظیم کن",
+     "update", "change", "سبک‌تر"): treat it as a new instruction and use tools.
+   • Either way: never repeat analysis of events already covered in recent turns.
+
+10. AVOID DUPLICATE ACTIONS — check conversation HISTORY before calling any tool
+    • Scan recent assistant messages in history.
+    • If a recent assistant turn already indicated tomorrow's plan was updated:
+      do NOT call update_tomorrow_plan again unless user says to update it AGAIN.
+    • If a food event was already analyzed recently:
+      refer to it briefly — do NOT re-run the full analysis on the same event.
+    • Repeating the same action without a new explicit user request is always wrong.
+
 CRITICAL RULES (non-negotiable):
 - NEVER claim an action succeeded unless the tool returned success=true
-- NEVER show raw JSON, tool names, or system internals
+- NEVER show raw JSON, tool names, or system internals in your response text
 - NEVER shame users for eating off-plan foods or sweets
 - NEVER recommend starvation or under 1200 kcal/day
 - NEVER prescribe medication or medical treatment
-- Respond in the SAME LANGUAGE as the user (Persian for Persian, English for English, etc.)
-- Be concise, empathetic, and practical
-- Ask at most 1-2 follow-up questions
+- Respond in the SAME LANGUAGE as the user
+- Ask at most 1 follow-up question per turn
+
+RESPONSE FORMAT (strictly enforced):
+- Your final response text must NOT contain action confirmations.
+  Phrases like "برنامه فردا به‌روزرسانی شد" or "ثبت شد" belong in action chips, not in your text.
+  Do not repeat tool result summaries in your conversational response.
+- If a food event was already discussed in recent history, refer to it briefly.
+  Do not repeat the full nutritional analysis again.
+- Write complete sentences. Never output truncated or cut-off text.
+- Generate a fresh, clean coaching response. Do not continue from or repeat any
+  partial text that appeared before tool calls in this same turn.
 """
 
 _TOOL_REGISTRY = build_tool_registry()
 _TOOL_SPECS = build_openai_specs(_TOOL_REGISTRY)
+
+# System message injected immediately before the final text-generation call.
+# Prevents the LLM from repeating pre-tool thinking text or tool summaries.
+_CLEAN_RESPONSE_REMINDER = (
+    "Now write your final coaching response. "
+    "Start fresh — do not continue from or repeat any text from before the tool calls. "
+    "Do not include action confirmations (e.g. 'برنامه فردا به‌روزرسانی شد') — "
+    "those are shown separately. "
+    "Be concise. Complete every sentence. Ask at most one follow-up question."
+)
 
 
 def _is_greeting(message: str) -> bool:
@@ -101,6 +136,43 @@ def _is_greeting(message: str) -> bool:
 def _get_locale(db: Session, user: User) -> str:
     from app.repositories.calendar_repository import resolve_locale, get_user_language
     return resolve_locale(None, get_user_language(db, user.id))
+
+
+def _build_conversation_state(history: list[dict]) -> str:
+    """
+    Derive conversation state from message history using structural signals only.
+
+    No food-name or content-phrase matching — only message structure (role + punctuation).
+    Returns a compact state block to inject into the system prompt so the LLM can make
+    a better-informed decision about whether the current message is a follow-up answer
+    or a new independent instruction.
+    """
+    if not history:
+        return ""
+
+    last_assistant = next(
+        (m for m in reversed(history) if m.get("role") == "assistant"),
+        None,
+    )
+    if last_assistant is None:
+        return ""
+
+    content = last_assistant.get("content", "").strip()
+    if _FOLLOWUP_QUESTION_RE.search(content):
+        return (
+            "FOLLOW_UP_PENDING=true\n"
+            "The immediately preceding assistant message ended with a question. "
+            "The user's current message is likely ANSWERING that question, not issuing a new command.\n"
+            "Decision rules:\n"
+            "  • If user message is ONLY information/context (food description, quantity, time, name): "
+            "treat as a follow-up answer. Provide guidance. "
+            "Do NOT call update_tomorrow_plan or generate_week_plan based solely on this.\n"
+            "  • If user message contains an explicit action command "
+            "('کن', 'بکن', 'تنظیم کن', 'سبک‌تر', 'update', 'change', 'adjust'): "
+            "treat as a new instruction and call the appropriate tool.\n"
+            "  • Do NOT repeat analysis or actions already completed in recent turns."
+        )
+    return ""
 
 
 def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageResponse:
@@ -152,7 +224,14 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
     exec_ctx = AgentExecutionContext(
         db=db, user=user, locale=locale, nutrition_memory=ctx, chat_session_id=session.id,
     )
+
+    # Build conversation state annotation from recent history (structural detection only).
+    conversation_state = _build_conversation_state(history[-10:])
+
     system_with_ctx = _ORCHESTRATOR_SYSTEM + f"\nUser profile context: {ctx_json}"
+    if conversation_state:
+        system_with_ctx += f"\n\nCONVERSATION_STATE:\n{conversation_state}"
+
     messages: list[dict] = [{"role": "system", "content": system_with_ctx}]
     messages.extend(history[-10:])
     messages.append({"role": "user", "content": message})
@@ -171,8 +250,11 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                 reply_text = tool_result.assistant_message or ""
                 break
 
-            # Append assistant turn with tool_calls
-            asst_turn: dict = {"role": "assistant", "content": tool_result.assistant_message or None}
+            # Append assistant turn with tool_calls.
+            # Use None for content when the model is calling tools — this prevents partial
+            # pre-tool "thinking" text from leaking into the final response context.
+            asst_content = tool_result.assistant_message or None
+            asst_turn: dict = {"role": "assistant", "content": asst_content}
             if tool_result.raw_tool_calls:
                 asst_turn["tool_calls"] = tool_result.raw_tool_calls
             messages.append(asst_turn)
@@ -192,19 +274,18 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                         tr = tool.execute(exec_ctx, tc.arguments)
                         if tr.success and tr.user_visible_summary:
                             actions_summary.append(tr.user_visible_summary)
-                        if not tr.success:
-                            # Tool caught a DB error internally; rollback so the session
-                            # is usable for saving the assistant reply afterward.
-                            try:
-                                db.rollback()
-                                session = chat_repository.get_or_create_companion_session(db, user.id)
-                            except Exception as rb_exc:
-                                logger.warning("Post-tool rollback failed: %s", rb_exc)
+                        # Keep tool result compact: success flag + data only.
+                        # Omit user_visible_summary from the LLM context to prevent it
+                        # from being copied verbatim into the final response text.
                         tool_content = json.dumps({
-                            "success": tr.success, "summary": tr.user_visible_summary,
-                            "data": tr.data, "error": tr.error,
+                            "success": tr.success,
+                            "data": tr.data,
+                            "error": tr.error,
                         }, ensure_ascii=False)
                     except Exception as exc:
+                        # tool.execute() raised unexpectedly — DB may be dirty, rollback.
+                        # Controlled tool failures (success=False return) do not need rollback
+                        # because the tool already handled its own error internally.
                         logger.warning("Tool %s raised: %s", tc.name, exc)
                         try:
                             db.rollback()
@@ -215,6 +296,9 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                 messages.append({"role": "tool", "tool_call_id": tc.id, "content": tool_content})
 
             if round_idx == MAX_TOOL_ROUNDS - 1 or not tool_result.tool_calls:
+                # Inject a clean-response reminder so the model generates a fresh reply
+                # instead of continuing from partial pre-tool text or repeating tool summaries.
+                messages.append({"role": "system", "content": _CLEAN_RESPONSE_REMINDER})
                 try:
                     final = provider.generate_with_tools(messages, _TOOL_SPECS)
                     reply_text = final.assistant_message or ""
