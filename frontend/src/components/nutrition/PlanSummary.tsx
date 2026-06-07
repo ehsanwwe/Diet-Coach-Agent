@@ -2,6 +2,7 @@
 
 import type { NutritionPlanResponse } from '@/types/nutrition'
 import type { Dictionary } from '@/dictionaries/fa'
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   plan?: NutritionPlanResponse | null
@@ -11,12 +12,12 @@ interface Props {
   dict: Pick<Dictionary, 'plan' | 'errors' | 'common'>
 }
 
-const MEAL_TIME_ICONS: Record<string, string> = {
-  breakfast: '🌅',
-  lunch: '☀️',
-  dinner: '🌙',
-  snack: '🍎',
-  unknown: '🍽️',
+const MEAL_TIME_ICONS: Record<string, AppIconName> = {
+  breakfast: 'sunrise',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+  unknown: 'meal',
 }
 
 function formatDate(iso: string | null): string {
@@ -69,7 +70,7 @@ export default function PlanSummary({ plan, loading, loadError, onRetry, dict }:
       <div className="flex-1 overflow-y-auto px-5 pt-6 pb-28">
         <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
           <div className="mx-auto w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center">
-            <span className="text-3xl">🍽️</span>
+            <AppIcon name="meal" className="text-brand" size={34} />
           </div>
           <h2 className="text-xl font-bold text-ink">{dict.plan.noPlanTitle}</h2>
           <p className="text-sm text-ink-2 leading-relaxed">{dict.plan.noPlanDesc}</p>
@@ -176,13 +177,13 @@ export default function PlanSummary({ plan, loading, loadError, onRetry, dict }:
               const mealTimeLabel =
                 dict.plan[meal.meal_time as keyof typeof dict.plan] ??
                 dict.plan.unknown
-              const icon = MEAL_TIME_ICONS[meal.meal_time] ?? '🍽️'
+              const icon = MEAL_TIME_ICONS[meal.meal_time] ?? 'meal'
               return (
                 <div
                   key={meal.id ?? idx}
                   className="flex items-start gap-3 pb-4 border-b border-line last:border-0 last:pb-0"
                 >
-                  <span className="text-xl mt-0.5 shrink-0">{icon}</span>
+                  <AppIcon name={icon} className="text-brand mt-0.5 shrink-0" size={20} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-xs font-medium text-brand">

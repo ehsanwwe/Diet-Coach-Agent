@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { CalendarResponse, PlanDay } from '@/types/nutrition'
 import type { Dictionary } from '@/dictionaries/fa'
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   calendar: CalendarResponse
@@ -12,12 +13,12 @@ interface Props {
   generating: boolean
 }
 
-const MEAL_ICONS: Record<string, string> = {
-  breakfast: '🌅',
-  lunch: '☀️',
-  dinner: '🌙',
-  snack: '🍎',
-  other: '🍽️',
+const MEAL_ICONS: Record<string, AppIconName> = {
+  breakfast: 'sunrise',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+  other: 'meal',
 }
 
 function formatDate(isoDate: string, locale: string): string {
@@ -65,7 +66,11 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
           </div>
           <p className="text-sm font-semibold text-ink truncate">{day.title}</p>
         </div>
-        <span className="text-ink-3 ms-3 shrink-0">{isExpanded ? '▲' : '▼'}</span>
+        <AppIcon
+          name={isExpanded ? 'chevronUp' : 'chevronDown'}
+          className="text-ink-3 ms-3 shrink-0"
+          size={18}
+        />
       </button>
 
       {isExpanded && (
@@ -74,15 +79,18 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
             <p className="text-xs text-ink-2 leading-relaxed pt-3">{day.summary}</p>
           )}
           {day.hydration_goal && (
-            <p className="text-xs text-ink-3">💧 {d.hydrationGoal}: {day.hydration_goal}</p>
+            <p className="text-xs text-ink-3 flex items-center gap-1.5">
+              <AppIcon name="water" size={14} />
+              <span>{d.hydrationGoal}: {day.hydration_goal}</span>
+            </p>
           )}
           <div className="space-y-3">
             {day.meals.map((meal) => {
-              const icon = MEAL_ICONS[meal.meal_type] ?? '🍽️'
+              const icon = MEAL_ICONS[meal.meal_type] ?? 'meal'
               const mealLabel = d[meal.meal_type as keyof typeof d] ?? meal.meal_type
               return (
                 <div key={meal.id} className="flex gap-3 items-start">
-                  <span className="text-lg shrink-0 mt-0.5">{icon}</span>
+                  <AppIcon name={icon} className="text-brand shrink-0 mt-0.5" size={18} />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-brand mb-0.5">{String(mealLabel)}</p>
                     <p className="text-sm font-medium text-ink">{meal.title}</p>
@@ -90,11 +98,15 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
                       <p className="text-xs text-ink-2 mt-0.5 leading-relaxed">{meal.description}</p>
                     )}
                     {meal.portion_guidance && (
-                      <p className="text-xs text-ink-3 mt-1">📏 {d.portionGuidance}: {meal.portion_guidance}</p>
+                      <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
+                        <AppIcon name="portion" size={13} />
+                        <span>{d.portionGuidance}: {meal.portion_guidance}</span>
+                      </p>
                     )}
                     {meal.alternatives && meal.alternatives.length > 0 && (
-                      <p className="text-xs text-ink-3 mt-1">
-                        🔄 {d.alternatives}: {meal.alternatives.join('، ')}
+                      <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
+                        <AppIcon name="refresh" size={13} />
+                        <span>{d.alternatives}: {meal.alternatives.join('، ')}</span>
                       </p>
                     )}
                   </div>

@@ -288,7 +288,7 @@ const ar: Dictionary = {
     finalVideoComingSoon: 'فيديو الدليل قادم قريباً',
     finalVideoLoadError: 'تعذّر تحميل الفيديو. يمكنك المتابعة على أي حال.',
     finalWatchFirst: 'مشاهدة الفيديو مستحسنة، لكن يمكنك المتابعة.',
-    finalMarkWatched: '✓ تم المشاهدة (تطوير)',
+    finalMarkWatched: 'تم المشاهدة (تطوير)',
     finalWatchedBadge: 'تمت المشاهدة',
     finalComplete: 'ابدأ مع مدرب التغذية',
     finalCompleting: 'جارٍ الإكمال...',

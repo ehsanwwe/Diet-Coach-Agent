@@ -1,4 +1,5 @@
 import type { Dictionary } from '@/dictionaries/fa'
+import AppIcon from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Pick<Dictionary, 'safety'>
@@ -16,7 +17,7 @@ export default function ClinicalReviewState({
   if (compact) {
     return (
       <div className="flex items-start gap-3 p-4 rounded-2xl bg-warm-muted border border-warm/20">
-        <span className="text-warm text-lg mt-0.5 shrink-0">⚕</span>
+        <AppIcon name="medical" className="text-warm mt-0.5 shrink-0" size={20} />
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink mb-1">
             {isClinical ? dict.safety.clinicalTitle : dict.safety.highRiskTitle}
@@ -32,7 +33,7 @@ export default function ClinicalReviewState({
   return (
     <div className="rounded-2xl bg-warm-muted border border-warm/20 overflow-hidden">
       <div className="flex items-center gap-3 px-5 py-4 border-b border-warm/20">
-        <span className="text-2xl">⚕</span>
+        <AppIcon name="medical" className="text-warm shrink-0" size={26} />
         <h2 className="text-base font-semibold text-ink">
           {isClinical ? dict.safety.clinicalTitle : dict.safety.highRiskTitle}
         </h2>

@@ -3,6 +3,7 @@
 import type { Dictionary } from '@/dictionaries/fa'
 import type { BehaviorWin, ProgressSummaryResponse } from '@/types/progress'
 import WeightSparkline from './WeightSparkline'
+import AppIcon from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Pick<Dictionary, 'progress'>
@@ -38,7 +39,8 @@ function WinChip({ dict, win }: { dict: Props['dict']; win: BehaviorWin }) {
           : 'bg-surface border border-line text-ink-3',
       ].join(' ')}
     >
-      {win.achieved ? '✓ ' : ''}{winLabel(dict, win)}
+      {win.achieved && <AppIcon name="check" className="inline me-1 align-[-2px]" size={13} />}
+      {winLabel(dict, win)}
       {win.value ? ` · ${win.value}` : ''}
     </span>
   )

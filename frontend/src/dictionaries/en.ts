@@ -288,7 +288,7 @@ const en: Dictionary = {
     finalVideoComingSoon: 'Guide video coming soon',
     finalVideoLoadError: 'Could not load the video. You can still continue.',
     finalWatchFirst: 'Watching the video is recommended, but you can continue.',
-    finalMarkWatched: '✓ Mark as watched (dev)',
+    finalMarkWatched: 'Mark as watched (dev)',
     finalWatchedBadge: 'Video watched',
     finalComplete: 'Start with Diet Coach',
     finalCompleting: 'Completing...',

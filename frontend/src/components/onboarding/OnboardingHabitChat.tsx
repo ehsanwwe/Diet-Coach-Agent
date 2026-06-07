@@ -6,6 +6,7 @@ import { cn } from '@/lib/cn'
 import { sendTextMessage, uploadAudio, getChatHistory } from '@/lib/onboardingChat'
 import type { ChatHistoryItem } from '@/types/onboardingChat'
 import AudioRecorder from '@/components/audio/AudioRecorder'
+import AppIcon from '@/components/ui/AppIcon'
 
 interface AudioDict {
   startRecording: string
@@ -214,7 +215,7 @@ function ChatBubble({ item, dict }: { item: ChatHistoryItem; dict: AudioDict }) 
     <div className="flex justify-end">
       <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand/10 border border-brand/20 px-3 py-2 text-sm text-ink">
         <div className="flex items-center gap-1.5">
-          <span className="text-brand">🎤</span>
+          <AppIcon name="microphone" className="text-brand" size={16} />
           {item.duration_seconds != null && (
             <span className="text-xs text-ink-2">
               {Math.round(item.duration_seconds)}s

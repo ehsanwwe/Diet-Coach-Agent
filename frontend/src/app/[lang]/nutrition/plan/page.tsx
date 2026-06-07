@@ -9,6 +9,7 @@ import MealCalendar from '@/components/nutrition/MealCalendar'
 import ClinicalReviewState from '@/components/nutrition/ClinicalReviewState'
 import { getMealPlanCalendar, generateMealPlanWeek, getNutritionProfile } from '@/lib/nutrition'
 import type { CalendarResponse, NutritionProfileResponse } from '@/types/nutrition'
+import AppIcon from '@/components/ui/AppIcon'
 
 function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const router = useRouter()
@@ -105,7 +106,7 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
       {!hasDays ? (
         <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
           <div className="mx-auto w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center">
-            <span className="text-3xl">📅</span>
+            <AppIcon name="calendar" className="text-brand" size={34} />
           </div>
           <h2 className="text-xl font-bold text-ink">{d.noPlanTitle}</h2>
           <p className="text-sm text-ink-2 leading-relaxed">{d.noPlanDesc}</p>

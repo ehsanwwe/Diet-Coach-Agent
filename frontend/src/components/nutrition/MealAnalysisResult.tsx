@@ -1,5 +1,6 @@
 import type { MealAnalysisResponse } from '@/types/nutrition'
 import type { Dictionary } from '@/dictionaries/fa'
+import AppIcon from '@/components/ui/AppIcon'
 
 interface Props {
   result: MealAnalysisResponse
@@ -69,7 +70,7 @@ export default function MealAnalysisResult({ result, dict, onReset }: Props) {
           <ul className="space-y-2">
             {result.suggestions.map((s, i) => (
               <li key={i} className="text-sm text-ink-2 flex gap-2">
-                <span className="text-brand shrink-0">✓</span>
+                <AppIcon name="check" className="text-brand shrink-0 mt-0.5" size={15} />
                 {s}
               </li>
             ))}

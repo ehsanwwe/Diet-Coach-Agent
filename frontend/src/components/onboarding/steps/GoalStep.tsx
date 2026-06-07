@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import { ALL_GOALS, type GoalType } from '@/types/onboarding'
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Dictionary['onboarding']
@@ -26,18 +27,18 @@ const GOAL_LABEL_KEYS: Record<GoalType, keyof Dictionary['onboarding']> = {
   general_health_companion: 'goalGeneral',
 }
 
-const GOAL_EMOJI: Record<GoalType, string> = {
-  weight_loss: '⚖️',
-  weight_gain: '📈',
-  muscle_gain: '💪',
-  healthy_eating: '🥗',
-  diabetes_support: '🩺',
-  fatty_liver_support: '🫀',
-  pcos_support: '🌸',
-  digestive_support: '🌿',
-  sports_nutrition: '🏃',
-  pregnancy_breastfeeding_caution: '🤱',
-  general_health_companion: '✨',
+const GOAL_ICONS: Record<GoalType, AppIconName> = {
+  weight_loss: 'weight',
+  weight_gain: 'progress',
+  muscle_gain: 'muscle',
+  healthy_eating: 'healthyEating',
+  diabetes_support: 'medical',
+  fatty_liver_support: 'safety',
+  pcos_support: 'pcos',
+  digestive_support: 'digestive',
+  sports_nutrition: 'sports',
+  pregnancy_breastfeeding_caution: 'baby',
+  general_health_companion: 'generalHealth',
 }
 
 export default function GoalStep({ dict, defaultValue, onSubmit }: Props) {
@@ -70,9 +71,11 @@ export default function GoalStep({ dict, defaultValue, onSubmit }: Props) {
                   : 'border-line bg-elevated hover:border-brand-light',
               )}
             >
-              <span className="text-2xl" role="img" aria-hidden>
-                {GOAL_EMOJI[goal]}
-              </span>
+              <AppIcon
+                name={GOAL_ICONS[goal]}
+                className={selected === goal ? 'text-brand' : 'text-ink-2'}
+                size={24}
+              />
               <span
                 className={cn(
                   'text-xs font-medium leading-snug',

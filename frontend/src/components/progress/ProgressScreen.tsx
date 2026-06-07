@@ -9,6 +9,7 @@ import { getProgressSummary, getWeeklyReport } from '@/lib/progress'
 import CheckInForm from './CheckInForm'
 import ProgressSummary from './ProgressSummary'
 import WeeklyReport from './WeeklyReport'
+import AppIcon from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Dictionary
@@ -95,7 +96,7 @@ export default function ProgressScreen({ dict, locale }: Props) {
         </div>
         <div className="rounded-2xl bg-elevated p-6 shadow-sm text-center space-y-4">
           <div className="mx-auto w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center">
-            <span className="text-3xl">⚖️</span>
+            <AppIcon name="weight" className="text-brand" size={34} />
           </div>
           <h2 className="text-xl font-bold text-ink">{dict.progress.emptyTitle}</h2>
           <p className="text-sm text-ink-2 leading-relaxed">

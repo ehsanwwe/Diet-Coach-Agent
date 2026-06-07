@@ -8,19 +8,20 @@ import type { Locale } from '@/lib/i18n'
 import type { CalendarResponse, NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
 import { getMealPlanCalendar, generateMealPlanWeek, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
 import ClinicalReviewState from './ClinicalReviewState'
+import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Dictionary
   locale: Locale
 }
 
-function QuickActionCard({ href, icon, label }: { href: string; icon: string; label: string }) {
+function QuickActionCard({ href, icon, label }: { href: string; icon: AppIconName; label: string }) {
   return (
     <Link
       href={href}
       className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-elevated shadow-sm hover:shadow-md transition-shadow"
     >
-      <span className="text-2xl">{icon}</span>
+      <AppIcon name={icon} className="text-brand" size={24} />
       <span className="text-xs font-medium text-ink-2 text-center leading-tight">{label}</span>
     </Link>
   )
@@ -194,22 +195,22 @@ export default function NutritionDashboard({ dict, locale }: Props) {
         <div className="grid grid-cols-2 gap-3">
           <QuickActionCard
             href={`/${locale}/nutrition/meal-analysis`}
-            icon="🍽️"
+            icon="search"
             label={dict.dashboard.analyzeMeal}
           />
           <QuickActionCard
             href={`/${locale}/nutrition/what-to-eat`}
-            icon="🤔"
+            icon="question"
             label={dict.dashboard.whatToEatNow}
           />
           <QuickActionCard
             href={`/${locale}/nutrition/plan`}
-            icon="📋"
+            icon="clipboardList"
             label={dict.dashboard.generatePlan}
           />
           <QuickActionCard
             href={`/${locale}/chat`}
-            icon="💬"
+            icon="chat"
             label={dict.dashboard.openChat}
           />
         </div>

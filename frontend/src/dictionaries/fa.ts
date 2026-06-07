@@ -859,7 +859,7 @@ const fa: Dictionary = {
     finalVideoComingSoon: 'ویدئوی راهنما به زودی اضافه می‌شود',
     finalVideoLoadError: 'بارگذاری ویدئو ناموفق بود. می‌توانید ادامه دهید.',
     finalWatchFirst: 'تماشای ویدئو توصیه می‌شود، اما می‌توانید ادامه دهید.',
-    finalMarkWatched: '✓ تماشا شد (محیط توسعه)',
+    finalMarkWatched: 'تماشا شد (محیط توسعه)',
     finalWatchedBadge: 'ویدئو تماشا شد',
     finalComplete: 'شروع با مربی تغذیه',
     finalCompleting: 'در حال تکمیل...',
