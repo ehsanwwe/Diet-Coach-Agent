@@ -39,7 +39,7 @@ _GREETING_REPLY = (
     "• سوال درباره مواد مغذی یا ترکیب غذا"
 )
 
-# Structural signal: last assistant turn ended with a question.
+# Structural signal: message ends with a question mark (Persian or ASCII).
 _FOLLOWUP_QUESTION_RE = re.compile(r"[؟?]\s*$")
 
 _ORCHESTRATOR_SYSTEM = """\
@@ -53,7 +53,7 @@ MANDATORY TOOL RULES:
 
 2. USER REPORTS EATING SOMETHING → analyze_meal(should_log=true) + get_calendar
    When: user says they ate/drank something (past tense), or reports a food event today.
-   After tools: NEVER shame the user. Ask ONE supportive follow-up question.
+   After tools: NEVER shame the user. You may ask ONE concise supportive follow-up question.
    IMPORTANT: Do NOT call update_tomorrow_plan just because the user ate something.
    Only call update_tomorrow_plan if the user EXPLICITLY asks to adjust tomorrow's plan.
 
@@ -69,6 +69,9 @@ MANDATORY TOOL RULES:
 
 5. WHAT TO EAT NOW → what_to_eat_now
    When: user asks for meal suggestions or what to eat right now.
+   ALSO WHEN: user reports still being hungry, hunger pain, hunger burn, or weakness
+              after a food event — call what_to_eat_now immediately, do NOT ask more questions.
+   hunger_level mapping: "گرسنه‌ام" / "هنوز گرسنه" / "سوزش گرسنگی" / "شکم‌درد" → hunger_level="high"
 
 6. PROGRESS / CHECK-IN → log_check_in or get_progress_summary
    When: user mentions weight, sleep, activity, stress, or asks about their progress.
@@ -79,21 +82,27 @@ MANDATORY TOOL RULES:
 8. MULTI-TASK → call all relevant tools in parallel, give ONE combined final response.
 
 9. FOLLOW-UP ANSWER DETECTION — read CONVERSATION_STATE before deciding
-   If CONVERSATION_STATE reports FOLLOW_UP_PENDING=true:
-   • The user's current message is answering the question the assistant just asked.
-   • If the message is ONLY providing information (food, time, quantity, context):
-     treat it as context. Provide guidance. Do NOT call update_tomorrow_plan.
-   • If the message contains an explicit action command ("کن", "بکن", "تنظیم کن",
-     "update", "change", "سبک‌تر"): treat it as a new instruction and use tools.
-   • Either way: never repeat analysis of events already covered in recent turns.
+   If CONVERSATION_STATE shows FOLLOW_UP_PENDING=true:
+   • The user's current message is answering the question the assistant already asked.
+   • MANDATORY: Take action. Do NOT ask another diagnostic question.
+   • If user reports hunger or any hunger-related discomfort: call what_to_eat_now(hunger_level="high")
+     and give a specific decisive food recommendation — name the food and portion.
+   • If user message contains an explicit action command ('کن', 'بکن', 'تنظیم کن', 'سبک‌تر'):
+     treat as a new instruction and call the appropriate tool.
+   • NEVER repeat analysis of food events already covered in recent turns.
+   If CONVERSATION_STATE shows MAX_FOLLOWUPS_REACHED=true:
+   • ABSOLUTE RULE: Do NOT ask any question. Call tools. Give decisive answer only.
+   • Call what_to_eat_now for any hunger/discomfort context.
 
 10. AVOID DUPLICATE ACTIONS — check conversation HISTORY before calling any tool
-    • Scan recent assistant messages in history.
-    • If a recent assistant turn already indicated tomorrow's plan was updated:
-      do NOT call update_tomorrow_plan again unless user says to update it AGAIN.
-    • If a food event was already analyzed recently:
-      refer to it briefly — do NOT re-run the full analysis on the same event.
-    • Repeating the same action without a new explicit user request is always wrong.
+    • If a recent assistant turn already updated tomorrow's plan: do NOT update again.
+    • If a food event was already analyzed recently: refer to it briefly, do NOT re-analyze.
+
+FOLLOW-UP LIMIT (critical):
+- Per user issue/event, ask AT MOST 1 clarifying question before taking action.
+- 'گرسنه‌ام', 'هنوز گرسنه‌ام', 'سوزش گرسنگی', 'شکم‌درد از گرسنگی', 'ضعف' are NOT reasons to ask.
+  They are signals to call what_to_eat_now and give immediate food guidance.
+- Safety exception ONLY for life-threatening symptoms: 'درد شدید قفسه سینه', 'استفراغ خون' etc.
 
 CRITICAL RULES (non-negotiable):
 - NEVER claim an action succeeded unless the tool returned success=true
@@ -102,12 +111,14 @@ CRITICAL RULES (non-negotiable):
 - NEVER recommend starvation or under 1200 kcal/day
 - NEVER prescribe medication or medical treatment
 - Respond in the SAME LANGUAGE as the user
-- Ask at most 1 follow-up question per turn
+- Ask at most 1 follow-up question per turn; 0 questions when MAX_FOLLOWUPS_REACHED=true
 
 RESPONSE FORMAT (strictly enforced):
 - Your final response text must NOT contain action confirmations.
   Phrases like "برنامه فردا به‌روزرسانی شد" or "ثبت شد" belong in action chips, not in your text.
   Do not repeat tool result summaries in your conversational response.
+- When plan update succeeds: briefly mention WHAT changed (e.g. more fiber/protein, lighter carbs).
+- If plan update fails: say you could not save the update; still give the immediate food recommendation.
 - If a food event was already discussed in recent history, refer to it briefly.
   Do not repeat the full nutritional analysis again.
 - Write complete sentences. Never output truncated or cut-off text.
@@ -118,15 +129,23 @@ RESPONSE FORMAT (strictly enforced):
 _TOOL_REGISTRY = build_tool_registry()
 _TOOL_SPECS = build_openai_specs(_TOOL_REGISTRY)
 
-# System message injected immediately before the final text-generation call.
-# Prevents the LLM from repeating pre-tool thinking text or tool summaries.
-_CLEAN_RESPONSE_REMINDER = (
-    "Now write your final coaching response. "
-    "Start fresh — do not continue from or repeat any text from before the tool calls. "
-    "Do not include action confirmations (e.g. 'برنامه فردا به‌روزرسانی شد') — "
-    "those are shown separately. "
-    "Be concise. Complete every sentence. Ask at most one follow-up question."
-)
+
+def _clean_response_reminder(conversation_state: str = "") -> str:
+    """Build the pre-final-response system reminder, stricter when follow-up limit is reached."""
+    base = (
+        "Now write your final coaching response. "
+        "Start fresh — do not continue from or repeat any text from before the tool calls. "
+        "Do not include action confirmations (e.g. 'برنامه فردا به‌روزرسانی شد') in your main text — "
+        "those are shown separately as action chips. "
+        "Be concise. Complete every sentence."
+    )
+    if "MAX_FOLLOWUPS_REACHED" in conversation_state:
+        return (
+            base
+            + " DO NOT ask a follow-up question — provide decisive food guidance only. "
+            "Name specific food options and portions."
+        )
+    return base + " Ask at most one follow-up question only if genuinely needed."
 
 
 def _is_greeting(message: str) -> bool:
@@ -138,41 +157,76 @@ def _get_locale(db: Session, user: User) -> str:
     return resolve_locale(None, get_user_language(db, user.id))
 
 
+def _count_recent_followup_questions(history: list[dict]) -> int:
+    """
+    Count how many consecutive recent assistant messages ended with a question mark.
+
+    Iterates history in reverse, skipping user messages, counting assistant messages
+    that end with '؟' or '?'. Stops at the first assistant message that does NOT end
+    with a question mark, or after examining 6 assistant messages.
+    """
+    count = 0
+    for msg in reversed(history):
+        if msg.get("role") != "assistant":
+            continue
+        content = msg.get("content") or ""
+        if _FOLLOWUP_QUESTION_RE.search(content.strip()):
+            count += 1
+        else:
+            break
+        if count >= 6:
+            break
+    return count
+
+
 def _build_conversation_state(history: list[dict]) -> str:
     """
     Derive conversation state from message history using structural signals only.
 
     No food-name or content-phrase matching — only message structure (role + punctuation).
-    Returns a compact state block to inject into the system prompt so the LLM can make
-    a better-informed decision about whether the current message is a follow-up answer
-    or a new independent instruction.
+    Returns a compact state block injected into the system prompt so the LLM knows
+    whether the user is answering a follow-up question and whether the follow-up budget
+    is exhausted (mandating action instead of another question).
     """
     if not history:
         return ""
 
-    last_assistant = next(
-        (m for m in reversed(history) if m.get("role") == "assistant"),
-        None,
-    )
-    if last_assistant is None:
+    followup_count = _count_recent_followup_questions(history)
+
+    if followup_count == 0:
         return ""
 
-    content = last_assistant.get("content", "").strip()
-    if _FOLLOWUP_QUESTION_RE.search(content):
+    if followup_count >= 2:
         return (
+            f"FOLLOW_UP_COUNT={followup_count}\n"
             "FOLLOW_UP_PENDING=true\n"
-            "The immediately preceding assistant message ended with a question. "
-            "The user's current message is likely ANSWERING that question, not issuing a new command.\n"
-            "Decision rules:\n"
-            "  • If user message is ONLY information/context (food description, quantity, time, name): "
-            "treat as a follow-up answer. Provide guidance. "
-            "Do NOT call update_tomorrow_plan or generate_week_plan based solely on this.\n"
-            "  • If user message contains an explicit action command "
-            "('کن', 'بکن', 'تنظیم کن', 'سبک‌تر', 'update', 'change', 'adjust'): "
-            "treat as a new instruction and call the appropriate tool.\n"
-            "  • Do NOT repeat analysis or actions already completed in recent turns."
+            "MAX_FOLLOWUPS_REACHED=true\n"
+            "⚠️ MANDATORY ACTION REQUIRED: The assistant has already asked MULTIPLE follow-up questions.\n"
+            "The user is answering them. You MUST call tools and provide decisive guidance NOW.\n"
+            "ABSOLUTELY FORBIDDEN: Asking any further diagnostic question.\n"
+            "REQUIRED for hunger/discomfort after food:\n"
+            "  → call what_to_eat_now(hunger_level='high', meal_context='<brief summary>')\n"
+            "  → give SPECIFIC food recommendation — name the food, portion, and when to eat it\n"
+            "  → call update_tomorrow_plan ONLY if user EXPLICITLY asked for plan update\n"
+            "ORDINARY SYMPTOMS DO NOT NEED MORE QUESTIONS:\n"
+            "  'گرسنه‌ام' / 'هنوز گرسنه‌ام' / 'سوزش گرسنگی' / 'شکم‌درد از گرسنگی' / 'ضعف'\n"
+            "  → these all mean the user needs food NOW — call what_to_eat_now\n"
+            "Safety exception ONLY for life-threatening symptoms like 'درد شدید قفسه سینه' or 'استفراغ خون'.\n"
         )
-    return ""
+
+    # followup_count == 1: one follow-up already asked — enforce action on next response
+    return (
+        "FOLLOW_UP_COUNT=1\n"
+        "FOLLOW_UP_PENDING=true\n"
+        "The assistant already asked one follow-up question. The user is now answering it.\n"
+        "MANDATORY RULES:\n"
+        "  • If user reports hunger, hunger pain, hunger burn, or stomach discomfort:\n"
+        "    → call what_to_eat_now(hunger_level='high') immediately — do NOT ask another question.\n"
+        "  • If user message is purely informational: provide concrete guidance, no more questions.\n"
+        "  • If user message contains explicit action command ('کن', 'تنظیم کن', 'سبک‌تر'):\n"
+        "    → call the appropriate tool.\n"
+        "  • NEVER repeat analysis already completed in recent turns.\n"
+    )
 
 
 def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageResponse:
@@ -247,14 +301,26 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
             provider_name = tool_result.provider
 
             if not tool_result.tool_calls:
-                reply_text = tool_result.assistant_message or ""
+                if tool_calls_total > 0:
+                    # Tools were already called in a prior round.
+                    # Inject the clean-response reminder before accepting the model's text
+                    # to prevent partial pre-tool "thinking" text from bleeding through.
+                    messages.append({"role": "system", "content": _clean_response_reminder(conversation_state)})
+                    try:
+                        clean = provider.generate_with_tools(messages, _TOOL_SPECS)
+                        reply_text = clean.assistant_message or ""
+                    except Exception as exc:
+                        logger.warning("Clean response generation failed: %s", exc)
+                        reply_text = tool_result.assistant_message or ""
+                else:
+                    # No tools called at all — pure text response, use as-is.
+                    reply_text = tool_result.assistant_message or ""
                 break
 
             # Append assistant turn with tool_calls.
-            # Use None for content when the model is calling tools — this prevents partial
-            # pre-tool "thinking" text from leaking into the final response context.
-            asst_content = tool_result.assistant_message or None
-            asst_turn: dict = {"role": "assistant", "content": asst_content}
+            # Always set content=None to discard any partial pre-tool "thinking" text
+            # the model may have generated before deciding to call tools.
+            asst_turn: dict = {"role": "assistant", "content": None}
             if tool_result.raw_tool_calls:
                 asst_turn["tool_calls"] = tool_result.raw_tool_calls
             messages.append(asst_turn)
@@ -284,8 +350,6 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                         }, ensure_ascii=False)
                     except Exception as exc:
                         # tool.execute() raised unexpectedly — DB may be dirty, rollback.
-                        # Controlled tool failures (success=False return) do not need rollback
-                        # because the tool already handled its own error internally.
                         logger.warning("Tool %s raised: %s", tc.name, exc)
                         try:
                             db.rollback()
@@ -295,10 +359,9 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
                         tool_content = json.dumps({"success": False, "error": str(exc)})
                 messages.append({"role": "tool", "tool_call_id": tc.id, "content": tool_content})
 
-            if round_idx == MAX_TOOL_ROUNDS - 1 or not tool_result.tool_calls:
-                # Inject a clean-response reminder so the model generates a fresh reply
-                # instead of continuing from partial pre-tool text or repeating tool summaries.
-                messages.append({"role": "system", "content": _CLEAN_RESPONSE_REMINDER})
+            if round_idx == MAX_TOOL_ROUNDS - 1:
+                # Exhausted all rounds — force final generation with clean reminder.
+                messages.append({"role": "system", "content": _clean_response_reminder(conversation_state)})
                 try:
                     final = provider.generate_with_tools(messages, _TOOL_SPECS)
                     reply_text = final.assistant_message or ""

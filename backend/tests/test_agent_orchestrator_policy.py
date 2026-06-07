@@ -78,8 +78,9 @@ class TestBuildConversationState:
             {"role": "assistant", "content": "بقیه وعده‌های امروز رو خوردی؟"},
         ]
         result = self._call(history)
-        assert "update_tomorrow_plan" in result
-        assert "generate_week_plan" in result
+        # Single follow-up: state should signal pending and count=1
+        assert "FOLLOW_UP_PENDING" in result
+        assert "FOLLOW_UP_COUNT=1" in result
 
 
 # ---------------------------------------------------------------------------
