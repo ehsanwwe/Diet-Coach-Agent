@@ -1,157 +1,180 @@
 # Diet Coach Agent
 
-<p align="center">
-  <img alt="Project Status" src="https://img.shields.io/badge/status-active_development-2ea44f?style=for-the-badge">
-  <img alt="Backend" src="https://img.shields.io/badge/backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white">
-  <img alt="Frontend" src="https://img.shields.io/badge/frontend-Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white">
-  <img alt="TypeScript" src="https://img.shields.io/badge/typescript-strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white">
-  <img alt="Database" src="https://img.shields.io/badge/database-SQLite-003B57?style=for-the-badge&logo=sqlite&logoColor=white">
-</p>
+AI-powered multilingual diet coach agent with **FastAPI**, **Next.js**, **SQLite**, **OpenAI tool-calling**, **meal-plan calendar**, **voice-ready onboarding**, and **health-safety guardrails**.
 
-<p align="center">
-  <img alt="GitHub License" src="https://img.shields.io/github/license/ehsanwwe/Diet-Coach-Agent?style=flat-square">
-  <img alt="Last Commit" src="https://img.shields.io/github/last-commit/ehsanwwe/Diet-Coach-Agent?style=flat-square">
-  <img alt="Repo Size" src="https://img.shields.io/github/repo-size/ehsanwwe/Diet-Coach-Agent?style=flat-square">
-  <img alt="Issues" src="https://img.shields.io/github/issues/ehsanwwe/Diet-Coach-Agent?style=flat-square">
-</p>
-
-## Overview
-
-**Diet Coach Agent** is a production-oriented multilingual nutrition and wellness companion designed to help users build healthier eating habits, complete a structured nutrition onboarding flow, record personal health context, and receive safe, adaptive guidance through a modern mobile-first experience.
-
-The project is built with a clear separation between backend and frontend, migration-managed data models, authenticated user flows, multilingual UI, RTL/LTR support, and a scalable architecture prepared for future nutrition intelligence, voice input, meal analysis, progress tracking, and professional review workflows.
-
-This repository is designed with long-term maintainability in mind: clean structure, typed code, explicit environment configuration, database migrations, modular service/repository layers, and a frontend experience suitable for real product delivery.
+Diet Coach Agent is not just a chatbot and not just a meal-plan generator.  
+It is a production-oriented nutrition companion that can onboard users, understand their health context, generate adaptive meal plans, track progress, and use backend tools from inside the chat.
 
 ---
 
-## Product Positioning
+## What it does
 
-Diet Coach Agent is not a simple calorie calculator or a static meal-plan generator. It is designed as a daily nutrition companion that can gradually understand the user's profile, lifestyle, preferences, risk factors, eating behavior, and progress history.
-
-The application focuses on:
-
-- Structured nutrition onboarding
-- Safe medical screening and risk detection
-- Habit and behavior awareness
-- Multilingual user experience
-- Persian-first product localization
-- Voice-ready onboarding interaction
-- Future-ready architecture for adaptive nutrition guidance
-
-The product is especially suitable for teams or organizations that need a serious, extensible foundation for a digital health, nutrition, wellness, or lifestyle-coaching platform.
-
----
-
-## Key Features
-
-### Authentication
-
-- Phone-number based OTP login
-- Development OTP support with `123456`
-- JWT-compatible authentication architecture
-- Protected backend routes
-- Frontend auth state handling
-- Logout-ready token revocation structure
-
-### Multilingual UI
-
-- Persian as the default language
-- English and Arabic language foundations
-- Dictionary-based i18n
-- RTL support for Persian and Arabic
-- LTR support for English
-- Direction-aware layout and transitions
-
-### Onboarding
-
-- Seven-step animated onboarding wizard
-- Profile, goal, medical, lifestyle, preferences, behavior, and final review steps
-- Backend-backed onboarding persistence
-- Auth-protected onboarding APIs
-- Clinical review notice for high-risk users
-- Final video placeholder with development bypass support
-
-### Voice & Habit Chat Foundation
-
-- Onboarding habit chat architecture
-- Text message endpoint support
-- Audio upload endpoint support
-- Local audio storage configuration
-- Audio metadata persistence
-- Frontend-ready voice recorder architecture
-- Future-ready transcription/STT integration path
-
-### Backend Architecture
-
-- FastAPI application shell
-- API versioning under `/api/v1`
-- SQLAlchemy 2.x ORM models
-- Alembic migrations
-- SQLite database for current stage
-- Pydantic v2 schemas
-- Service and repository separation
-- Environment-based configuration
-- Consistent validation and error handling
-
-### Frontend Architecture
-
-- Next.js App Router
-- TypeScript strict mode
-- Mobile-first layout
-- Desktop-centered mobile app experience
-- Component-based structure
-- Tailwind CSS styling
-- Reusable auth, onboarding, and UI modules
+- Phone OTP authentication
+- 7-step nutrition onboarding
+- Medical/risk screening with clinical-review states
+- Persian-first multilingual UI: `fa`, `en`, `ar`
+- RTL/LTR-aware mobile-first frontend
+- Onboarding video + text/voice habit chat
+- AI nutrition companion chat
+- OpenAI tool-calling agent with backend tool registry
+- Meal analysis from chat
+- “What should I eat now?” guidance
+- Rolling 7-day meal-plan calendar
+- Next-week meal-plan generation
+- Progress check-ins and weekly reports
+- Settings and language management
+- Safe fallback mock AI provider for local/offline development
 
 ---
 
-## Current Implementation Status
+## Agent capabilities
 
-| Phase | Status | Description |
-|---|---:|---|
-| Phase 01 | Completed | Infrastructure, backend foundation, ORM models, Alembic, FastAPI shell, frontend skeleton |
-| Phase 02 | Completed | i18n foundation, RTL/LTR support, mobile-first frontend shell |
-| Phase 03 | Completed | OTP authentication flow, backend endpoints, frontend login screens |
-| Phase 04 | Completed | Onboarding backend APIs, safety guardrail service, onboarding persistence |
-| Phase 05 | Completed | Animated onboarding frontend wizard consuming backend APIs |
-| Phase 06 | In progress / Next | Voice, audio upload, waveform recorder, onboarding habit chat |
-| Phase 07+ | Planned | Nutrition backend, agent layer, adaptive guidance, progress, reports, polish |
+The chat is powered by a backend **Agent Orchestrator**.
+
+The AI does not directly access the database.  
+Instead, it sees a controlled list of backend tools and decides which tool to call.
+
+Current tool capabilities include:
+
+- Analyze a meal or food item
+- Log food events
+- Suggest what to eat now
+- Read the user’s meal-plan calendar
+- Generate the next 7-day meal plan
+- Safely update tomorrow’s plan
+- Adapt nutrition guidance
+- Log daily check-ins
+- Read progress summary
+- Clear chat memory with confirmation
+
+Example:
+
+```text
+User: من امشب شیرینی خامه‌ای خوردم، برنامه فردامو سبک‌تر کن
+
+Agent:
+- analyzes the food event
+- checks the current plan
+- safely updates tomorrow’s plan
+- replies with a concise summary
+```
 
 ---
 
-## Tech Stack
+## Tech stack
 
 ### Backend
 
 - Python
 - FastAPI
 - SQLAlchemy 2.x
-- Alembic
+- Alembic migrations
 - SQLite
 - Pydantic v2
 - PyJWT
-- Uvicorn
+- httpx
+- OpenAI provider with SOCKS5 proxy enforcement
 - Modular service/repository architecture
+- Tool-based AI agent orchestration
 
 ### Frontend
 
-- Next.js
+- Next.js App Router
 - React
 - TypeScript
-- App Router
 - Tailwind CSS
+- Framer Motion
 - React Hook Form
 - Zod
-- Framer Motion
 - Dictionary-based i18n
+- RTL/LTR-aware UI
+- Mobile-first PWA-ready architecture
 
 ---
 
-## Repository Structure
+## AI provider modes
+
+The backend can run without any external AI provider.
+
+```env
+AI_PROVIDER=mock
+```
+
+For real AI behavior:
+
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-your-key
+OPENAI_MODEL=gpt-5.4-nano
+OPENAI_REQUIRE_PROXY=true
+OPENAI_PROXY_URL=socks5://127.0.0.1:1080
+```
+
+OpenAI requests are blocked unless a SOCKS5 proxy is configured.  
+This prevents accidental direct calls from the backend.
+
+---
+
+## Run locally
+
+### 1. Clone
+
+```bash
+git clone https://github.com/ehsanwwe/Diet-Coach-Agent.git
+cd Diet-Coach-Agent
+```
+
+### 2. Backend
+
+```bash
+cd backend
+cp .env.example .env
+python -m venv .venv
+.venv\Scripts\activate
+pip install -e ".[dev]"
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+Backend:
 
 ```text
-diet-coach-agent/
+http://127.0.0.1:8000
+```
+
+OpenAPI:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### 3. Frontend
+
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Frontend:
+
+```text
+http://localhost:3000
+```
+
+Default development OTP:
+
+```text
+123456
+```
+
+---
+
+## Repository structure
+
+```text
+Diet-Coach-Agent/
 ├── backend/
 │   ├── app/
 │   │   ├── api/
@@ -159,13 +182,10 @@ diet-coach-agent/
 │   │   ├── models/
 │   │   ├── repositories/
 │   │   ├── schemas/
-│   │   ├── services/
-│   │   └── main.py
+│   │   └── services/
 │   ├── alembic/
-│   ├── alembic.ini
-│   ├── pyproject.toml
-│   ├── .env.example
-│   └── README.md
+│   ├── tests/
+│   └── pyproject.toml
 │
 ├── frontend/
 │   ├── src/
@@ -175,263 +195,67 @@ diet-coach-agent/
 │   │   ├── hooks/
 │   │   ├── lib/
 │   │   └── types/
-│   ├── package.json
-│   ├── next.config.ts
-│   ├── tsconfig.json
-│   ├── .env.example
-│   └── README.md
+│   └── package.json
 │
 ├── .planning/
-├── CHANGELOG.md
-├── DECISIONS.md
-├── NEXT_STEPS.md
 ├── PROJECT_STATE.md
+├── NEXT_STEPS.md
+├── CHANGELOG.md
 └── README.md
 ```
 
 ---
 
-## Getting Started
+## Safety note
 
-### Prerequisites
+This project is designed as a nutrition and wellness companion.  
+It is not a replacement for a physician, registered dietitian, emergency care, or clinical treatment.
 
-Install the following tools before running the project:
-
-- Python 3.11+
-- Node.js 20+
-- npm
-- Git
+High-risk users should be routed toward professional review before receiving strict or disease-specific diet prescriptions.
 
 ---
 
-## Backend Setup
+## Who is this for?
 
-```bash
-cd backend
-python -m venv .venv
-```
+This repository is useful for:
 
-Activate the virtual environment:
+- AI health-product teams
+- nutrition startups
+- wellness platforms
+- medical software teams
+- developers building tool-using agents
+- companies that need a production-ready foundation for a personalized diet coach
 
-```bash
-# Windows PowerShell
-.venv\Scripts\Activate.ps1
-```
+You can run it locally, extend it, adapt it to your own product, or collaborate with us to turn it into a production system.
 
-```bash
-# Linux/macOS
-source .venv/bin/activate
-```
+---
 
-Install dependencies:
+## Collaboration
 
-```bash
-pip install -e .
-```
+If you want to build a custom AI nutrition agent, integrate this system into your own platform, or collaborate on product development, feel free to open an issue or contact the maintainer.
 
-Create local environment file:
-
-```bash
-cp .env.example .env
-```
-
-Run migrations:
-
-```bash
-alembic upgrade head
-```
-
-Start backend:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Default backend URL:
+Maintainer:
 
 ```text
-http://127.0.0.1:8000
+Ehsan Moradi
+GitHub: ehsanwwe
 ```
 
-OpenAPI documentation:
+---
+
+## Donate / Support
+
+If this project helped you, saved development time, or gave you a useful foundation, consider supporting its continued development.
+
+You can sponsor, donate, or simply star the repository.
 
 ```text
-http://127.0.0.1:8000/docs
+GitHub: https://github.com/ehsanwwe
+Repository: https://github.com/ehsanwwe/Diet-Coach-Agent
 ```
-
----
-
-## Frontend Setup
-
-```bash
-cd frontend
-npm install
-```
-
-Create local environment file:
-
-```bash
-cp .env.example .env.local
-```
-
-Start development server:
-
-```bash
-npm run dev
-```
-
-Default frontend URL:
-
-```text
-http://localhost:3000
-```
-
----
-
-## Environment Configuration
-
-### Backend
-
-Typical backend variables:
-
-```env
-APP_NAME="Diet Coach Agent"
-ENVIRONMENT=development
-DEBUG=false
-
-SECRET_KEY=change-me
-ACCESS_TOKEN_EXPIRE_MINUTES=10080
-
-DATABASE_URL=sqlite+pysqlite:///./app.db
-
-DEV_OTP_CODE=123456
-OTP_EXPIRE_MINUTES=5
-SMS_PROVIDER=mock
-
-AUDIO_STORAGE_PATH=./storage/audio
-MAX_AUDIO_UPLOAD_MB=20
-ALLOWED_AUDIO_MIME_TYPES=audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav
-```
-
-### Frontend
-
-Typical frontend variables:
-
-```env
-NEXT_PUBLIC_APP_NAME="Diet Coach Agent"
-NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
-NEXT_PUBLIC_DEFAULT_LOCALE=fa
-NEXT_PUBLIC_SUPPORTED_LOCALES=fa,en,ar
-NEXT_PUBLIC_ENABLE_DEV_VIDEO_BYPASS=true
-```
-
-> Local `.env` files, SQLite database files, uploads, audio files, caches, and build artifacts must not be committed.
-
----
-
-## API Overview
-
-### Health
-
-```text
-GET /api/v1/health
-```
-
-### Authentication
-
-```text
-POST /api/v1/auth/request-otp
-POST /api/v1/auth/verify-otp
-POST /api/v1/auth/logout
-GET  /api/v1/auth/me
-```
-
-### Onboarding
-
-```text
-GET  /api/v1/onboarding/status
-POST /api/v1/onboarding/profile
-POST /api/v1/onboarding/medical
-POST /api/v1/onboarding/lifestyle
-POST /api/v1/onboarding/preferences
-POST /api/v1/onboarding/behavior
-POST /api/v1/onboarding/complete
-```
-
-### Onboarding Chat / Audio
-
-```text
-POST /api/v1/onboarding/chat/text
-POST /api/v1/onboarding/chat/audio
-GET  /api/v1/onboarding/chat/history
-```
-
----
-
-## Quality Standards
-
-This project follows a professional delivery approach:
-
-- Clear backend/frontend separation
-- Versioned API structure
-- Migration-managed database schema
-- Typed backend schemas
-- Strict TypeScript frontend
-- Modular service/repository backend pattern
-- Reusable frontend components
-- Environment-based configuration
-- Safe handling of local files and secrets
-- Multilingual UI from the foundation
-- Git history designed to remain clean and reviewable
-
-The codebase is structured so future developers can continue work without reverse-engineering hidden assumptions.
-
----
-
-## Security and Safety Notes
-
-- Authentication uses a JWT-compatible architecture.
-- OTP is mocked for development and must be connected to a real SMS provider before production use.
-- Sensitive configuration must remain in local environment files.
-- SQLite files and uploaded media are ignored by Git.
-- Medical and nutrition-related flows include safety guardrails and clinical review states.
-- The application must not be presented as a replacement for a licensed physician, registered dietitian, or emergency medical service.
-
----
-
-## Roadmap
-
-Planned next milestones:
-
-- Complete voice recorder and audio upload UX
-- Add transcription provider integration
-- Add nutrition profile intelligence layer
-- Add adaptive meal guidance
-- Add daily check-in and progress tracking
-- Add weekly reports
-- Add settings and language management
-- Add production deployment configuration
-- Add automated tests for critical flows
-- Add specialist review workflow foundation
-
----
-
-## Professional Note
-
-Diet Coach Agent is being developed as a serious product foundation, not a temporary prototype. The architecture is intentionally structured to support future growth, maintainability, localization, health-safety boundaries, and real user workflows.
-
-The project is suitable for demonstration to stakeholders, staged product development, investor review, technical handoff, and continued production engineering. It is maintained with clear ownership, reviewable commits, and a practical architecture that can be extended by future engineering teams.
-
----
-
-## Maintainer
-
-**Ehsan Moradi**  
-Senior Software Engineer & Product Developer  
-GitHub: `ehsanwwe`
 
 ---
 
 ## License
 
-This project is licensed under the terms defined in the repository `LICENSE` file.
+MIT
