@@ -1,0 +1,206 @@
+stages:
+  - deploy
+
+variables:
+  GIT_REPO_SSH: "git@git.mediuty.com:ai_agent_erp/diet-coach-agent.git"
+
+  DEV_DEPLOY_PATH: "/root/ai_agent_erp/diet-coach-agent-dev"
+  PROD_DEPLOY_PATH: "/root/ai_agent_erp/diet-coach-agent-prod"
+
+.deploy_template:
+  image: ubuntu:cicd
+  stage: deploy
+
+  before_script:
+    - set -euo pipefail
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIV_KEY_BASE64" | base64 -d > ~/.ssh/server_deploy_key
+    - chmod 600 ~/.ssh/server_deploy_key
+    - ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
+
+  script:
+    - |
+      set -euo pipefail
+
+      GIT_KEY_B64="${GIT_SSH_PRIV_KEY_BASE64:-$SSH_PRIV_KEY_BASE64}"
+
+      if [ "$DEPLOY_ENV" = "prod" ]; then
+        DEPLOY_PATH="$PROD_DEPLOY_PATH"
+        COMPOSE_FILE="docker-compose.prod.yml"
+        ENV_FILE=".env.prod"
+        GIT_REF="$CI_COMMIT_TAG"
+        BACKEND_CONTAINER="diet-coach-backend-prod"
+      else
+        DEPLOY_PATH="$DEV_DEPLOY_PATH"
+        COMPOSE_FILE="docker-compose.dev.yml"
+        ENV_FILE=".env.dev"
+        GIT_REF="main"
+        BACKEND_CONTAINER="diet-coach-backend-dev"
+      fi
+
+      echo "Deploy environment: $DEPLOY_ENV"
+      echo "Deploy path: $DEPLOY_PATH"
+      echo "Git ref: $GIT_REF"
+      echo "Git SSH URL: $GIT_REPO_SSH"
+      echo "Compose file: $COMPOSE_FILE"
+      echo "Runtime env file: $ENV_FILE"
+
+      ssh -p "${SSH_PORT:-22}" -i ~/.ssh/server_deploy_key "$SSH_USER@$SSH_HOST" "mkdir -p /tmp/diet-coach-ci"
+
+      printf '%s' "$GIT_KEY_B64" | ssh -p "${SSH_PORT:-22}" -i ~/.ssh/server_deploy_key "$SSH_USER@$SSH_HOST" \
+        "cat > /tmp/diet-coach-ci/git_key.b64"
+
+      ssh -p "${SSH_PORT:-22}" -i ~/.ssh/server_deploy_key "$SSH_USER@$SSH_HOST" \
+        "DEPLOY_ENV='$DEPLOY_ENV' \
+         DEPLOY_PATH='$DEPLOY_PATH' \
+         GIT_REPO_SSH='$GIT_REPO_SSH' \
+         GIT_REF='$GIT_REF' \
+         COMPOSE_FILE='$COMPOSE_FILE' \
+         ENV_FILE='$ENV_FILE' \
+         BACKEND_CONTAINER='$BACKEND_CONTAINER' \
+         bash -s" <<'REMOTE'
+      set -euo pipefail
+
+      mkdir -p /tmp/diet-coach-ci
+
+      base64 -d /tmp/diet-coach-ci/git_key.b64 > /tmp/diet-coach-ci/git_key
+      chmod 600 /tmp/diet-coach-ci/git_key
+      rm -f /tmp/diet-coach-ci/git_key.b64
+
+      ENV_BACKUP="/tmp/diet-coach-ci/${DEPLOY_ENV}.env.backup"
+
+      trap 'rm -f /tmp/diet-coach-ci/git_key "$ENV_BACKUP"' EXIT
+
+      export GIT_SSH_COMMAND="ssh -i /tmp/diet-coach-ci/git_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+
+      mkdir -p "$(dirname "$DEPLOY_PATH")"
+
+      # Preserve server-side runtime env before Git operations.
+      if [ -f "$DEPLOY_PATH/$ENV_FILE" ]; then
+        cp "$DEPLOY_PATH/$ENV_FILE" "$ENV_BACKUP"
+        chmod 600 "$ENV_BACKUP"
+        echo "Preserved existing $DEPLOY_PATH/$ENV_FILE"
+      fi
+
+      if [ ! -d "$DEPLOY_PATH/.git" ]; then
+        echo "Repository not found. Cloning..."
+        rm -rf "$DEPLOY_PATH"
+        git clone "$GIT_REPO_SSH" "$DEPLOY_PATH"
+      fi
+
+      cd "$DEPLOY_PATH"
+
+      git remote set-url origin "$GIT_REPO_SSH"
+      git fetch --prune --tags origin '+refs/heads/*:refs/remotes/origin/*' '+refs/tags/*:refs/tags/*'
+
+      if [ "$DEPLOY_ENV" = "prod" ]; then
+        git checkout -f "$GIT_REF"
+        git reset --hard "$GIT_REF"
+      else
+        git checkout -f main
+        git reset --hard origin/main
+      fi
+
+      # Restore server-side runtime env after Git reset.
+      if [ -f "$ENV_BACKUP" ]; then
+        cp "$ENV_BACKUP" "$ENV_FILE"
+        chmod 600 "$ENV_FILE"
+        echo "Restored server-side $ENV_FILE after Git reset"
+      fi
+
+      if [ ! -f "$ENV_FILE" ]; then
+        echo "ERROR: $DEPLOY_PATH/$ENV_FILE does not exist."
+        echo "Create it once on the server, then run the pipeline again."
+        exit 1
+      fi
+
+      chmod 600 "$ENV_FILE"
+
+      mkdir -p backend/persistent frontend/persistent
+      mkdir -p backend/persistent/dev frontend/persistent/dev
+      mkdir -p backend/persistent/prod frontend/persistent/prod
+
+      echo "Checking required runtime env values..."
+
+      if ! grep -q '^SECRET_KEY=.\+' "$ENV_FILE"; then
+        echo "ERROR: SECRET_KEY is missing or empty in $ENV_FILE"
+        cat -A "$ENV_FILE"
+        exit 1
+      fi
+
+      if ! grep -q '^DATABASE_URL=.\+' "$ENV_FILE"; then
+        echo "ERROR: DATABASE_URL is missing or empty in $ENV_FILE"
+        cat -A "$ENV_FILE"
+        exit 1
+      fi
+
+      if ! grep -q '^NEXT_PUBLIC_API_BASE_URL=.\+' "$ENV_FILE"; then
+        echo "ERROR: NEXT_PUBLIC_API_BASE_URL is missing or empty in $ENV_FILE"
+        cat -A "$ENV_FILE"
+        exit 1
+      fi
+
+      if ! grep -q '^CORS_ORIGINS=.\+' "$ENV_FILE"; then
+        echo "ERROR: CORS_ORIGINS is missing or empty in $ENV_FILE"
+        cat -A "$ENV_FILE"
+        exit 1
+      fi
+
+      echo "Runtime env file is present. Safe values:"
+      grep -v -E '^(SECRET_KEY|OPENCLAW_API_KEY|OPENAI_API_KEY)=' "$ENV_FILE" || true
+
+      echo "Validating Docker Compose config..."
+      docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" config > /tmp/diet-coach-ci/compose.resolved.yml
+
+      if ! grep -q 'SECRET_KEY' /tmp/diet-coach-ci/compose.resolved.yml; then
+        echo "ERROR: Docker Compose config does not contain SECRET_KEY"
+        cat /tmp/diet-coach-ci/compose.resolved.yml
+        exit 1
+      fi
+
+      if ! grep -q 'CORS_ORIGINS' /tmp/diet-coach-ci/compose.resolved.yml; then
+        echo "ERROR: Docker Compose config does not contain CORS_ORIGINS"
+        cat /tmp/diet-coach-ci/compose.resolved.yml
+        exit 1
+      fi
+
+      echo "Deploying containers..."
+      docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build --force-recreate --remove-orphans
+
+      if ! docker inspect "$BACKEND_CONTAINER" \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^SECRET_KEY=.\+'; then
+        echo "ERROR: $BACKEND_CONTAINER did not receive SECRET_KEY"
+        docker inspect "$BACKEND_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}'
+        exit 1
+      fi
+
+      if ! docker inspect "$BACKEND_CONTAINER" \
+        --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -q '^CORS_ORIGINS=.\+'; then
+        echo "ERROR: $BACKEND_CONTAINER did not receive CORS_ORIGINS"
+        docker inspect "$BACKEND_CONTAINER" --format '{{range .Config.Env}}{{println .}}{{end}}'
+        exit 1
+      fi
+
+      echo "Backend container received required runtime env values."
+
+      docker logs --tail 80 "$BACKEND_CONTAINER" || true
+      docker image prune -f
+      REMOTE
+
+deploy_development:
+  extends: .deploy_template
+  variables:
+    DEPLOY_ENV: "dev"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: on_success
+    - when: never
+
+deploy_production:
+  extends: .deploy_template
+  variables:
+    DEPLOY_ENV: "prod"
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: on_success
+    - when: never

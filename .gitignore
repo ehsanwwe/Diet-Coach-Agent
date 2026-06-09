@@ -36,6 +36,7 @@ dist/
 build/
 .eggs/
 .Python
+.env
 env/
 venv/
 .venv/
@@ -97,3 +98,9 @@ backend/app.db
 
 # Loose archive file
 backend.zip
+
+.env
+.env.*
+!.env.example
+!.env.dev.example
+!.env.prod.example
