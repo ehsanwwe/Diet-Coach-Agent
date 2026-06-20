@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.models.progress import ProgressEntry
 from app.models.user import User
 from app.repositories import calendar_repository, nutrition_repository, onboarding_repository, progress_repository
+from app.schemas.ai import AI_TASK_SCHEMAS
 from app.services import nutrition_memory_service, prompt_builder
 from app.services.ai_provider import AIProvider, AIProviderResult
+from app.services.mock_ai_provider import MockAIProvider, TASK_WEEKLY_REPORT
 from app.services.nutrition_agent_service import NutritionAgentService
 from app.services.safety_guardrail_service import SafetyAssessment
 
@@ -161,6 +163,34 @@ def test_memory_includes_recent_checkin_and_progress_summaries(
     assert ctx.body_response_summary is not None
 
 
+def test_memory_includes_richer_weekly_insights(db_session: Session, test_user: User):
+    today = date.today()
+    progress_repository.save_weekly_report(
+        db_session,
+        test_user.id,
+        week_start=today - timedelta(days=6),
+        week_end=today,
+        report_data={
+            "summary": "weekly pattern summary",
+            "behavior_pattern_summary": "stress and cravings",
+            "three_strengths": ["logged meals", "noticed cravings", "walked"],
+            "two_small_adjustments": ["add protein", "prepare snack"],
+            "next_week_small_goal": "log five check-ins",
+            "safety_notes": ["review symptoms"],
+            "requires_human_review": True,
+        },
+    )
+    db_session.flush()
+
+    ctx = nutrition_memory_service.build(db_session, test_user)
+
+    assert ctx.weekly_insights_summary is not None
+    assert "behavior_pattern_summary=stress and cravings" in ctx.weekly_insights_summary
+    assert "three_strengths=logged meals" in ctx.weekly_insights_summary
+    assert "next_week_small_goal=log five check-ins" in ctx.weekly_insights_summary
+    assert "requires_human_review=True" in ctx.weekly_insights_summary
+
+
 def test_memory_includes_meal_history_and_active_plan_summary(
     db_session: Session, test_user: User
 ):
@@ -255,6 +285,32 @@ def test_prompt_builder_includes_expanded_memory_sections():
     assert "recent_progress_checkins" in prompt.user
     assert "active_plan_context" in prompt.user
     assert "waist_circumference" in prompt.user
+
+
+def test_prompt_builder_weekly_report_contract_uses_memory_and_metrics():
+    ctx = nutrition_memory_service.NutritionMemoryContext(
+        user_id="u1",
+        weekly_insights_summary="last report",
+        recent_checkin_summary="avg sleep 6h",
+    )
+
+    prompt = prompt_builder.for_weekly_report(ctx, {"logging_days": 5}, "fa")
+
+    assert prompt.task_type == "weekly_report"
+    assert "TASK:weekly_report" in prompt.system
+    assert "NutritionMemoryContext" in prompt.system
+    assert "Deterministic weekly metrics" in prompt.user
+    assert "three_strengths" in prompt.user
+
+
+def test_mock_weekly_report_validates_against_ai_schema():
+    result = MockAIProvider().generate_text([{"role": "system", "content": TASK_WEEKLY_REPORT}])
+    data = json.loads(result.content)
+    validated = AI_TASK_SCHEMAS["weekly_report"].model_validate(data)
+
+    assert len(validated.three_strengths) == 3
+    assert len(validated.two_small_adjustments) == 2
+    assert validated.next_week_small_goal
 
 
 class CapturingProvider(AIProvider):

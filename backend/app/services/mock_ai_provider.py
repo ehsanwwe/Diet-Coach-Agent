@@ -22,6 +22,7 @@ TASK_CONTEXT_GUIDANCE = "TASK:context_guidance"
 TASK_GENERATE_WEEK_FA = "TASK:generate_week_fa"
 TASK_GENERATE_WEEK_EN = "TASK:generate_week_en"
 TASK_GENERATE_WEEK_AR = "TASK:generate_week_ar"
+TASK_WEEKLY_REPORT = "TASK:weekly_report"
 
 
 def _make_week_fa() -> dict:
@@ -1176,6 +1177,24 @@ _MOCK_CONTEXT_GUIDANCE = {
     "requires_human_review": False,
 }
 
+_MOCK_WEEKLY_REPORT = {
+    "summary": "گزارش این هفته روی الگوهای قابل اقدام تمرکز دارد و بدون قضاوت نوشته شده است.",
+    "behavior_pattern_summary": "خواب، استرس، ثبت وعده‌ها و هوس‌ها برای تصمیم‌های کوچک هفته بعد استفاده شوند.",
+    "three_strengths": [
+        "ثبت داده‌ها به شناخت بهتر بدن کمک کرده است.",
+        "تمرکز روی وعده‌های متعادل قابل ادامه است.",
+        "بررسی هوس‌ها می‌تواند مسیر تغییر را عملی‌تر کند.",
+    ],
+    "two_small_adjustments": [
+        "در یک وعده روزانه یک منبع پروتئین یا فیبر کوچک اضافه شود.",
+        "برای زمان‌های پرریسک، یک میان‌وعده ساده و متعادل از قبل آماده باشد.",
+    ],
+    "next_week_small_goal": "هفته بعد حداقل پنج چک‌این کوتاه ثبت شود.",
+    "monitoring_notes": "خواب، استرس، گرسنگی، هوس و علائم هشدار پیگیری شوند.",
+    "safety_notes": [],
+    "requires_human_review": False,
+}
+
 _MOCK_ADAPT_PLAN = {
     "summary": "برنامه با توجه به بازخورد جدید شما به شکل محافظه‌کارانه تنظیم شد.",
     "assessment_summary": "بازخورد اخیر نشان می‌دهد نیاز به وعده‌های سیرکننده‌تر و انعطاف‌پذیرتر وجود دارد.",
@@ -1282,6 +1301,8 @@ class MockAIProvider(AIProvider):
             content = json.dumps(_MOCK_WEEK_AR, ensure_ascii=False)
         elif task_type == "generate_week_fa":
             content = json.dumps(_MOCK_WEEK_FA, ensure_ascii=False)
+        elif task_type == "weekly_report":
+            content = json.dumps(_MOCK_WEEKLY_REPORT, ensure_ascii=False)
         else:
             content = json.dumps(_MOCK_PLAN, ensure_ascii=False)
 
@@ -1303,6 +1324,8 @@ class MockAIProvider(AIProvider):
                 return "generate_week_ar"
             if TASK_GENERATE_WEEK_FA in content:
                 return "generate_week_fa"
+            if TASK_WEEKLY_REPORT in content:
+                return "weekly_report"
             if TASK_GENERATE_PLAN in content:
                 return "generate_plan"
             if TASK_ANALYZE_MEAL in content:

@@ -27,6 +27,7 @@ from app.services.prompt_builder import (
     for_craving_support,
     for_generate_plan,
     for_generate_week_plan,
+    for_weekly_report,
     for_slip_recovery,
     for_what_to_eat_now,
 )
@@ -65,7 +66,7 @@ def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]
     from app.services.mock_ai_provider import (
         TASK_ADAPT_PLAN, TASK_ANALYZE_MEAL, TASK_GENERATE_PLAN, TASK_WHAT_TO_EAT,
         TASK_CHAT, TASK_CONTEXT_GUIDANCE, TASK_CRAVING_SUPPORT, TASK_GENERATE_WEEK_AR,
-        TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA, TASK_SLIP_RECOVERY,
+        TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA, TASK_SLIP_RECOVERY, TASK_WEEKLY_REPORT,
     )
     task_tag_map = {
         "generate_plan": TASK_GENERATE_PLAN,
@@ -79,6 +80,7 @@ def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]
         "generate_week_fa": TASK_GENERATE_WEEK_FA,
         "generate_week_en": TASK_GENERATE_WEEK_EN,
         "generate_week_ar": TASK_GENERATE_WEEK_AR,
+        "weekly_report": TASK_WEEKLY_REPORT,
     }
     tag = task_tag_map.get(task_type, TASK_GENERATE_PLAN)
     result = mock.generate_text([{"role": "system", "content": tag}])
@@ -243,6 +245,15 @@ class NutritionAgentService:
                 is_mock=True,
             )
         return parsed, result
+
+    def weekly_report(
+        self,
+        ctx: NutritionMemoryContext,
+        weekly_metrics: dict,
+        locale: str,
+    ) -> tuple[dict, AIProviderResult]:
+        prompt = for_weekly_report(ctx, weekly_metrics, locale)
+        return self._call(prompt)
 
     def adapt_plan(
         self,

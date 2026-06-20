@@ -562,23 +562,45 @@ def summarize_meal_history(db: Session, user_id: str) -> str | None:
 
 
 def summarize_weekly_insights(db: Session, user_id: str) -> str | None:
-    result = db.execute(
-        select(WeeklyReport)
-        .where(WeeklyReport.user_id == user_id)
-        .order_by(desc(WeeklyReport.generated_at))
-        .limit(1)
-    )
-    report = result.scalar_one_or_none()
+    report = progress_repository.get_latest_weekly_report(db, user_id)
     if not report:
         return None
     data = _decode_json_dict(report.report_data)
     if not data:
         return None
     parts = [f"week {report.week_start.isoformat()} to {report.week_end.isoformat()}"]
-    for key in ("avg_hunger", "avg_sleep", "avg_stress", "total_activity_minutes", "adherence_pct", "suggested_focus", "sleep_stress_note"):
+    for key in (
+        "summary",
+        "avg_hunger",
+        "avg_hunger_level_1_10",
+        "avg_sleep",
+        "avg_stress",
+        "avg_adherence_level",
+        "total_activity_minutes",
+        "adherence_pct",
+        "adherence_summary",
+        "behavior_pattern_summary",
+        "eating_out_pattern",
+        "protein_quality",
+        "fiber_quality",
+        "hydration_quality",
+        "simple_sugar_quality",
+        "sleep_food_relationship",
+        "stress_food_relationship",
+        "next_week_small_goal",
+        "suggested_focus",
+        "sleep_stress_note",
+        "confidence_level",
+    ):
         value = data.get(key)
         if value is not None:
             parts.append(f"{key}={value}")
+    for key in ("three_strengths", "two_small_adjustments", "craving_patterns", "risky_time_windows", "safety_notes"):
+        value = data.get(key)
+        if isinstance(value, list) and value:
+            parts.append(f"{key}=" + " | ".join(str(v)[:120] for v in value[:3]))
+    if data.get("requires_human_review"):
+        parts.append("requires_human_review=True")
     return "; ".join(parts)
 
 

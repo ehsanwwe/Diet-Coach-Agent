@@ -64,6 +64,19 @@ class WeightTrend(BaseModel):
     delta: float
 
 
+class DataCompleteness(BaseModel):
+    checkin_days: int = 0
+    expected_days: int = 7
+    checkin_pct: int = 0
+    weight_points: int = 0
+    waist_points: int = 0
+    meal_entries: int = 0
+    has_sleep_data: bool = False
+    has_stress_data: bool = False
+    has_hunger_data: bool = False
+    has_adherence_data: bool = False
+
+
 class ProgressSummaryResponse(BaseModel):
     has_data: bool
     recent_checkins: list[CheckInResponse] = Field(default_factory=list)
@@ -83,20 +96,46 @@ class ProgressSummaryResponse(BaseModel):
 
 
 class WeeklyReportData(BaseModel):
+    summary: str | None = None
+    date_range: dict[str, date] | None = None
     weight_trend: WeightTrend | None = None
+    waist_trend: WeightTrend | None = None
     weight_series: list[float] = Field(default_factory=list)
+    waist_series: list[float] = Field(default_factory=list)
     avg_hunger: float | None = None
     avg_hunger_level_1_10: float | None = None
     avg_sleep: float | None = None
     avg_sleep_quality: float | None = None
     avg_energy_level: float | None = None
     avg_stress: float | None = None
+    avg_adherence_level: float | None = None
     total_activity_minutes: int = 0
     logging_days: int = 0
     adherence_pct: int = 0
+    adherence_summary: str | None = None
+    risky_meals: list[str] = Field(default_factory=list)
+    risky_time_windows: list[str] = Field(default_factory=list)
+    craving_patterns: list[str] = Field(default_factory=list)
     craving_summary: str | None = None
     eating_location_summary: str | None = None
+    eating_out_pattern: str | None = None
     symptom_summary: str | None = None
+    protein_quality: str | None = None
+    fiber_quality: str | None = None
+    hydration_quality: str | None = None
+    simple_sugar_quality: str | None = None
+    sleep_food_relationship: str | None = None
+    stress_food_relationship: str | None = None
+    behavior_pattern_summary: str | None = None
+    three_strengths: list[str] = Field(default_factory=list)
+    two_small_adjustments: list[str] = Field(default_factory=list)
+    next_week_small_goal: str | None = None
+    monitoring_notes: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    generated_from_data_points: dict[str, int] = Field(default_factory=dict)
+    data_completeness: DataCompleteness | None = None
+    confidence_level: str | None = None
     adaptation_hint: bool = False
     human_review_recommended: bool = False
     sleep_stress_note: str | None = None

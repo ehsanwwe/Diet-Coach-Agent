@@ -20,6 +20,7 @@ from app.services.mock_ai_provider import (
     TASK_GENERATE_WEEK_EN,
     TASK_GENERATE_WEEK_FA,
     TASK_SLIP_RECOVERY,
+    TASK_WEEKLY_REPORT,
     TASK_WHAT_TO_EAT,
 )
 from app.services.nutrition_memory_service import NutritionMemoryContext
@@ -454,6 +455,39 @@ def for_generate_week_plan(
     if extra_context:
         user = f"Special instruction for this request: {extra_context}\n\n" + user
     return PromptData(task_type=f"generate_week_{effective_locale}", system=system, user=user)
+
+
+def for_weekly_report(
+    ctx: NutritionMemoryContext,
+    weekly_metrics: dict,
+    locale: str | None = None,
+) -> PromptData:
+    effective_locale = _normalize_locale(locale)
+    system = (
+        _base_system(TASK_WEEKLY_REPORT, ctx, locale=effective_locale)
+        + "\nWeekly report rules:\n"
+        "- Use NutritionMemoryContext and the deterministic weekly metrics; do not invent missing data.\n"
+        "- Explain patterns in simple, supportive, non-judgmental language.\n"
+        "- Provide exactly three strengths, exactly two small adjustments, and one small next-week goal.\n"
+        "- Mention human review when risk context or red-flag symptoms require it.\n"
+        "- Never recommend fasting, detox, purging, skipping meals, extreme exercise, or severe calorie restriction as compensation.\n"
+    )
+    user = (
+        f"User memory/context:\n{_memory_json(ctx)}\n\n"
+        f"Deterministic weekly metrics:\n{json.dumps(weekly_metrics, ensure_ascii=False, indent=2)}\n\n"
+        "Return JSON exactly in this shape:\n"
+        "{\n"
+        '  "summary": "...",\n'
+        '  "behavior_pattern_summary": "...",\n'
+        '  "three_strengths": ["...", "...", "..."],\n'
+        '  "two_small_adjustments": ["...", "..."],\n'
+        '  "next_week_small_goal": "...",\n'
+        '  "monitoring_notes": "...",\n'
+        '  "safety_notes": [],\n'
+        '  "requires_human_review": false\n'
+        "}"
+    )
+    return PromptData(task_type="weekly_report", system=system, user=user)
 
 
 def for_adapt_plan(

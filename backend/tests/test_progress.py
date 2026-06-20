@@ -1,8 +1,10 @@
 """Tests for Phase 9 progress endpoints (PROG-01, PROG-02, PROG-03)."""
 from __future__ import annotations
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from sqlalchemy import select
-from app.models.progress import DailyCheckIn
+from app.models.progress import DailyCheckIn, ProgressEntry
+from app.repositories import onboarding_repository
+from app.services.safety_guardrail_service import SafetyAssessment
 
 
 def test_submit_check_in(client, auth_headers, test_user, db_session):
@@ -142,6 +144,13 @@ def test_weekly_report(client, auth_headers, test_user, db_session):
     assert len(report["suggested_focus"]) > 0
     assert report["weight_trend"] is not None
     assert report["weight_trend"]["first"] == 73.0
+    assert report["summary"]
+    assert report["date_range"]["start"] == week_start.isoformat()
+    assert len(report["three_strengths"]) == 3
+    assert len(report["two_small_adjustments"]) == 2
+    assert report["next_week_small_goal"]
+    assert "data_completeness" in report
+    assert report["generated_from_data_points"]["checkins"] == 7
 
 
 def test_weekly_report_empty(client, auth_headers, test_user):
@@ -155,3 +164,136 @@ def test_weekly_report_empty(client, auth_headers, test_user):
     # week boundaries are still computed even on empty
     assert data["week_start"] is not None
     assert data["week_end"] is not None
+
+
+def test_weekly_report_computes_weight_and_waist_from_progress_entries(
+    client, auth_headers, test_user, db_session
+):
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    client.post(
+        "/api/v1/progress/check-in",
+        json={"check_date": week_start.isoformat(), "sleep_hours": 7.0},
+        headers=auth_headers,
+    )
+    db_session.add_all(
+        [
+            ProgressEntry(
+                user_id=test_user.id,
+                entry_type="weight",
+                value_numeric=75.0,
+                recorded_at=datetime.combine(week_start, datetime.min.time()),
+            ),
+            ProgressEntry(
+                user_id=test_user.id,
+                entry_type="weight",
+                value_numeric=74.2,
+                recorded_at=datetime.combine(week_start + timedelta(days=4), datetime.min.time()),
+            ),
+            ProgressEntry(
+                user_id=test_user.id,
+                entry_type="waist",
+                value_numeric=92.0,
+                recorded_at=datetime.combine(week_start, datetime.min.time()),
+            ),
+            ProgressEntry(
+                user_id=test_user.id,
+                entry_type="waist",
+                value_numeric=91.0,
+                recorded_at=datetime.combine(week_start + timedelta(days=4), datetime.min.time()),
+            ),
+        ]
+    )
+    db_session.flush()
+
+    res = client.get("/api/v1/progress/weekly-report", headers=auth_headers)
+
+    assert res.status_code == 200, res.text
+    report = res.json()["report"]
+    assert report["weight_trend"]["delta"] == -0.8
+    assert report["waist_trend"]["delta"] == -1.0
+    assert report["data_completeness"]["weight_points"] == 2
+    assert report["data_completeness"]["waist_points"] == 2
+
+
+def test_weekly_report_summarizes_phase5_checkin_signals(client, auth_headers):
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    for i in range(3):
+        client.post(
+            "/api/v1/progress/check-in",
+            json={
+                "check_date": (week_start + timedelta(days=i)).isoformat(),
+                "hunger_level_1_10": 8,
+                "energy_level": 2 + i,
+                "cravings": "sweet after dinner",
+                "craving_type": "sweet",
+                "eating_location": "work",
+                "planned_eating_out": i == 1,
+                "symptoms": "mild headache" if i == 0 else None,
+                "adherence_level": 2 + i,
+                "sleep_hours": 5.5,
+                "stress_level": 4,
+            },
+            headers=auth_headers,
+        )
+
+    res = client.get("/api/v1/progress/weekly-report", headers=auth_headers)
+
+    assert res.status_code == 200, res.text
+    report = res.json()["report"]
+    assert report["avg_hunger_level_1_10"] == 8.0
+    assert report["avg_energy_level"] == 3.0
+    assert report["avg_adherence_level"] == 3.0
+    assert report["craving_patterns"]
+    assert report["eating_out_pattern"] is not None
+    assert report["risky_time_windows"]
+    assert report["sleep_food_relationship"] is not None
+    assert report["stress_food_relationship"] is not None
+
+
+def test_weekly_report_is_supportive_and_avoids_extreme_compensation(client, auth_headers):
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    client.post(
+        "/api/v1/progress/check-in",
+        json={
+            "check_date": week_start.isoformat(),
+            "cravings": "ate sweets",
+            "hunger_level_1_10": 9,
+            "adherence_level": 1,
+        },
+        headers=auth_headers,
+    )
+
+    res = client.get("/api/v1/progress/weekly-report", headers=auth_headers)
+
+    report_text = str(res.json()["report"]).lower()
+    banned = ["failed", "failure", "shame", "detox", "purge", "skip meals", "extreme exercise"]
+    assert all(term not in report_text for term in banned)
+
+
+def test_weekly_report_high_risk_sets_safety_notes(
+    client, auth_headers, test_user, db_session
+):
+    onboarding_repository.create_risk_assessment(
+        db_session,
+        test_user.id,
+        SafetyAssessment(risk_level="clinical_review_required", flags_triggered=["kidney_disease"], clinical_review_required=True),
+    )
+    db_session.flush()
+    today = date.today()
+    week_start = today - timedelta(days=today.weekday())
+    client.post(
+        "/api/v1/progress/check-in",
+        json={"check_date": week_start.isoformat(), "symptoms": "chest pain"},
+        headers=auth_headers,
+    )
+
+    res = client.get("/api/v1/progress/weekly-report", headers=auth_headers)
+
+    assert res.status_code == 200, res.text
+    report = res.json()["report"]
+    assert report["requires_human_review"] is True
+    assert report["human_review_recommended"] is True
+    assert report["safety_notes"]

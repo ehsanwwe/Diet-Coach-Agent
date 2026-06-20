@@ -214,6 +214,17 @@ class AIAdaptPlanResponse(_AIBaseModel):
     follow_up_question: str | None = None
 
 
+class AIWeeklyReportResponse(_AIBaseModel):
+    summary: str = Field(min_length=1)
+    behavior_pattern_summary: str | None = None
+    three_strengths: list[str] = Field(min_length=3)
+    two_small_adjustments: list[str] = Field(min_length=2)
+    next_week_small_goal: str = Field(min_length=1)
+    monitoring_notes: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+
+
 AI_TASK_SCHEMAS: dict[str, type[_AIBaseModel]] = {
     "generate_plan": AIPlanResponse,
     "analyze_meal": AIMealAnalysisResponse,
@@ -226,4 +237,5 @@ AI_TASK_SCHEMAS: dict[str, type[_AIBaseModel]] = {
     "generate_week_en": AIWeekPlanResponse,
     "generate_week_ar": AIWeekPlanResponse,
     "adapt_plan": AIAdaptPlanResponse,
+    "weekly_report": AIWeeklyReportResponse,
 }

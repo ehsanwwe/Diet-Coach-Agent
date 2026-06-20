@@ -1,10 +1,10 @@
 """Progress repository: SQLAlchemy 2.x data access for DailyCheckIn, WeeklyReport."""
 from __future__ import annotations
 import json
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timezone
 from sqlalchemy import select, desc
 from sqlalchemy.orm import Session
-from app.models.progress import DailyCheckIn, WeeklyReport
+from app.models.progress import DailyCheckIn, ProgressEntry, WeeklyReport
 
 
 def upsert_checkin(
@@ -88,12 +88,47 @@ def get_checkins_between(
     return list(result.scalars().all())
 
 
+def get_progress_entries_between(
+    db: Session,
+    user_id: str,
+    start_date: date,
+    end_date: date,
+    entry_types: list[str] | None = None,
+) -> list[ProgressEntry]:
+    """Return generic progress entries within [start_date, end_date], oldest first."""
+    start_dt = datetime.combine(start_date, time.min)
+    end_dt = datetime.combine(end_date, time.max)
+    stmt = (
+        select(ProgressEntry)
+        .where(
+            ProgressEntry.user_id == user_id,
+            ProgressEntry.recorded_at >= start_dt,
+            ProgressEntry.recorded_at <= end_dt,
+        )
+        .order_by(ProgressEntry.recorded_at.asc())
+    )
+    if entry_types:
+        stmt = stmt.where(ProgressEntry.entry_type.in_(entry_types))
+    result = db.execute(stmt)
+    return list(result.scalars().all())
+
+
 def get_or_create_weekly_report(
     db: Session, user_id: str, week_start: date
 ) -> WeeklyReport | None:
     result = db.execute(
         select(WeeklyReport)
         .where(WeeklyReport.user_id == user_id, WeeklyReport.week_start == week_start)
+        .order_by(desc(WeeklyReport.generated_at))
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
+
+def get_latest_weekly_report(db: Session, user_id: str) -> WeeklyReport | None:
+    result = db.execute(
+        select(WeeklyReport)
+        .where(WeeklyReport.user_id == user_id)
         .order_by(desc(WeeklyReport.generated_at))
         .limit(1)
     )
