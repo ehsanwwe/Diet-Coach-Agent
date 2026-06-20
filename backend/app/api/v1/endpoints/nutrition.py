@@ -25,11 +25,17 @@ from app.schemas.calendar import (
 from app.schemas.nutrition import (
     AdaptPlanRequest,
     AdaptPlanResponse,
+    ContextGuidanceRequest,
+    ContextGuidanceResponse,
+    CravingSupportRequest,
+    CravingSupportResponse,
     MealAnalysisResponse,
     MealAnalyzeRequest,
     NutritionPlanGenerateResponse,
     NutritionPlanResponse,
     NutritionProfileResponse,
+    SlipRecoveryRequest,
+    SlipRecoveryResponse,
     WhatToEatNowRequest,
     WhatToEatNowResponse,
 )
@@ -121,6 +127,51 @@ def what_to_eat_now(
         raise_http_error(exc.message, status_code=exc.status_code)
     except Exception as exc:
         raise_http_error(f"Failed to get food suggestions: {exc}", status_code=500)
+
+
+@router.post("/craving-support", response_model=CravingSupportResponse)
+def craving_support(
+    body: CravingSupportRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> CravingSupportResponse:
+    """Return structured craving coaching with safety guardrails."""
+    try:
+        return nutrition_service.get_craving_support(db, current_user, body)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to get craving support: {exc}", status_code=500)
+
+
+@router.post("/slip-recovery", response_model=SlipRecoveryResponse)
+def slip_recovery(
+    body: SlipRecoveryRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> SlipRecoveryResponse:
+    """Return non-judgmental recovery guidance after overeating or breaking plan."""
+    try:
+        return nutrition_service.recover_from_slip(db, current_user, body)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to get slip recovery guidance: {exc}", status_code=500)
+
+
+@router.post("/context-guidance", response_model=ContextGuidanceResponse)
+def context_guidance(
+    body: ContextGuidanceRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> ContextGuidanceResponse:
+    """Return restaurant, party, travel, or work eating guidance."""
+    try:
+        return nutrition_service.get_restaurant_party_travel_guidance(db, current_user, body)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code)
+    except Exception as exc:
+        raise_http_error(f"Failed to get context guidance: {exc}", status_code=500)
 
 
 @router.get("/calendar", response_model=CalendarResponse)

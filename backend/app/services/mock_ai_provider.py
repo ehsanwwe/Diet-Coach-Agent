@@ -16,6 +16,9 @@ TASK_ANALYZE_MEAL = "TASK:analyze_meal"
 TASK_WHAT_TO_EAT = "TASK:what_to_eat_now"
 TASK_ADAPT_PLAN = "TASK:adapt_plan"
 TASK_CHAT = "TASK:chat_message"
+TASK_CRAVING_SUPPORT = "TASK:craving_support"
+TASK_SLIP_RECOVERY = "TASK:slip_recovery"
+TASK_CONTEXT_GUIDANCE = "TASK:context_guidance"
 TASK_GENERATE_WEEK_FA = "TASK:generate_week_fa"
 TASK_GENERATE_WEEK_EN = "TASK:generate_week_en"
 TASK_GENERATE_WEEK_AR = "TASK:generate_week_ar"
@@ -1105,6 +1108,74 @@ _MOCK_CHAT = {
     )
 }
 
+_MOCK_CRAVING_SUPPORT = {
+    "calming_message": "این هوس خوردن اطلاعات مفیدی درباره بدن و شرایط امروزت می‌دهد، نه نشانه ضعف.",
+    "likely_triggers": ["فاصله زیاد بین وعده‌ها", "استرس یا خستگی", "خواب ناکافی", "محدودیت زیاد در روزهای قبل"],
+    "hunger_vs_craving_assessment": "اگر گرسنگی بدنی هم بالاست، یک میان‌وعده متعادل بهتر از مقاومت شدید است.",
+    "immediate_options": [
+        {
+            "title": "گزینه متعادل",
+            "description": "ماست چکیده با کمی دارچین و چند عدد گردو",
+            "household_portions": "یک کاسه کوچک ماست + دو عدد گردو",
+            "why_it_helps": "پروتئین و چربی مفید دارد و هوس شیرینی را ملایم‌تر می‌کند.",
+            "substitutions": ["پنیر و نان سبوس‌دار", "میوه با چند عدد بادام"],
+        },
+        {
+            "title": "گزینه انعطاف‌پذیر",
+            "description": "اگر شیرینی می‌خواهی، مقدار کوچک را کنار چای و بعد از یک میان‌وعده پروتئینی بخور.",
+            "household_portions": "یک تکه کوچک شیرینی",
+            "why_it_helps": "حذف کامل شیرینی لازم نیست؛ مقدار و زمینه مهم است.",
+            "substitutions": ["خرما با گردو", "میوه شیرین"],
+        },
+    ],
+    "better_choice": {
+        "title": "ماست و گردو",
+        "description": "گزینه سیرکننده‌تر برای وقتی هوس با گرسنگی همراه است.",
+        "household_portions": "یک کاسه کوچک + دو عدد گردو",
+        "why_it_helps": "به سیری کمک می‌کند و از ریزه‌خواری پشت سر هم کم می‌کند.",
+    },
+    "flexible_choice": {
+        "title": "شیرینی کنترل‌شده",
+        "description": "برنج، نان و شیرینی ممنوع نیستند؛ مقدار، تعادل و زمینه مهم است.",
+        "household_portions": "یک تکه کوچک",
+        "why_it_helps": "انعطاف باعث کاهش حس محرومیت می‌شود.",
+    },
+    "prevention_tip": "برای زمان‌های هوس شبانه، یک میان‌وعده پروتئینی ساده از قبل آماده کن.",
+    "follow_up_question": "این هوس بیشتر بعد از استرس، کم‌خوابی یا فاصله زیاد از وعده قبلی می‌آید؟",
+    "safety_notes": [],
+    "requires_human_review": False,
+}
+
+_MOCK_SLIP_RECOVERY = {
+    "calming_message": "آرام باش؛ یک وعده یا یک روز مسیر کلی تو را خراب نمی‌کند.",
+    "data_not_failure_message": "این اتفاق داده مفید است، نه شکست.",
+    "likely_trigger_questions": [
+        "قبل از آن خیلی گرسنه بودی؟",
+        "امروز محدودیت شدید یا حذف وعده داشتی؟",
+        "استرس، کم‌خوابی یا احساس گناه قبل از خوردن وجود داشت؟",
+    ],
+    "pattern_hypothesis": "احتمالاً ترکیبی از گرسنگی زیاد، استرس یا محدودیت قبلی باعث شدت خوردن شده است.",
+    "one_small_adjustment": "در وعده بعدی یک منبع پروتئین، سبزی/فیبر و مقدار متعادل کربوهیدرات داشته باش.",
+    "next_meal_plan": "وعده بعدی را حذف نکن؛ یک بشقاب متعادل مثل مرغ یا تخم‌مرغ با سالاد و کمی نان یا برنج انتخاب کن.",
+    "tomorrow_reset_note": "فردا به برنامه معمول برگرد؛ نیازی به جریمه یا سخت‌گیری نیست.",
+    "no_extreme_compensation_note": "روزه سخت، حذف وعده، دیتاکس، پاکسازی، استفراغ عمدی یا ورزش افراطی توصیه نمی‌شود.",
+    "safety_notes": [],
+    "requires_human_review": False,
+}
+
+_MOCK_CONTEXT_GUIDANCE = {
+    "best_available_choice": "در رستوران، گزینه‌ای با پروتئین مثل جوجه‌کباب یا خوراک مرغ، سالاد و مقدار کنترل‌شده نان یا برنج انتخاب کن.",
+    "flexible_choice": "اگر غذای پرکالری‌تر انتخاب کردی، سهم را کوچک‌تر کن و کنار آن سالاد یا ماست ساده بگذار.",
+    "portion_strategy": "نصف بشقاب سبزی/سالاد، یک کف دست پروتئین، و یک مشت کربوهیدرات مثل برنج یا نان.",
+    "plate_balance_tip": "برنج یا نان ممنوع نیست؛ با پروتئین و سبزی متعادلش کن.",
+    "drink_tip": "نوشیدنی بدون قند یا دوغ کم‌نمک بهتر از نوشابه است.",
+    "dessert_or_snack_strategy": "اگر دسر می‌خوری، مقدار کوچک را آرام بخور و آن را به شکست تبدیل نکن.",
+    "if_user_chooses_high_calorie_option": "همان وعده را با آرامش بخور؛ فقط مقدار را مدیریت کن و از جبران افراطی بعدش پرهیز کن.",
+    "next_meal_adjustment": "وعده بعدی را سبک‌تر اما کامل نگه دار: پروتئین، سبزی و آب کافی.",
+    "safety_notes": [],
+    "requires_human_review": False,
+}
+
 _MOCK_ADAPT_PLAN = {
     "summary": "برنامه با توجه به بازخورد جدید شما به شکل محافظه‌کارانه تنظیم شد.",
     "assessment_summary": "بازخورد اخیر نشان می‌دهد نیاز به وعده‌های سیرکننده‌تر و انعطاف‌پذیرتر وجود دارد.",
@@ -1195,6 +1266,12 @@ class MockAIProvider(AIProvider):
             content = json.dumps(_MOCK_MEAL_ANALYSIS, ensure_ascii=False)
         elif task_type == "what_to_eat_now":
             content = json.dumps(_MOCK_WHAT_TO_EAT, ensure_ascii=False)
+        elif task_type == "craving_support":
+            content = json.dumps(_MOCK_CRAVING_SUPPORT, ensure_ascii=False)
+        elif task_type == "slip_recovery":
+            content = json.dumps(_MOCK_SLIP_RECOVERY, ensure_ascii=False)
+        elif task_type == "context_guidance":
+            content = json.dumps(_MOCK_CONTEXT_GUIDANCE, ensure_ascii=False)
         elif task_type == "adapt_plan":
             content = json.dumps(_MOCK_ADAPT_PLAN, ensure_ascii=False)
         elif task_type == "chat_message":
@@ -1232,6 +1309,12 @@ class MockAIProvider(AIProvider):
                 return "analyze_meal"
             if TASK_WHAT_TO_EAT in content:
                 return "what_to_eat_now"
+            if TASK_CRAVING_SUPPORT in content:
+                return "craving_support"
+            if TASK_SLIP_RECOVERY in content:
+                return "slip_recovery"
+            if TASK_CONTEXT_GUIDANCE in content:
+                return "context_guidance"
             if TASK_ADAPT_PLAN in content:
                 return "adapt_plan"
             if TASK_CHAT in content:

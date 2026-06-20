@@ -92,6 +92,14 @@ class AIFoodOption(_AIBaseModel):
     substitutions: list[str] = Field(default_factory=list)
 
 
+class AICoachingOption(_AIBaseModel):
+    title: str = Field(min_length=1)
+    description: str | None = None
+    household_portions: str | None = None
+    why_it_helps: str | None = None
+    substitutions: list[str] = Field(default_factory=list)
+
+
 class AIWhatToEatNowResponse(_AIBaseModel):
     options: list[AIFoodOption] = Field(min_length=1)
     best_goal_aligned_option: AIFoodOption | None = None
@@ -100,6 +108,57 @@ class AIWhatToEatNowResponse(_AIBaseModel):
     reasoning_summary: str = ""
     warnings: list[str] = Field(default_factory=list)
     assessment_summary: str | None = None
+    intervention_summary: str | None = None
+    monitoring_notes: str | None = None
+
+
+class AICravingSupportResponse(_AIBaseModel):
+    calming_message: str = Field(default="")
+    likely_triggers: list[str] = Field(default_factory=list)
+    hunger_vs_craving_assessment: str | None = None
+    immediate_options: list[AICoachingOption] = Field(default_factory=list)
+    better_choice: AICoachingOption | None = None
+    flexible_choice: AICoachingOption | None = None
+    prevention_tip: str | None = None
+    follow_up_question: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    assessment_summary: str | None = None
+    nutrition_diagnosis: str | None = None
+    intervention_summary: str | None = None
+    monitoring_notes: str | None = None
+
+
+class AISlipRecoveryResponse(_AIBaseModel):
+    calming_message: str = Field(default="")
+    data_not_failure_message: str = Field(default="")
+    likely_trigger_questions: list[str] = Field(default_factory=list)
+    pattern_hypothesis: str | None = None
+    one_small_adjustment: str | None = None
+    next_meal_plan: str | None = None
+    tomorrow_reset_note: str | None = None
+    no_extreme_compensation_note: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    assessment_summary: str | None = None
+    nutrition_diagnosis: str | None = None
+    intervention_summary: str | None = None
+    monitoring_notes: str | None = None
+
+
+class AIContextGuidanceResponse(_AIBaseModel):
+    best_available_choice: str | None = None
+    flexible_choice: str | None = None
+    portion_strategy: str | None = None
+    plate_balance_tip: str | None = None
+    drink_tip: str | None = None
+    dessert_or_snack_strategy: str | None = None
+    if_user_chooses_high_calorie_option: str | None = None
+    next_meal_adjustment: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    assessment_summary: str | None = None
+    nutrition_diagnosis: str | None = None
     intervention_summary: str | None = None
     monitoring_notes: str | None = None
 
@@ -160,6 +219,9 @@ AI_TASK_SCHEMAS: dict[str, type[_AIBaseModel]] = {
     "analyze_meal": AIMealAnalysisResponse,
     "what_to_eat_now": AIWhatToEatNowResponse,
     "chat_message": AIChatResponse,
+    "craving_support": AICravingSupportResponse,
+    "slip_recovery": AISlipRecoveryResponse,
+    "context_guidance": AIContextGuidanceResponse,
     "generate_week_fa": AIWeekPlanResponse,
     "generate_week_en": AIWeekPlanResponse,
     "generate_week_ar": AIWeekPlanResponse,

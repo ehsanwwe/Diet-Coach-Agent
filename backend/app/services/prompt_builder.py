@@ -13,10 +13,13 @@ from app.services.mock_ai_provider import (
     TASK_ADAPT_PLAN,
     TASK_ANALYZE_MEAL,
     TASK_CHAT,
+    TASK_CONTEXT_GUIDANCE,
+    TASK_CRAVING_SUPPORT,
     TASK_GENERATE_PLAN,
     TASK_GENERATE_WEEK_AR,
     TASK_GENERATE_WEEK_EN,
     TASK_GENERATE_WEEK_FA,
+    TASK_SLIP_RECOVERY,
     TASK_WHAT_TO_EAT,
 )
 from app.services.nutrition_memory_service import NutritionMemoryContext
@@ -281,6 +284,92 @@ def for_what_to_eat_now(
         "}"
     )
     return PromptData(task_type="what_to_eat_now", system=system, user=user)
+
+
+def for_craving_support(ctx: NutritionMemoryContext, request_context: dict) -> PromptData:
+    system = _base_system(TASK_CRAVING_SUPPORT, ctx)
+    user = (
+        f"User memory/context:\n{_memory_json(ctx)}\n\n"
+        f"Craving support request:\n{json.dumps(request_context, ensure_ascii=False)}\n\n"
+        "Provide calm craving support. Normalize the experience without shame.\n"
+        "Distinguish physical hunger from craving when possible.\n"
+        "Identify likely triggers such as sleep, stress, long gaps between meals, low protein, restriction, emotion, habit, or environment.\n"
+        "Give immediate practical options, one better-aligned choice, one flexible choice, and one prevention tip.\n"
+        "Avoid all-or-nothing language, severe restriction, fasting, detox, purging, or exercise compensation.\n"
+        "Do not ban rice, bread, sweets, or restaurant foods absolutely; portion, balance, and context matter.\n"
+        "Return JSON exactly in this shape:\n"
+        "{\n"
+        '  "calming_message": "...",\n'
+        '  "likely_triggers": ["..."],\n'
+        '  "hunger_vs_craving_assessment": "...",\n'
+        '  "immediate_options": [{"title": "...", "description": "...", "household_portions": "...", "why_it_helps": "...", "substitutions": ["..."]}],\n'
+        '  "better_choice": {"title": "...", "description": "...", "household_portions": "...", "why_it_helps": "..."},\n'
+        '  "flexible_choice": {"title": "...", "description": "...", "household_portions": "...", "why_it_helps": "..."},\n'
+        '  "prevention_tip": "...",\n'
+        '  "follow_up_question": "...",\n'
+        '  "safety_notes": [],\n'
+        '  "requires_human_review": false\n'
+        "}"
+    )
+    return PromptData(task_type="craving_support", system=system, user=user)
+
+
+def for_slip_recovery(ctx: NutritionMemoryContext, request_context: dict) -> PromptData:
+    system = _base_system(TASK_SLIP_RECOVERY, ctx)
+    user = (
+        f"User memory/context:\n{_memory_json(ctx)}\n\n"
+        f"Slip recovery request:\n{json.dumps(request_context, ensure_ascii=False)}\n\n"
+        "Follow this 6-step slip recovery protocol:\n"
+        "1. Calm the user.\n"
+        "2. Say this is useful data, not a failure.\n"
+        "3. Ask what happened before it using concise trigger questions.\n"
+        "4. Detect the likely pattern.\n"
+        "5. Suggest one small adjustment.\n"
+        "6. Return to the next meal or tomorrow without punishment.\n"
+        "Never say the diet is ruined. Never suggest fasting, detox, purging, skipping meals, extreme exercise, or extreme restriction after overeating.\n"
+        "Avoid shame, blame, all-or-nothing language, and the phrase 'you failed'.\n"
+        "Return JSON exactly in this shape:\n"
+        "{\n"
+        '  "calming_message": "...",\n'
+        '  "data_not_failure_message": "...",\n'
+        '  "likely_trigger_questions": ["..."],\n'
+        '  "pattern_hypothesis": "...",\n'
+        '  "one_small_adjustment": "...",\n'
+        '  "next_meal_plan": "...",\n'
+        '  "tomorrow_reset_note": "...",\n'
+        '  "no_extreme_compensation_note": "...",\n'
+        '  "safety_notes": [],\n'
+        '  "requires_human_review": false\n'
+        "}"
+    )
+    return PromptData(task_type="slip_recovery", system=system, user=user)
+
+
+def for_context_guidance(ctx: NutritionMemoryContext, request_context: dict) -> PromptData:
+    system = _base_system(TASK_CONTEXT_GUIDANCE, ctx)
+    user = (
+        f"User memory/context:\n{_memory_json(ctx)}\n\n"
+        f"Restaurant/party/travel request:\n{json.dumps(request_context, ensure_ascii=False)}\n\n"
+        "Give restaurant, party, travel, or work eating guidance with no absolute bans.\n"
+        "Suggest the best available choice and a flexible choice.\n"
+        "Use portion strategy, plate balance, suitable drink advice, dessert/sweets strategy, and next-meal adjustment without punishment.\n"
+        "Balance protein, vegetables/fiber, controlled carbohydrate, and realistic Iranian/Persian foods when suitable.\n"
+        "If the user chooses a high-calorie option, avoid shame and give a practical portion/context strategy.\n"
+        "Return JSON exactly in this shape:\n"
+        "{\n"
+        '  "best_available_choice": "...",\n'
+        '  "flexible_choice": "...",\n'
+        '  "portion_strategy": "...",\n'
+        '  "plate_balance_tip": "...",\n'
+        '  "drink_tip": "...",\n'
+        '  "dessert_or_snack_strategy": "...",\n'
+        '  "if_user_chooses_high_calorie_option": "...",\n'
+        '  "next_meal_adjustment": "...",\n'
+        '  "safety_notes": [],\n'
+        '  "requires_human_review": false\n'
+        "}"
+    )
+    return PromptData(task_type="context_guidance", system=system, user=user)
 
 
 def for_chat_message(

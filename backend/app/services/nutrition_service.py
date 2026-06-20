@@ -21,6 +21,11 @@ from app.schemas.nutrition import (
     AdaptPlanRequest,
     AdaptPlanResponse,
     BehaviorSummary,
+    CoachingOption,
+    ContextGuidanceRequest,
+    ContextGuidanceResponse,
+    CravingSupportRequest,
+    CravingSupportResponse,
     DailyGuidelines,
     FoodOption,
     LifestyleSummary,
@@ -33,6 +38,8 @@ from app.schemas.nutrition import (
     NutritionProfileResponse,
     PreferencesSummary,
     ProfileSummary,
+    SlipRecoveryRequest,
+    SlipRecoveryResponse,
     WhatToEatNowRequest,
     WhatToEatNowResponse,
 )
@@ -191,6 +198,81 @@ def _adapt_text(body: AdaptPlanRequest) -> str:
 
 def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
     return any(k in text for k in keywords)
+
+
+def _behavior_text(values: list[object]) -> str:
+    parts: list[str] = []
+    for value in values:
+        if value is None:
+            continue
+        if isinstance(value, list):
+            parts.extend(str(v) for v in value if v)
+        else:
+            parts.append(str(value))
+    return " ".join(parts).lower()
+
+
+def _coaching_option(raw: dict | None) -> CoachingOption | None:
+    if not raw:
+        return None
+    return CoachingOption(
+        title=raw.get("title", "گزینه پیشنهادی"),
+        description=raw.get("description"),
+        household_portions=raw.get("household_portions"),
+        why_it_helps=raw.get("why_it_helps"),
+        substitutions=raw.get("substitutions") or [],
+    )
+
+
+def _behavior_safety(ctx, request_text: str) -> tuple[list[str], bool]:
+    notes: list[str] = []
+    requires_human_review = False
+
+    if ctx.clinical_review_required:
+        notes.append(_CLINICAL_REVIEW_WELLNESS_GUIDANCE)
+        requires_human_review = True
+    elif ctx.risk_level == "high":
+        notes.append(_HIGH_RISK_WELLNESS_GUIDANCE)
+
+    if "eating_disorder_history" in ctx.active_medical_flags:
+        notes.append("eating_disorder_history: avoid restrictive coaching and recommend specialist review")
+        requires_human_review = True
+
+    if _contains_any(
+        request_text,
+        (
+            "self-harm",
+            "self harm",
+            "suicide",
+            "suicidal",
+            "kill myself",
+            "خودکشی",
+            "خودآزاری",
+        ),
+    ):
+        notes.append("self_harm_language_detected: urgent human support required")
+        requires_human_review = True
+
+    if _contains_any(
+        request_text,
+        (
+            "chest pain",
+            "blood in stool",
+            "faint",
+            "fainting",
+            "severe dizziness",
+            "shortness of breath",
+            "درد قفسه",
+            "خون در مدفوع",
+            "غش",
+            "سرگیجه شدید",
+            "تنگی نفس",
+        ),
+    ):
+        notes.append(_ADAPT_HUMAN_REVIEW_WARNING)
+        requires_human_review = True
+
+    return list(dict.fromkeys(notes)), requires_human_review
 
 
 def _adapt_decision(
@@ -756,6 +838,103 @@ def what_to_eat_now(
         or next((o for o in options if o.option_type == "flexible"), None),
         reasoning_summary=data.get("reasoning_summary", ""),
         warnings=warnings,
+        provider=result.provider,
+        is_mock=result.is_mock,
+    )
+
+
+# ─── 5b. POST /nutrition/craving-support ─────────────────────────────────────
+
+def get_craving_support(
+    db: Session, user: User, body: CravingSupportRequest
+) -> CravingSupportResponse:
+    ctx = nutrition_memory_service.build(db, user)
+    agent = NutritionAgentService()
+    request_context = body.model_dump(mode="json", exclude_none=True)
+    data, result = agent.craving_support(ctx, request_context)
+    safety_notes, requires_review = _behavior_safety(
+        ctx,
+        _behavior_text(list(request_context.values())),
+    )
+    safety_notes.extend(data.get("safety_notes") or [])
+
+    immediate_options = [_coaching_option(o) for o in (data.get("immediate_options") or [])]
+    immediate_options = [o for o in immediate_options if o is not None]
+
+    return CravingSupportResponse(
+        calming_message=data.get("calming_message", ""),
+        likely_triggers=data.get("likely_triggers") or [],
+        hunger_vs_craving_assessment=data.get("hunger_vs_craving_assessment"),
+        immediate_options=immediate_options,
+        better_choice=_coaching_option(data.get("better_choice")),
+        flexible_choice=_coaching_option(data.get("flexible_choice")),
+        prevention_tip=data.get("prevention_tip"),
+        follow_up_question=data.get("follow_up_question"),
+        safety_notes=list(dict.fromkeys(safety_notes)),
+        requires_human_review=bool(data.get("requires_human_review") or requires_review),
+        provider=result.provider,
+        is_mock=result.is_mock,
+    )
+
+
+# ─── 5c. POST /nutrition/slip-recovery ───────────────────────────────────────
+
+def recover_from_slip(
+    db: Session, user: User, body: SlipRecoveryRequest
+) -> SlipRecoveryResponse:
+    ctx = nutrition_memory_service.build(db, user)
+    agent = NutritionAgentService()
+    request_context = body.model_dump(mode="json", exclude_none=True)
+    data, result = agent.slip_recovery(ctx, request_context)
+    safety_notes, requires_review = _behavior_safety(
+        ctx,
+        _behavior_text(list(request_context.values())),
+    )
+    safety_notes.extend(data.get("safety_notes") or [])
+    no_compensation = data.get("no_extreme_compensation_note") or _ADAPT_NO_EXTREME_COMPENSATION
+
+    return SlipRecoveryResponse(
+        calming_message=data.get("calming_message", ""),
+        data_not_failure_message=data.get("data_not_failure_message", ""),
+        likely_trigger_questions=data.get("likely_trigger_questions") or [],
+        pattern_hypothesis=data.get("pattern_hypothesis"),
+        one_small_adjustment=data.get("one_small_adjustment"),
+        next_meal_plan=data.get("next_meal_plan"),
+        tomorrow_reset_note=data.get("tomorrow_reset_note"),
+        no_extreme_compensation_note=no_compensation,
+        safety_notes=list(dict.fromkeys(safety_notes)),
+        requires_human_review=bool(data.get("requires_human_review") or requires_review),
+        provider=result.provider,
+        is_mock=result.is_mock,
+    )
+
+
+# ─── 5d. POST /nutrition/context-guidance ────────────────────────────────────
+
+def get_restaurant_party_travel_guidance(
+    db: Session, user: User, body: ContextGuidanceRequest
+) -> ContextGuidanceResponse:
+    ctx = nutrition_memory_service.build(db, user)
+    agent = NutritionAgentService()
+    request_context = body.model_dump(mode="json", exclude_none=True)
+    data, result = agent.context_guidance(ctx, request_context)
+    safety_notes, requires_review = _behavior_safety(
+        ctx,
+        _behavior_text(list(request_context.values())),
+    )
+    safety_notes.extend(data.get("safety_notes") or [])
+
+    return ContextGuidanceResponse(
+        best_available_choice=data.get("best_available_choice"),
+        flexible_choice=data.get("flexible_choice"),
+        portion_strategy=data.get("portion_strategy"),
+        plate_balance_tip=data.get("plate_balance_tip"),
+        drink_tip=data.get("drink_tip"),
+        dessert_or_snack_strategy=data.get("dessert_or_snack_strategy"),
+        if_user_chooses_high_calorie_option=data.get("if_user_chooses_high_calorie_option"),
+        next_meal_adjustment=data.get("next_meal_adjustment"),
+        safety_notes=list(dict.fromkeys(safety_notes)),
+        requires_human_review=bool(data.get("requires_human_review") or requires_review),
         provider=result.provider,
         is_mock=result.is_mock,
     )

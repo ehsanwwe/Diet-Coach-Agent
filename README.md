@@ -241,20 +241,7 @@ Ehsan Moradi
 GitHub: ehsanwwe
 ```
 
----
 
-## Donate / Support
-
-If this project helped you, saved development time, or gave you a useful foundation, consider supporting its continued development.
-
-You can sponsor, donate, or simply star the repository.
-
-```text
-GitHub: https://github.com/ehsanwwe
-Repository: https://github.com/ehsanwwe/Diet-Coach-Agent
-```
-
----
 
 ## License
 

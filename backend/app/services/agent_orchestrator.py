@@ -17,6 +17,11 @@ from app.services.ai_provider import AIProviderError, get_ai_provider
 from app.services.agent_tools.base import AgentExecutionContext
 from app.services.agent_tools.registry import build_tool_registry
 from app.services.agent_tools.openai_tool_specs import build_openai_specs
+from app.schemas.nutrition import (
+    ContextGuidanceRequest,
+    CravingSupportRequest,
+    SlipRecoveryRequest,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +133,118 @@ RESPONSE FORMAT (strictly enforced):
 
 _TOOL_REGISTRY = build_tool_registry()
 _TOOL_SPECS = build_openai_specs(_TOOL_REGISTRY)
+
+_CRAVING_KEYWORDS = (
+    "craving", "cravings", "sweet craving", "i want chocolate",
+    "هوس", "ولع", "دلم شکلات", "دلم شیرینی", "ریزه‌خواری", "ریزه خواری",
+)
+_SLIP_KEYWORDS = (
+    "overate", "ate too much", "broke my diet", "ruined my diet", "slip",
+    "پرخوری", "زیاد خوردم", "رژیمم خراب", "همه چیز خراب", "لغزش", "خراب شد",
+)
+_CONTEXT_KEYWORDS = (
+    "restaurant", "party", "travel", "travelling", "traveling", "fast food",
+    "رستوران", "مهمونی", "مهمانی", "سفر", "فست فود", "مسافرت",
+)
+
+
+def _contains_keyword(text: str, keywords: tuple[str, ...]) -> bool:
+    lowered = text.lower()
+    return any(keyword in lowered for keyword in keywords)
+
+
+def _detect_behavior_intent(message: str) -> str | None:
+    if _contains_keyword(message, _SLIP_KEYWORDS):
+        return "slip_recovery"
+    if _contains_keyword(message, _CRAVING_KEYWORDS):
+        return "craving_support"
+    if _contains_keyword(message, _CONTEXT_KEYWORDS):
+        return "context_guidance"
+    return None
+
+
+def _context_type_from_message(message: str) -> str:
+    lowered = message.lower()
+    if "restaurant" in lowered or "رستوران" in lowered or "fast food" in lowered or "فست فود" in lowered:
+        return "restaurant"
+    if "party" in lowered or "مهمونی" in lowered or "مهمانی" in lowered:
+        return "party"
+    if "travel" in lowered or "traveling" in lowered or "travelling" in lowered or "سفر" in lowered or "مسافرت" in lowered:
+        return "travel"
+    return "mixed"
+
+
+def _behavior_reply(intent: str, data: dict) -> str:
+    if intent == "craving_support":
+        parts = [
+            data.get("calming_message"),
+            data.get("hunger_vs_craving_assessment"),
+            (data.get("better_choice") or {}).get("description"),
+            data.get("prevention_tip"),
+        ]
+    elif intent == "slip_recovery":
+        parts = [
+            data.get("calming_message"),
+            data.get("data_not_failure_message"),
+            data.get("one_small_adjustment"),
+            data.get("next_meal_plan"),
+            data.get("no_extreme_compensation_note"),
+        ]
+    else:
+        parts = [
+            data.get("best_available_choice"),
+            data.get("flexible_choice"),
+            data.get("portion_strategy"),
+            data.get("next_meal_adjustment"),
+        ]
+    return "\n".join(str(p) for p in parts if p) or "راهنمایی آماده شد."
+
+
+def _run_behavior_workflow(
+    db: Session,
+    session,
+    user: User,
+    message: str,
+    intent: str,
+) -> ChatMessageResponse:
+    from app.services import nutrition_service
+
+    if intent == "craving_support":
+        result = nutrition_service.get_craving_support(
+            db,
+            user,
+            CravingSupportRequest(user_note=message),
+        )
+    elif intent == "slip_recovery":
+        result = nutrition_service.recover_from_slip(
+            db,
+            user,
+            SlipRecoveryRequest(what_happened=message, user_note=message),
+        )
+    else:
+        result = nutrition_service.get_restaurant_party_travel_guidance(
+            db,
+            user,
+            ContextGuidanceRequest(
+                context_type=_context_type_from_message(message),
+                user_note=message,
+            ),
+        )
+
+    payload = result.model_dump(mode="json")
+    reply_text = _behavior_reply(intent, payload)
+    assistant_msg = chat_repository.create_message(db, session.id, "assistant", reply_text)
+    db.commit()
+    return ChatMessageResponse(
+        message_id=assistant_msg.id,
+        role="assistant",
+        content=reply_text,
+        provider=result.provider,
+        is_mock=result.is_mock,
+        created_at=assistant_msg.created_at,
+        actions_summary=[intent],
+        tool_calls_executed=1,
+    )
 
 
 def _clean_response_reminder(conversation_state: str = "") -> str:
@@ -263,6 +380,10 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
             message_id=am.id, role="assistant", content=_GREETING_REPLY,
             provider="local", is_mock=True, created_at=am.created_at,
         )
+
+    behavior_intent = _detect_behavior_intent(message)
+    if behavior_intent is not None:
+        return _run_behavior_workflow(db, session, user, message, behavior_intent)
 
     locale = _get_locale(db, user)
     ctx = nutrition_memory_service.build(db, user)

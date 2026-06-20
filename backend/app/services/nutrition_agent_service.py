@@ -23,8 +23,11 @@ from app.services.prompt_builder import (
     for_adapt_plan,
     for_analyze_meal,
     for_chat_message,
+    for_context_guidance,
+    for_craving_support,
     for_generate_plan,
     for_generate_week_plan,
+    for_slip_recovery,
     for_what_to_eat_now,
 )
 
@@ -61,12 +64,16 @@ def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]
     mock = MockAIProvider()
     from app.services.mock_ai_provider import (
         TASK_ADAPT_PLAN, TASK_ANALYZE_MEAL, TASK_GENERATE_PLAN, TASK_WHAT_TO_EAT,
-        TASK_CHAT, TASK_GENERATE_WEEK_AR, TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA,
+        TASK_CHAT, TASK_CONTEXT_GUIDANCE, TASK_CRAVING_SUPPORT, TASK_GENERATE_WEEK_AR,
+        TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA, TASK_SLIP_RECOVERY,
     )
     task_tag_map = {
         "generate_plan": TASK_GENERATE_PLAN,
         "analyze_meal": TASK_ANALYZE_MEAL,
         "what_to_eat_now": TASK_WHAT_TO_EAT,
+        "craving_support": TASK_CRAVING_SUPPORT,
+        "slip_recovery": TASK_SLIP_RECOVERY,
+        "context_guidance": TASK_CONTEXT_GUIDANCE,
         "adapt_plan": TASK_ADAPT_PLAN,
         "chat_message": TASK_CHAT,
         "generate_week_fa": TASK_GENERATE_WEEK_FA,
@@ -181,6 +188,30 @@ class NutritionAgentService:
         history: list[dict[str, str]],
     ) -> tuple[dict, AIProviderResult]:
         prompt = for_chat_message(ctx, user_message, history)
+        return self._call(prompt)
+
+    def craving_support(
+        self,
+        ctx: NutritionMemoryContext,
+        request_context: dict,
+    ) -> tuple[dict, AIProviderResult]:
+        prompt = for_craving_support(ctx, request_context)
+        return self._call(prompt)
+
+    def slip_recovery(
+        self,
+        ctx: NutritionMemoryContext,
+        request_context: dict,
+    ) -> tuple[dict, AIProviderResult]:
+        prompt = for_slip_recovery(ctx, request_context)
+        return self._call(prompt)
+
+    def context_guidance(
+        self,
+        ctx: NutritionMemoryContext,
+        request_context: dict,
+    ) -> tuple[dict, AIProviderResult]:
+        prompt = for_context_guidance(ctx, request_context)
         return self._call(prompt)
 
     def generate_week_plan(

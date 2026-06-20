@@ -50,6 +50,14 @@ class FoodOption(BaseModel):
     substitutions: list[str] = Field(default_factory=list)
 
 
+class CoachingOption(BaseModel):
+    title: str
+    description: str | None = None
+    household_portions: str | None = None
+    why_it_helps: str | None = None
+    substitutions: list[str] = Field(default_factory=list)
+
+
 # ─── Profile sub-schemas ──────────────────────────────────────────────────────
 
 class ProfileSummary(BaseModel):
@@ -198,6 +206,98 @@ class WhatToEatNowResponse(BaseModel):
     flexible_option: FoodOption | None = None
     reasoning_summary: str = ""
     warnings: list[str] = Field(default_factory=list)
+    provider: str = "mock"
+    is_mock: bool = True
+
+
+# ─── 5b. POST /nutrition/craving-support ─────────────────────────────────────
+
+class CravingSupportRequest(BaseModel):
+    craving_food: str | None = Field(default=None, max_length=200)
+    craving_intensity_1_10: int | None = Field(default=None, ge=1, le=10)
+    hunger_level_1_10: int | None = Field(default=None, ge=1, le=10)
+    last_meal_time: str | None = Field(default=None, max_length=100)
+    last_meal_summary: str | None = Field(default=None, max_length=300)
+    sleep_quality: int | None = Field(default=None, ge=1, le=5)
+    stress_level: int | None = Field(default=None, ge=1, le=5)
+    emotion: str | None = Field(default=None, max_length=100)
+    current_place: str | None = Field(default=None, max_length=100)
+    available_foods: list[str] = Field(default_factory=list, max_length=20)
+    time_of_day: str | None = Field(default=None, max_length=100)
+    user_note: str | None = Field(default=None, max_length=1000)
+
+
+class CravingSupportResponse(BaseModel):
+    calming_message: str = ""
+    likely_triggers: list[str] = Field(default_factory=list)
+    hunger_vs_craving_assessment: str | None = None
+    immediate_options: list[CoachingOption] = Field(default_factory=list)
+    better_choice: CoachingOption | None = None
+    flexible_choice: CoachingOption | None = None
+    prevention_tip: str | None = None
+    follow_up_question: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    provider: str = "mock"
+    is_mock: bool = True
+
+
+# ─── 5c. POST /nutrition/slip-recovery ───────────────────────────────────────
+
+class SlipRecoveryRequest(BaseModel):
+    what_happened: str | None = Field(default=None, max_length=1000)
+    foods_eaten: list[str] = Field(default_factory=list, max_length=30)
+    approximate_amount: str | None = Field(default=None, max_length=300)
+    emotion_before: str | None = Field(default=None, max_length=100)
+    emotion_after: str | None = Field(default=None, max_length=100)
+    hunger_before_1_10: int | None = Field(default=None, ge=1, le=10)
+    stress_level: int | None = Field(default=None, ge=1, le=5)
+    sleep_quality: int | None = Field(default=None, ge=1, le=5)
+    restriction_before_slip: bool | None = None
+    last_meal_time: str | None = Field(default=None, max_length=100)
+    user_note: str | None = Field(default=None, max_length=1000)
+
+
+class SlipRecoveryResponse(BaseModel):
+    calming_message: str = ""
+    data_not_failure_message: str = ""
+    likely_trigger_questions: list[str] = Field(default_factory=list)
+    pattern_hypothesis: str | None = None
+    one_small_adjustment: str | None = None
+    next_meal_plan: str | None = None
+    tomorrow_reset_note: str | None = None
+    no_extreme_compensation_note: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    provider: str = "mock"
+    is_mock: bool = True
+
+
+# ─── 5d. POST /nutrition/context-guidance ────────────────────────────────────
+
+class ContextGuidanceRequest(BaseModel):
+    context_type: Literal["restaurant", "party", "travel", "work", "mixed"] = "mixed"
+    available_options: list[str] = Field(default_factory=list, max_length=30)
+    preferred_option: str | None = Field(default=None, max_length=200)
+    current_goal: str | None = Field(default=None, max_length=200)
+    hunger_level_1_10: int | None = Field(default=None, ge=1, le=10)
+    meal_timing: str | None = Field(default=None, max_length=100)
+    budget_context: str | None = Field(default=None, max_length=200)
+    medical_constraints: str | None = Field(default=None, max_length=500)
+    user_note: str | None = Field(default=None, max_length=1000)
+
+
+class ContextGuidanceResponse(BaseModel):
+    best_available_choice: str | None = None
+    flexible_choice: str | None = None
+    portion_strategy: str | None = None
+    plate_balance_tip: str | None = None
+    drink_tip: str | None = None
+    dessert_or_snack_strategy: str | None = None
+    if_user_chooses_high_calorie_option: str | None = None
+    next_meal_adjustment: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
     provider: str = "mock"
     is_mock: bool = True
 
