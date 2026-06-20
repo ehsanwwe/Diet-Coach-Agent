@@ -11,7 +11,7 @@ import uuid
 from datetime import date, datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Date, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -36,10 +36,20 @@ class DailyCheckIn(Base):
     )
     check_date: Mapped[date] = mapped_column(Date, nullable=False)
     weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    waist_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
     hunger_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    hunger_level_1_10: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sleep_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sleep_quality: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    energy_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     stress_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     activity_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cravings: Mapped[str | None] = mapped_column(Text, nullable=True)
+    craving_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    eating_location: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    planned_eating_out: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    adherence_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    symptoms: Mapped[str | None] = mapped_column(Text, nullable=True)
     adherence_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False

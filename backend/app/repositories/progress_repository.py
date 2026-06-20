@@ -13,10 +13,20 @@ def upsert_checkin(
     *,
     check_date: date,
     weight_kg: float | None = None,
+    waist_cm: float | None = None,
     hunger_level: int | None = None,
+    hunger_level_1_10: int | None = None,
     sleep_hours: float | None = None,
+    sleep_quality: int | None = None,
+    energy_level: int | None = None,
     stress_level: int | None = None,
     activity_minutes: int | None = None,
+    cravings: str | None = None,
+    craving_type: str | None = None,
+    eating_location: str | None = None,
+    planned_eating_out: bool | None = None,
+    adherence_level: int | None = None,
+    symptoms: str | None = None,
     adherence_notes: str | None = None,
 ) -> DailyCheckIn:
     """Insert a new check-in or update the existing one for (user_id, check_date)."""
@@ -32,10 +42,20 @@ def upsert_checkin(
         db.add(checkin)
     # Always set — None overwrites prior value. This matches PUT semantics on a single resource per day.
     checkin.weight_kg = weight_kg
+    checkin.waist_cm = waist_cm
     checkin.hunger_level = hunger_level
+    checkin.hunger_level_1_10 = hunger_level_1_10
     checkin.sleep_hours = sleep_hours
+    checkin.sleep_quality = sleep_quality
+    checkin.energy_level = energy_level
     checkin.stress_level = stress_level
     checkin.activity_minutes = activity_minutes
+    checkin.cravings = cravings
+    checkin.craving_type = craving_type
+    checkin.eating_location = eating_location
+    checkin.planned_eating_out = planned_eating_out
+    checkin.adherence_level = adherence_level
+    checkin.symptoms = symptoms
     checkin.adherence_notes = adherence_notes
     db.flush()
     return checkin

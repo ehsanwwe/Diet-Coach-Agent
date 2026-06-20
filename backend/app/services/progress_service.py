@@ -1,6 +1,7 @@
 """Progress service: aggregation, behavior wins, suggested focus. Pure Python — no AI call."""
 from __future__ import annotations
 import json
+from collections import Counter
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
 
@@ -29,15 +30,25 @@ def submit_check_in(db: Session, user: User, body: CheckInRequest) -> CheckInRes
         user.id,
         check_date=body.check_date,
         weight_kg=body.weight_kg,
+        waist_cm=body.waist_cm,
         hunger_level=body.hunger_level,
+        hunger_level_1_10=body.hunger_level_1_10,
         sleep_hours=body.sleep_hours,
+        sleep_quality=body.sleep_quality,
+        energy_level=body.energy_level,
         stress_level=body.stress_level,
         activity_minutes=body.activity_minutes,
+        cravings=body.cravings,
+        craving_type=body.craving_type,
+        eating_location=body.eating_location,
+        planned_eating_out=body.planned_eating_out,
+        adherence_level=body.adherence_level,
+        symptoms=body.symptoms,
         adherence_notes=body.adherence_notes,
     )
     db.commit()
     db.refresh(checkin)
-    return CheckInResponse.model_validate(checkin)
+    return _checkin_response(checkin)
 
 
 # ─── 2. GET /progress/summary ────────────────────────────────────────────────
@@ -65,7 +76,11 @@ def get_summary(db: Session, user: User) -> ProgressSummaryResponse:
     streak = _compute_logging_streak(checkins_newest_first)
     wins = _compute_behavior_wins(checkins_newest_first[:7], streak)
 
-    recent = [CheckInResponse.model_validate(c) for c in checkins_newest_first]
+    recent = [_checkin_response(c) for c in checkins_newest_first]
+    energy_values = [c.energy_level for c in checkins_newest_first[:7] if c.energy_level is not None]
+    hunger_10_values = [
+        c.hunger_level_1_10 for c in checkins_newest_first[:7] if c.hunger_level_1_10 is not None
+    ]
 
     return ProgressSummaryResponse(
         has_data=True,
@@ -73,6 +88,13 @@ def get_summary(db: Session, user: User) -> ProgressSummaryResponse:
         weight_series=weights,
         latest_weight_kg=latest_weight,
         weight_trend=weight_trend,
+        avg_energy_level=_avg(energy_values),
+        avg_hunger_level_1_10=_avg(hunger_10_values),
+        craving_summary=_summarize_text_values([c.cravings for c in checkins_newest_first[:7]]),
+        eating_location_summary=_summarize_counts([c.eating_location for c in checkins_newest_first[:7]]),
+        symptom_summary=_summarize_text_values([c.symptoms for c in checkins_newest_first[:7]]),
+        adaptation_hint=any(_needs_adaptation(c) for c in checkins_newest_first[:7]),
+        human_review_recommended=any(_has_red_flag_symptoms(c.symptoms) for c in checkins_newest_first[:7]),
         behavior_wins=wins,
         logging_streak=streak,
         empty_state_message=None,
@@ -133,6 +155,75 @@ def _compute_logging_streak(checkins_newest_first: list[DailyCheckIn]) -> int:
     return streak
 
 
+def _avg(values: list[float | int]) -> float | None:
+    return round(sum(values) / len(values), 1) if values else None
+
+
+def _has_red_flag_symptoms(symptoms: str | None) -> bool:
+    if not symptoms:
+        return False
+    text = symptoms.lower()
+    return any(
+        term in text
+        for term in (
+            "chest pain",
+            "blood in stool",
+            "faint",
+            "fainting",
+            "severe dizziness",
+            "shortness of breath",
+            "درد قفسه",
+            "خون در مدفوع",
+            "غش",
+            "سرگیجه شدید",
+            "تنگی نفس",
+        )
+    )
+
+
+def _needs_adaptation(c: DailyCheckIn) -> bool:
+    return any(
+        (
+            c.sleep_hours is not None and c.sleep_hours < 6,
+            c.sleep_quality is not None and c.sleep_quality <= 2,
+            c.energy_level is not None and c.energy_level <= 2,
+            c.stress_level is not None and c.stress_level >= 4,
+            c.hunger_level_1_10 is not None and c.hunger_level_1_10 >= 8,
+            c.hunger_level is not None and c.hunger_level >= 4,
+            bool(c.cravings),
+            bool(c.planned_eating_out),
+            c.adherence_level is not None and c.adherence_level <= 2,
+            bool(c.symptoms),
+        )
+    )
+
+
+def _checkin_response(c: DailyCheckIn) -> CheckInResponse:
+    safety_notes = ["red_flag_symptoms_reported"] if _has_red_flag_symptoms(c.symptoms) else []
+    return CheckInResponse.model_validate(c).model_copy(
+        update={
+            "adaptation_hint": _needs_adaptation(c),
+            "human_review_recommended": bool(safety_notes),
+            "safety_notes": safety_notes,
+        }
+    )
+
+
+def _summarize_counts(values: list[str | None]) -> str | None:
+    clean = [v.strip() for v in values if v and v.strip()]
+    if not clean:
+        return None
+    counts = Counter(clean)
+    return ", ".join(f"{key}={count}" for key, count in counts.most_common(3))
+
+
+def _summarize_text_values(values: list[str | None]) -> str | None:
+    clean = [v.strip() for v in values if v and v.strip()]
+    if not clean:
+        return None
+    return " | ".join(clean[-3:])
+
+
 def _compute_behavior_wins(checkins_recent_7: list[DailyCheckIn], streak: int) -> list[BehaviorWin]:
     """Compute behavior win chips from the last 7 check-ins."""
     sleeps = [c.sleep_hours for c in checkins_recent_7 if c.sleep_hours is not None]
@@ -186,7 +277,10 @@ def _compute_behavior_wins(checkins_recent_7: list[DailyCheckIn], streak: int) -
 def _compute_weekly_report(checkins_oldest_first: list[DailyCheckIn]) -> WeeklyReportData:
     weights = [c.weight_kg for c in checkins_oldest_first if c.weight_kg is not None]
     hungers = [c.hunger_level for c in checkins_oldest_first if c.hunger_level is not None]
+    hungers_10 = [c.hunger_level_1_10 for c in checkins_oldest_first if c.hunger_level_1_10 is not None]
     sleeps = [c.sleep_hours for c in checkins_oldest_first if c.sleep_hours is not None]
+    sleep_quality = [c.sleep_quality for c in checkins_oldest_first if c.sleep_quality is not None]
+    energy = [c.energy_level for c in checkins_oldest_first if c.energy_level is not None]
     stresses = [c.stress_level for c in checkins_oldest_first if c.stress_level is not None]
     activities = [c.activity_minutes for c in checkins_oldest_first if c.activity_minutes is not None]
 
@@ -195,7 +289,10 @@ def _compute_weekly_report(checkins_oldest_first: list[DailyCheckIn]) -> WeeklyR
         weight_trend = WeightTrend(first=weights[0], last=weights[-1], delta=round(weights[-1] - weights[0], 2))
 
     avg_hunger = round(sum(hungers) / len(hungers), 1) if hungers else None
+    avg_hunger_10 = round(sum(hungers_10) / len(hungers_10), 1) if hungers_10 else None
     avg_sleep = round(sum(sleeps) / len(sleeps), 1) if sleeps else None
+    avg_sleep_quality = round(sum(sleep_quality) / len(sleep_quality), 1) if sleep_quality else None
+    avg_energy = round(sum(energy) / len(energy), 1) if energy else None
     avg_stress = round(sum(stresses) / len(stresses), 1) if stresses else None
     total_activity = sum(activities)
     logging_days = len(checkins_oldest_first)
@@ -209,11 +306,19 @@ def _compute_weekly_report(checkins_oldest_first: list[DailyCheckIn]) -> WeeklyR
         weight_trend=weight_trend,
         weight_series=weights,
         avg_hunger=avg_hunger,
+        avg_hunger_level_1_10=avg_hunger_10,
         avg_sleep=avg_sleep,
+        avg_sleep_quality=avg_sleep_quality,
+        avg_energy_level=avg_energy,
         avg_stress=avg_stress,
         total_activity_minutes=total_activity,
         logging_days=logging_days,
         adherence_pct=adherence_pct,
+        craving_summary=_summarize_text_values([c.cravings for c in checkins_oldest_first]),
+        eating_location_summary=_summarize_counts([c.eating_location for c in checkins_oldest_first]),
+        symptom_summary=_summarize_text_values([c.symptoms for c in checkins_oldest_first]),
+        adaptation_hint=any(_needs_adaptation(c) for c in checkins_oldest_first),
+        human_review_recommended=any(_has_red_flag_symptoms(c.symptoms) for c in checkins_oldest_first),
         sleep_stress_note=sleep_stress_note,
         suggested_focus=_suggest_focus(avg_hunger, avg_sleep, avg_stress, total_activity, logging_days),
     )

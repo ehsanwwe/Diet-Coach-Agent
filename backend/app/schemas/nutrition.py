@@ -43,6 +43,11 @@ class FoodOption(BaseModel):
     calories_estimate: int | None = None
     prep_time_minutes: int | None = None
     tags: list[str] = Field(default_factory=list)
+    option_type: Literal["best_goal_aligned", "fastest", "flexible", "general"] | None = None
+    household_portions: str | None = None
+    why_it_fits_goal: str | None = None
+    safety_note: str | None = None
+    substitutions: list[str] = Field(default_factory=list)
 
 
 # ─── Profile sub-schemas ──────────────────────────────────────────────────────
@@ -134,17 +139,33 @@ class MealAnalyzeRequest(BaseModel):
     meal_text: str = Field(..., min_length=3, max_length=2000)
     meal_time: Literal["breakfast", "lunch", "dinner", "snack", "unknown"] = "unknown"
     context: str | None = Field(default=None, max_length=500)
+    current_goal: str | None = Field(default=None, max_length=200)
+    hunger_level_1_10: int | None = Field(default=None, ge=1, le=10)
+    eaten_at: str | None = Field(default=None, max_length=100)
 
 
 class MealAnalysisResponse(BaseModel):
     meal_id: str | None = None
     quality_score: int | None = None
     analysis_summary: str
+    likely_meal: str | None = None
+    uncertainties: list[str] = Field(default_factory=list)
     protein: str = ""
     fiber: str = ""
     sugar: str = ""
     balance: str = ""
     portion: str = ""
+    protein_quality: str | None = None
+    fiber_vegetable_quality: str | None = None
+    carbohydrate_quality: str | None = None
+    fat_quality: str | None = None
+    simple_sugar_quality: str | None = None
+    portion_volume_assessment: str | None = None
+    satiety_assessment: str | None = None
+    likely_goal_effect: str | None = None
+    one_small_correction: str | None = None
+    next_meal_suggestion: str | None = None
+    no_extreme_compensation_note: str | None = None
     suggestions: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     provider: str = "mock"
@@ -158,10 +179,23 @@ class WhatToEatNowRequest(BaseModel):
     hunger_level: Literal["low", "medium", "high"] = "medium"
     meal_context: str | None = Field(default=None, max_length=500)
     time_available_minutes: int | None = Field(default=None, ge=1, le=180)
+    current_place: str | None = Field(default=None, max_length=100)
+    location_context: str | None = Field(default=None, max_length=100)
+    last_meal_time: str | None = Field(default=None, max_length=100)
+    last_meal_summary: str | None = Field(default=None, max_length=300)
+    current_goal: str | None = Field(default=None, max_length=200)
+    hunger_level_1_10: int | None = Field(default=None, ge=1, le=10)
+    cooking_access: str | None = Field(default=None, max_length=200)
+    budget_context: str | None = Field(default=None, max_length=200)
+    medical_constraints: str | None = Field(default=None, max_length=500)
+    user_preference_note: str | None = Field(default=None, max_length=500)
 
 
 class WhatToEatNowResponse(BaseModel):
     options: list[FoodOption] = Field(default_factory=list)
+    best_goal_aligned_option: FoodOption | None = None
+    fastest_option: FoodOption | None = None
+    flexible_option: FoodOption | None = None
     reasoning_summary: str = ""
     warnings: list[str] = Field(default_factory=list)
     provider: str = "mock"

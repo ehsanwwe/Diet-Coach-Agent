@@ -190,20 +190,29 @@ def for_analyze_meal(
     meal_text: str,
     meal_time: str,
     meal_context: str | None,
+    extra_context: dict | None = None,
 ) -> PromptData:
     system = _base_system(TASK_ANALYZE_MEAL, ctx)
     user_ctx = _memory_json(ctx)
     extra = f"\nAdditional context: {meal_context}" if meal_context else ""
+    structured_extra = (
+        "\nStructured daily context: " + json.dumps(extra_context, ensure_ascii=False)
+        if extra_context
+        else ""
+    )
     user = (
         f"User profile: {user_ctx}\n\n"
         f"Meal text: {meal_text}\n"
-        f"Meal time: {meal_time}{extra}\n\n"
+        f"Meal time: {meal_time}{extra}{structured_extra}\n\n"
         "Analyze the meal without punishment or extreme compensation advice.\n"
-        "Cover likely meal identification, uncertainties, protein quality, fiber/vegetable quality, carbohydrate quality, fat quality, simple sugar, portion/volume, satiety, likely effect on the user's goal, one small correction, and a next-meal suggestion.\n"
+        "Cover likely meal identification, uncertainties, protein quality, fiber/vegetable quality, carbohydrate quality, fat quality, simple sugar quality, portion/volume assessment, satiety assessment, likely effect on the user's goal, one small correction, and a next-meal suggestion.\n"
+        "Never suggest fasting, detox, purging, extreme exercise, skipping the next meal, or harsh compensation after overeating.\n"
         "Return JSON exactly in this shape:\n"
         "{\n"
         '  "quality_score": int,\n'
         '  "analysis_summary": "...",\n'
+        '  "likely_meal": "...",\n'
+        '  "uncertainties": ["..."],\n'
         '  "assessment_summary": "...",\n'
         '  "nutrition_diagnosis": "...",\n'
         '  "intervention_summary": "...",\n'
@@ -213,6 +222,17 @@ def for_analyze_meal(
         '  "sugar": "...",\n'
         '  "balance": "...",\n'
         '  "portion": "...",\n'
+        '  "protein_quality": "...",\n'
+        '  "fiber_vegetable_quality": "...",\n'
+        '  "carbohydrate_quality": "...",\n'
+        '  "fat_quality": "...",\n'
+        '  "simple_sugar_quality": "...",\n'
+        '  "portion_volume_assessment": "...",\n'
+        '  "satiety_assessment": "...",\n'
+        '  "likely_goal_effect": "...",\n'
+        '  "one_small_correction": "...",\n'
+        '  "next_meal_suggestion": "...",\n'
+        '  "no_extreme_compensation_note": "...",\n'
         '  "suggestions": ["..."],\n'
         '  "warnings": []\n'
         "}"
@@ -226,26 +246,36 @@ def for_what_to_eat_now(
     hunger_level: str,
     meal_context: str | None,
     time_available_minutes: int | None,
+    current_context: dict | None = None,
 ) -> PromptData:
     system = _base_system(TASK_WHAT_TO_EAT, ctx)
     user_ctx = _memory_json(ctx)
     foods_str = ", ".join(available_foods) if available_foods else "typical Iranian/Persian home foods"
     time_str = f"{time_available_minutes} minutes" if time_available_minutes else "unknown"
     extra = f"\nContext/place/last meal if provided: {meal_context}" if meal_context else ""
+    structured = (
+        "\nStructured current context: " + json.dumps(current_context, ensure_ascii=False)
+        if current_context
+        else ""
+    )
     user = (
         f"User profile: {user_ctx}\n\n"
         f"Available foods: {foods_str}\n"
         f"Hunger level label: {hunger_level}. Interpret hunger on a 1-10 scale when possible.\n"
-        f"Time constraint: {time_str}{extra}\n\n"
+        f"Time constraint: {time_str}{extra}{structured}\n\n"
         "Use current place/context (home, work, restaurant, travel), available foods, last meal time, current goal, hunger 1-10, time constraints, cooking ability/access, and medical constraints.\n"
         "If key data is missing, either ask concise clarifying questions in reasoning/warnings or provide safe low-risk options with stated assumptions.\n"
-        "Return 2-3 practical options: best aligned with goal, fastest option, and a more flexible option when appropriate.\n"
+        "Return 2-3 practical options: best aligned with goal, fastest option, and a more flexible option when appropriate. Each option should include household portions, why it fits the goal, substitutions, and safety note when relevant.\n"
+        "For high-risk or clinical-review users, keep options conservative and avoid aggressive disease-specific advice.\n"
         "Return JSON exactly in this shape:\n"
         "{\n"
         '  "assessment_summary": "...",\n'
         '  "intervention_summary": "...",\n'
         '  "monitoring_notes": "...",\n'
-        '  "options": [{"name": "...", "description": "...", "calories_estimate": int, "prep_time_minutes": int, "tags": ["best_aligned|fastest|flexible"]}],\n'
+        '  "options": [{"name": "...", "description": "...", "calories_estimate": int, "prep_time_minutes": int, "tags": ["best_aligned|fastest|flexible"], "option_type": "best_goal_aligned|fastest|flexible|general", "household_portions": "...", "why_it_fits_goal": "...", "safety_note": null, "substitutions": ["..."]}],\n'
+        '  "best_goal_aligned_option": {"name": "...", "description": "...", "option_type": "best_goal_aligned"},\n'
+        '  "fastest_option": {"name": "...", "description": "...", "option_type": "fastest"},\n'
+        '  "flexible_option": {"name": "...", "description": "...", "option_type": "flexible"},\n'
         '  "reasoning_summary": "...",\n'
         '  "warnings": []\n'
         "}"

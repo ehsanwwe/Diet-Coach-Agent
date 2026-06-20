@@ -630,12 +630,23 @@ def analyze_meal(
         meal_text=body.meal_text,
         meal_time=body.meal_time,
         meal_context=body.context,
+        extra_context={
+            k: v
+            for k, v in {
+                "current_goal": body.current_goal,
+                "hunger_level_1_10": body.hunger_level_1_10,
+                "eaten_at": body.eaten_at,
+            }.items()
+            if v is not None
+        },
     )
 
     # Safety: append clinical reminder if needed
     warnings = list(analysis.get("warnings") or [])
     if ctx.clinical_review_required:
         warnings.append(_CLINICAL_REVIEW_WELLNESS_GUIDANCE)
+    elif ctx.risk_level == "high":
+        warnings.append(_HIGH_RISK_WELLNESS_GUIDANCE)
 
     # Persist meal entry
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -652,12 +663,25 @@ def analyze_meal(
     return MealAnalysisResponse(
         meal_id=meal_entry.id,
         quality_score=analysis.get("quality_score"),
+        likely_meal=analysis.get("likely_meal"),
+        uncertainties=analysis.get("uncertainties") or [],
         analysis_summary=analysis.get("analysis_summary", "تحلیل انجام شد."),
         protein=analysis.get("protein", ""),
         fiber=analysis.get("fiber", ""),
         sugar=analysis.get("sugar", ""),
         balance=analysis.get("balance", ""),
         portion=analysis.get("portion", ""),
+        protein_quality=analysis.get("protein_quality"),
+        fiber_vegetable_quality=analysis.get("fiber_vegetable_quality"),
+        carbohydrate_quality=analysis.get("carbohydrate_quality"),
+        fat_quality=analysis.get("fat_quality"),
+        simple_sugar_quality=analysis.get("simple_sugar_quality"),
+        portion_volume_assessment=analysis.get("portion_volume_assessment"),
+        satiety_assessment=analysis.get("satiety_assessment"),
+        likely_goal_effect=analysis.get("likely_goal_effect"),
+        one_small_correction=analysis.get("one_small_correction"),
+        next_meal_suggestion=analysis.get("next_meal_suggestion"),
+        no_extreme_compensation_note=analysis.get("no_extreme_compensation_note"),
         suggestions=analysis.get("suggestions") or [],
         warnings=warnings,
         provider=result.provider,
@@ -679,25 +703,57 @@ def what_to_eat_now(
         hunger_level=body.hunger_level,
         meal_context=body.meal_context,
         time_available_minutes=body.time_available_minutes,
+        current_context={
+            k: v
+            for k, v in {
+                "current_place": body.current_place,
+                "location_context": body.location_context,
+                "last_meal_time": body.last_meal_time,
+                "last_meal_summary": body.last_meal_summary,
+                "current_goal": body.current_goal,
+                "hunger_level_1_10": body.hunger_level_1_10,
+                "cooking_access": body.cooking_access,
+                "budget_context": body.budget_context,
+                "medical_constraints": body.medical_constraints,
+                "user_preference_note": body.user_preference_note,
+            }.items()
+            if v is not None
+        },
     )
 
-    options = [
-        FoodOption(
+    def _food_option(o: dict | None) -> FoodOption | None:
+        if not o:
+            return None
+        return FoodOption(
             name=o.get("name", "گزینه غذایی"),
             description=o.get("description"),
             calories_estimate=o.get("calories_estimate"),
             prep_time_minutes=o.get("prep_time_minutes"),
             tags=o.get("tags") or [],
+            option_type=o.get("option_type"),
+            household_portions=o.get("household_portions"),
+            why_it_fits_goal=o.get("why_it_fits_goal"),
+            safety_note=o.get("safety_note"),
+            substitutions=o.get("substitutions") or [],
         )
-        for o in (data.get("options") or [])
-    ]
+
+    options = [_food_option(o) for o in (data.get("options") or [])]
+    options = [o for o in options if o is not None]
 
     warnings = list(data.get("warnings") or [])
     if ctx.clinical_review_required:
         warnings.append(_CLINICAL_REVIEW_WELLNESS_GUIDANCE)
+    elif ctx.risk_level == "high":
+        warnings.append(_HIGH_RISK_WELLNESS_GUIDANCE)
 
     return WhatToEatNowResponse(
         options=options,
+        best_goal_aligned_option=_food_option(data.get("best_goal_aligned_option"))
+        or next((o for o in options if o.option_type == "best_goal_aligned"), None),
+        fastest_option=_food_option(data.get("fastest_option"))
+        or next((o for o in options if o.option_type == "fastest"), None),
+        flexible_option=_food_option(data.get("flexible_option"))
+        or next((o for o in options if o.option_type == "flexible"), None),
         reasoning_summary=data.get("reasoning_summary", ""),
         warnings=warnings,
         provider=result.provider,

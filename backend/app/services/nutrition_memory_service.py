@@ -80,6 +80,13 @@ class NutritionMemoryContext:
     meal_history_summary: str | None = None
     progress_history_summary: str | None = None
     recent_checkin_summary: str | None = None
+    energy_trend_summary: str | None = None
+    hunger_1_10_trend_summary: str | None = None
+    daily_craving_summary: str | None = None
+    eating_location_summary: str | None = None
+    planned_eating_out_summary: str | None = None
+    symptom_summary: str | None = None
+    adherence_summary: str | None = None
     weekly_insights_summary: str | None = None
     body_response_summary: str | None = None
     communication_style: str | None = None
@@ -173,6 +180,20 @@ class NutritionMemoryContext:
             d["progress_history_summary"] = self.progress_history_summary
         if self.recent_checkin_summary:
             d["recent_checkin_summary"] = self.recent_checkin_summary
+        if self.energy_trend_summary:
+            d["energy_trend_summary"] = self.energy_trend_summary
+        if self.hunger_1_10_trend_summary:
+            d["hunger_1_10_trend_summary"] = self.hunger_1_10_trend_summary
+        if self.daily_craving_summary:
+            d["daily_craving_summary"] = self.daily_craving_summary
+        if self.eating_location_summary:
+            d["eating_location_summary"] = self.eating_location_summary
+        if self.planned_eating_out_summary:
+            d["planned_eating_out_summary"] = self.planned_eating_out_summary
+        if self.symptom_summary:
+            d["symptom_summary"] = self.symptom_summary
+        if self.adherence_summary:
+            d["adherence_summary"] = self.adherence_summary
         if self.weekly_insights_summary:
             d["weekly_insights_summary"] = self.weekly_insights_summary
         if self.body_response_summary:
@@ -265,6 +286,13 @@ class NutritionMemoryContext:
                 k: v
                 for k, v in {
                     "recent_checkin_summary": self.recent_checkin_summary,
+                    "energy_trend_summary": self.energy_trend_summary,
+                    "hunger_1_10_trend_summary": self.hunger_1_10_trend_summary,
+                    "daily_craving_summary": self.daily_craving_summary,
+                    "eating_location_summary": self.eating_location_summary,
+                    "planned_eating_out_summary": self.planned_eating_out_summary,
+                    "symptom_summary": self.symptom_summary,
+                    "adherence_summary": self.adherence_summary,
                     "progress_history_summary": self.progress_history_summary,
                     "weekly_insights_summary": self.weekly_insights_summary,
                     "body_response_summary": self.body_response_summary,
@@ -366,28 +394,100 @@ def summarize_recent_checkins(checkins) -> str | None:
         return None
     oldest_first = list(reversed(checkins[:7]))
     weights = [c.weight_kg for c in oldest_first if c.weight_kg is not None]
+    waists = [c.waist_cm for c in oldest_first if getattr(c, "waist_cm", None) is not None]
     sleeps = [c.sleep_hours for c in oldest_first if c.sleep_hours is not None]
+    sleep_quality = [
+        c.sleep_quality for c in oldest_first if getattr(c, "sleep_quality", None) is not None
+    ]
     stresses = [c.stress_level for c in oldest_first if c.stress_level is not None]
     hungers = [c.hunger_level for c in oldest_first if c.hunger_level is not None]
+    hungers_10 = [
+        c.hunger_level_1_10
+        for c in oldest_first
+        if getattr(c, "hunger_level_1_10", None) is not None
+    ]
+    energy = [c.energy_level for c in oldest_first if getattr(c, "energy_level", None) is not None]
     activities = [c.activity_minutes for c in oldest_first if c.activity_minutes is not None]
+    adherence = [
+        c.adherence_level for c in oldest_first if getattr(c, "adherence_level", None) is not None
+    ]
     notes = [c.adherence_notes.strip() for c in oldest_first if c.adherence_notes and c.adherence_notes.strip()]
+    cravings = [c.cravings.strip() for c in oldest_first if getattr(c, "cravings", None)]
+    locations = [c.eating_location for c in oldest_first if getattr(c, "eating_location", None)]
+    symptoms = [c.symptoms.strip() for c in oldest_first if getattr(c, "symptoms", None)]
 
     parts = [f"{len(oldest_first)} recent check-ins"]
     if len(weights) >= 2:
         parts.append(f"weight {weights[0]}->{weights[-1]}kg")
     elif weights:
         parts.append(f"latest weight {weights[-1]}kg")
+    if len(waists) >= 2:
+        parts.append(f"waist {waists[0]}->{waists[-1]}cm")
+    elif waists:
+        parts.append(f"latest waist {waists[-1]}cm")
     if sleeps:
         parts.append(f"avg sleep {_avg(sleeps)}h")
+    if sleep_quality:
+        parts.append(f"avg sleep quality {_avg(sleep_quality)}/5")
     if stresses:
         parts.append(f"avg stress {_avg(stresses)}/5")
     if hungers:
         parts.append(f"avg hunger {_avg(hungers)}/5")
+    if hungers_10:
+        parts.append(f"avg hunger {_avg(hungers_10)}/10")
+    if energy:
+        parts.append(f"avg energy {_avg(energy)}/5")
     if activities:
         parts.append(f"avg activity {int(_avg(activities) or 0)}min")
+    if adherence:
+        parts.append(f"avg adherence {_avg(adherence)}/5")
+    if cravings:
+        parts.append("cravings: " + " | ".join(cravings[-3:]))
+    if locations:
+        counts = Counter(locations)
+        parts.append("eating locations: " + ", ".join(f"{k}={v}" for k, v in counts.most_common(3)))
+    if any(getattr(c, "planned_eating_out", None) for c in oldest_first):
+        parts.append("planned eating out reported")
+    if symptoms:
+        parts.append("symptoms: " + " | ".join(symptoms[-3:]))
     if notes:
         parts.append("recent notes: " + " | ".join(notes[-3:]))
     return "; ".join(parts)
+
+
+def summarize_checkin_signals(checkins) -> dict[str, str | None]:
+    if not checkins:
+        return {}
+    oldest_first = list(reversed(checkins[:7]))
+    energy = [c.energy_level for c in oldest_first if getattr(c, "energy_level", None) is not None]
+    hungers_10 = [
+        c.hunger_level_1_10
+        for c in oldest_first
+        if getattr(c, "hunger_level_1_10", None) is not None
+    ]
+    cravings = [c.cravings.strip() for c in oldest_first if getattr(c, "cravings", None)]
+    locations = [c.eating_location for c in oldest_first if getattr(c, "eating_location", None)]
+    symptoms = [c.symptoms.strip() for c in oldest_first if getattr(c, "symptoms", None)]
+    adherence = [
+        c.adherence_level for c in oldest_first if getattr(c, "adherence_level", None) is not None
+    ]
+    planned_out_count = sum(1 for c in oldest_first if getattr(c, "planned_eating_out", None))
+
+    return {
+        "energy_trend_summary": f"avg energy {_avg(energy)}/5" if energy else None,
+        "hunger_1_10_trend_summary": f"avg hunger {_avg(hungers_10)}/10" if hungers_10 else None,
+        "daily_craving_summary": " | ".join(cravings[-3:]) if cravings else None,
+        "eating_location_summary": (
+            ", ".join(f"{k}={v}" for k, v in Counter(locations).most_common(3))
+            if locations
+            else None
+        ),
+        "planned_eating_out_summary": (
+            f"planned eating out on {planned_out_count} recent day(s)" if planned_out_count else None
+        ),
+        "symptom_summary": " | ".join(symptoms[-3:]) if symptoms else None,
+        "adherence_summary": f"avg adherence {_avg(adherence)}/5" if adherence else None,
+    }
 
 
 def summarize_progress_history(db: Session, user_id: str) -> tuple[str | None, str | None]:
@@ -625,6 +725,14 @@ def build(db: Session, user: User) -> NutritionMemoryContext:
 
     checkins = progress_repository.get_recent_checkins(db, user.id, days=7)
     ctx.recent_checkin_summary = summarize_recent_checkins(checkins)
+    checkin_signals = summarize_checkin_signals(checkins)
+    ctx.energy_trend_summary = checkin_signals.get("energy_trend_summary")
+    ctx.hunger_1_10_trend_summary = checkin_signals.get("hunger_1_10_trend_summary")
+    ctx.daily_craving_summary = checkin_signals.get("daily_craving_summary")
+    ctx.eating_location_summary = checkin_signals.get("eating_location_summary")
+    ctx.planned_eating_out_summary = checkin_signals.get("planned_eating_out_summary")
+    ctx.symptom_summary = checkin_signals.get("symptom_summary")
+    ctx.adherence_summary = checkin_signals.get("adherence_summary")
     ctx.progress_history_summary, ctx.body_response_summary = summarize_progress_history(db, user.id)
     ctx.meal_history_summary = summarize_meal_history(db, user.id)
     ctx.weekly_insights_summary = summarize_weekly_insights(db, user.id)

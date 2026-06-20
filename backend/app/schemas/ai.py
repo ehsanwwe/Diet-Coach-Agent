@@ -53,11 +53,24 @@ class AIPlanResponse(_AIBaseModel):
 class AIMealAnalysisResponse(_AIBaseModel):
     quality_score: int | None = Field(default=None, ge=1, le=10)
     analysis_summary: str = Field(min_length=1)
+    likely_meal: str | None = None
+    uncertainties: list[str] = Field(default_factory=list)
     protein: str = ""
     fiber: str = ""
     sugar: str = ""
     balance: str = ""
     portion: str = ""
+    protein_quality: str | None = None
+    fiber_vegetable_quality: str | None = None
+    carbohydrate_quality: str | None = None
+    fat_quality: str | None = None
+    simple_sugar_quality: str | None = None
+    portion_volume_assessment: str | None = None
+    satiety_assessment: str | None = None
+    likely_goal_effect: str | None = None
+    one_small_correction: str | None = None
+    next_meal_suggestion: str | None = None
+    no_extreme_compensation_note: str | None = None
     suggestions: list[str] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
     assessment_summary: str | None = None
@@ -72,10 +85,18 @@ class AIFoodOption(_AIBaseModel):
     calories_estimate: int | None = None
     prep_time_minutes: int | None = None
     tags: list[str] = Field(default_factory=list)
+    option_type: Literal["best_goal_aligned", "fastest", "flexible", "general"] | None = None
+    household_portions: str | None = None
+    why_it_fits_goal: str | None = None
+    safety_note: str | None = None
+    substitutions: list[str] = Field(default_factory=list)
 
 
 class AIWhatToEatNowResponse(_AIBaseModel):
     options: list[AIFoodOption] = Field(min_length=1)
+    best_goal_aligned_option: AIFoodOption | None = None
+    fastest_option: AIFoodOption | None = None
+    flexible_option: AIFoodOption | None = None
     reasoning_summary: str = ""
     warnings: list[str] = Field(default_factory=list)
     assessment_summary: str | None = None

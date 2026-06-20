@@ -155,8 +155,9 @@ class NutritionAgentService:
         meal_text: str,
         meal_time: str,
         meal_context: str | None,
+        extra_context: dict | None = None,
     ) -> tuple[dict, AIProviderResult]:
-        prompt = for_analyze_meal(ctx, meal_text, meal_time, meal_context)
+        prompt = for_analyze_meal(ctx, meal_text, meal_time, meal_context, extra_context)
         return self._call(prompt)
 
     def what_to_eat_now(
@@ -166,9 +167,10 @@ class NutritionAgentService:
         hunger_level: str,
         meal_context: str | None,
         time_available_minutes: int | None,
+        current_context: dict | None = None,
     ) -> tuple[dict, AIProviderResult]:
         prompt = for_what_to_eat_now(
-            ctx, available_foods, hunger_level, meal_context, time_available_minutes
+            ctx, available_foods, hunger_level, meal_context, time_available_minutes, current_context
         )
         return self._call(prompt)
 
