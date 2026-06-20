@@ -11,7 +11,10 @@ import logging
 import re
 from typing import Any
 
+from pydantic import ValidationError
+
 from app.core.config import settings
+from app.schemas.ai import AI_TASK_SCHEMAS
 from app.services.ai_provider import AIProvider, AIProviderError, AIProviderResult, get_ai_provider
 from app.services.conversation_context_manager import ConversationContextManager
 from app.services.mock_ai_provider import MockAIProvider
@@ -53,22 +56,43 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
-def _fallback_mock(task_type: str) -> dict:
+def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]:
     """Return mock data for the given task when real provider JSON is unparseable."""
     mock = MockAIProvider()
     from app.services.mock_ai_provider import (
         TASK_ADAPT_PLAN, TASK_ANALYZE_MEAL, TASK_GENERATE_PLAN, TASK_WHAT_TO_EAT,
+        TASK_CHAT, TASK_GENERATE_WEEK_AR, TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA,
     )
     task_tag_map = {
         "generate_plan": TASK_GENERATE_PLAN,
         "analyze_meal": TASK_ANALYZE_MEAL,
         "what_to_eat_now": TASK_WHAT_TO_EAT,
         "adapt_plan": TASK_ADAPT_PLAN,
+        "chat_message": TASK_CHAT,
+        "generate_week_fa": TASK_GENERATE_WEEK_FA,
+        "generate_week_en": TASK_GENERATE_WEEK_EN,
+        "generate_week_ar": TASK_GENERATE_WEEK_AR,
     }
     tag = task_tag_map.get(task_type, TASK_GENERATE_PLAN)
     result = mock.generate_text([{"role": "system", "content": tag}])
     data = json.loads(result.content)
-    return data
+    return data, AIProviderResult(
+        content=json.dumps(data, ensure_ascii=False),
+        provider="mock_fallback",
+        model="mock",
+        finish_reason=result.finish_reason,
+        raw_metadata={"fallback_reason": reason, "fallback_task": task_type},
+        is_mock=True,
+    )
+
+
+def _validate_task_output(task_type: str, data: dict) -> dict:
+    """Validate and normalize provider output for a known AI task."""
+    schema = AI_TASK_SCHEMAS.get(task_type)
+    if schema is None:
+        return data
+    validated = schema.model_validate(data)
+    return validated.model_dump(mode="json", exclude_none=True)
 
 
 class NutritionAgentService:
@@ -85,6 +109,7 @@ class NutritionAgentService:
         messages = self._ctx_manager.prepare(prompt_data)
         task_type = prompt_data.task_type
 
+        fallback_reason: str | None = None
         try:
             result = self._provider.generate_text(
                 messages,
@@ -93,19 +118,30 @@ class NutritionAgentService:
             )
         except AIProviderError as exc:
             logger.warning("AI provider failed (%s), using mock fallback: %s", task_type, exc)
-            mock_provider = MockAIProvider()
-            result = mock_provider.generate_text(messages)
+            parsed, result = _fallback_mock(task_type, "provider_error")
+            return _validate_task_output(task_type, parsed), result
 
         parsed = _extract_json(result.content)
         if parsed is None:
             logger.warning("Failed to parse provider JSON for task %s, using mock fallback", task_type)
-            parsed = _fallback_mock(task_type)
-            result = AIProviderResult(
-                content=json.dumps(parsed, ensure_ascii=False),
-                provider="mock_fallback",
-                model="mock",
-                is_mock=True,
+            fallback_reason = "invalid_json"
+        elif not isinstance(parsed, dict):
+            logger.warning("Provider JSON for task %s was not an object, using mock fallback", task_type)
+            fallback_reason = "non_object_json"
+
+        if fallback_reason is not None:
+            parsed, result = _fallback_mock(task_type, fallback_reason)
+
+        try:
+            parsed = _validate_task_output(task_type, parsed)
+        except ValidationError as exc:
+            logger.warning(
+                "Provider JSON schema validation failed for task %s, using mock fallback: %s",
+                task_type,
+                exc,
             )
+            parsed, result = _fallback_mock(task_type, "schema_validation_failed")
+            parsed = _validate_task_output(task_type, parsed)
 
         return parsed, result
 
@@ -154,7 +190,7 @@ class NutritionAgentService:
         """Generate a 7-day meal plan in the given locale."""
         prompt = for_generate_week_plan(ctx, locale, extra_context=extra_context)
         parsed, result = self._call(prompt)
-        # Validate structure: must have 'days' list with at least 7 entries
+        # Defensive fallback remains for older callers/tests and invalid locale mock data.
         if not isinstance(parsed.get("days"), list) or len(parsed["days"]) < 7:
             logger.warning(
                 "Week plan response invalid (locale=%s, days=%s), falling back to mock",
@@ -170,6 +206,7 @@ class NutritionAgentService:
                 content=json.dumps(parsed, ensure_ascii=False),
                 provider="mock_fallback",
                 model="mock",
+                raw_metadata={"fallback_reason": "week_plan_shape_invalid"},
                 is_mock=True,
             )
         return parsed, result

@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.audit import UserLanguagePreference
@@ -177,6 +177,30 @@ def delete_plan_day(db: Session, day: NutritionPlanDay) -> None:
     db.flush()
 
 
+def update_plan_day(
+    db: Session,
+    day: NutritionPlanDay,
+    *,
+    title: str | None = None,
+    summary: str | None = None,
+    hydration_goal: str | None = None,
+    notes: str | None = None,
+    warnings: list[str] | None = None,
+) -> NutritionPlanDay:
+    if title:
+        day.title = title
+    if summary is not None:
+        day.summary = summary
+    if hydration_goal is not None:
+        day.hydration_goal = hydration_goal
+    if notes is not None:
+        day.notes = notes
+    if warnings is not None:
+        day.warnings = json.dumps(warnings, ensure_ascii=False)
+    db.flush()
+    return day
+
+
 # ─── NutritionPlanDayMeal ─────────────────────────────────────────────────────
 
 def get_day_meals(db: Session, plan_day_id: str) -> list[NutritionPlanDayMeal]:
@@ -213,6 +237,32 @@ def create_plan_day_meal(
     db.add(meal)
     db.flush()
     return meal
+
+
+def replace_day_meals(
+    db: Session,
+    plan_day_id: str,
+    *,
+    locale: str,
+    meals: list[dict],
+) -> list[NutritionPlanDayMeal]:
+    db.execute(delete(NutritionPlanDayMeal).where(NutritionPlanDayMeal.plan_day_id == plan_day_id))
+    rows: list[NutritionPlanDayMeal] = []
+    for meal in meals:
+        rows.append(
+            create_plan_day_meal(
+                db,
+                plan_day_id=plan_day_id,
+                locale=locale,
+                meal_type=meal.get("meal_type", "snack"),
+                title=meal.get("title") or meal.get("name") or "—",
+                description=meal.get("description"),
+                portion_guidance=meal.get("portion_guidance") or meal.get("notes"),
+                alternatives=meal.get("alternatives") or [],
+                preparation_notes=meal.get("preparation_notes"),
+            )
+        )
+    return rows
 
 
 def decode_json_list(raw: str | None) -> list[str]:

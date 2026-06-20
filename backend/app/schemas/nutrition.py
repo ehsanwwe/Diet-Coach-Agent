@@ -110,6 +110,9 @@ class NutritionPlanResponse(BaseModel):
     plan_id: str | None = None
     status: str | None = None
     risk_level: str | None = None
+    plan_type: str | None = None
+    profile_complete: bool | None = None
+    missing_fields: list[str] = Field(default_factory=list)
     summary: str | None = None
     daily_guidelines: DailyGuidelines | None = None
     meals: list[MealItem] = Field(default_factory=list)
@@ -181,5 +184,13 @@ class AdaptPlanResponse(BaseModel):
     changes: list[str] = Field(default_factory=list)
     updated_guidelines: DailyGuidelines | None = None
     warnings: list[str] = Field(default_factory=list)
+    revision_applied: bool = False
+    revision_scope: Literal["none", "next_meal", "today", "remaining_day", "week", "guidance_only"] = "none"
+    revised_date: str | None = None
+    changed_items: list[str] = Field(default_factory=list)
+    reason_for_changes: str | None = None
+    safety_notes: list[str] = Field(default_factory=list)
+    requires_human_review: bool = False
+    fallback_reason: str | None = None
     provider: str = "mock"
     is_mock: bool = True
