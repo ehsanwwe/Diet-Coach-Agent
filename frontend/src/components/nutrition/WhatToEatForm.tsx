@@ -23,6 +23,13 @@ export default function WhatToEatForm({ dict, locale, onResult }: Props) {
   const [hunger, setHunger] = useState<HungerLevel>('medium')
   const [mealContext, setMealContext] = useState('')
   const [timeAvailable, setTimeAvailable] = useState('')
+  const [showDetails, setShowDetails] = useState(false)
+  const [currentPlace, setCurrentPlace] = useState('')
+  const [lastMeal, setLastMeal] = useState('')
+  const [hunger10, setHunger10] = useState('')
+  const [cookingAccess, setCookingAccess] = useState('')
+  const [budgetContext, setBudgetContext] = useState('')
+  const [preferenceNote, setPreferenceNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -57,6 +64,12 @@ export default function WhatToEatForm({ dict, locale, onResult }: Props) {
         hunger_level: hunger,
         meal_context: mealContext.trim() || undefined,
         time_available_minutes: timeAvailable ? parseInt(timeAvailable) : undefined,
+        current_place: currentPlace.trim() || undefined,
+        last_meal_summary: lastMeal.trim() || undefined,
+        hunger_level_1_10: hunger10 ? parseInt(hunger10) : undefined,
+        cooking_access: cookingAccess.trim() || undefined,
+        budget_context: budgetContext.trim() || undefined,
+        user_preference_note: preferenceNote.trim() || undefined,
       })
       onResult(result)
     } catch (err) {
@@ -99,7 +112,7 @@ export default function WhatToEatForm({ dict, locale, onResult }: Props) {
                   type="button"
                   onClick={() => removeFood(f)}
                   className="text-brand-light hover:text-brand transition-colors"
-                  aria-label={`remove ${f}`}
+                  aria-label={dict.whatToEat.removeFoodAriaLabel.replace('{food}', f)}
                 >
                   ×
                 </button>
@@ -181,6 +194,110 @@ export default function WhatToEatForm({ dict, locale, onResult }: Props) {
             className="w-full px-3 py-3 rounded-2xl bg-surface border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
           />
         </div>
+      </div>
+
+      <div className="rounded-2xl bg-surface border border-line">
+        <button
+          type="button"
+          onClick={() => setShowDetails((v) => !v)}
+          className="w-full px-4 py-3 text-sm font-bold text-ink flex items-center justify-between"
+          aria-expanded={showDetails}
+        >
+          {dict.whatToEat.optionalDetails}
+          <span className="text-ink-3">{showDetails ? '−' : '+'}</span>
+        </button>
+        {showDetails && (
+          <div className="px-4 pb-4 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="wte-place" className="block text-xs font-medium text-ink mb-2">
+                  {dict.whatToEat.currentPlaceLabel}
+                </label>
+                <input
+                  id="wte-place"
+                  type="text"
+                  value={currentPlace}
+                  onChange={(e) => setCurrentPlace(e.target.value)}
+                  placeholder={dict.whatToEat.currentPlacePlaceholder}
+                  maxLength={100}
+                  className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+                />
+              </div>
+              <div>
+                <label htmlFor="wte-hunger-10" className="block text-xs font-medium text-ink mb-2">
+                  {dict.whatToEat.hungerScaleLabel}
+                </label>
+                <input
+                  id="wte-hunger-10"
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={hunger10}
+                  onChange={(e) => setHunger10(e.target.value)}
+                  className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="wte-last-meal" className="block text-xs font-medium text-ink mb-2">
+                {dict.whatToEat.lastMealLabel}
+              </label>
+              <input
+                id="wte-last-meal"
+                type="text"
+                value={lastMeal}
+                onChange={(e) => setLastMeal(e.target.value)}
+                placeholder={dict.whatToEat.lastMealPlaceholder}
+                maxLength={300}
+                className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="wte-cooking" className="block text-xs font-medium text-ink mb-2">
+                  {dict.whatToEat.cookingAccessLabel}
+                </label>
+                <input
+                  id="wte-cooking"
+                  type="text"
+                  value={cookingAccess}
+                  onChange={(e) => setCookingAccess(e.target.value)}
+                  placeholder={dict.whatToEat.cookingAccessPlaceholder}
+                  maxLength={200}
+                  className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+                />
+              </div>
+              <div>
+                <label htmlFor="wte-budget" className="block text-xs font-medium text-ink mb-2">
+                  {dict.whatToEat.budgetContextLabel}
+                </label>
+                <input
+                  id="wte-budget"
+                  type="text"
+                  value={budgetContext}
+                  onChange={(e) => setBudgetContext(e.target.value)}
+                  placeholder={dict.whatToEat.budgetContextPlaceholder}
+                  maxLength={200}
+                  className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="wte-preference" className="block text-xs font-medium text-ink mb-2">
+                {dict.whatToEat.preferenceNoteLabel}
+              </label>
+              <input
+                id="wte-preference"
+                type="text"
+                value={preferenceNote}
+                onChange={(e) => setPreferenceNote(e.target.value)}
+                placeholder={dict.whatToEat.preferenceNotePlaceholder}
+                maxLength={500}
+                className="w-full px-3 py-3 rounded-2xl bg-elevated border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {error && (

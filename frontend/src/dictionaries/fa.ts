@@ -416,6 +416,20 @@ export interface Dictionary {
     snack: string
     unknown: string
     mockBadge: string
+    likelyMeal: string
+    uncertainties: string
+    nutritionQualityTitle: string
+    proteinQuality: string
+    fiberVegetableQuality: string
+    carbohydrateQuality: string
+    fatQuality: string
+    simpleSugarQuality: string
+    portionVolumeAssessment: string
+    satietyAssessment: string
+    goalEffect: string
+    smallCorrection: string
+    nextMealSuggestion: string
+    noExtremeCompensation: string
   }
   whatToEat: {
     title: string
@@ -423,6 +437,7 @@ export interface Dictionary {
     availableFoodsLabel: string
     availableFoodsPlaceholder: string
     availableFoodsHint: string
+    removeFoodAriaLabel: string
     addFood: string
     hungerLevelLabel: string
     hungerLow: string
@@ -441,6 +456,100 @@ export interface Dictionary {
     warningsTitle: string
     tryAgainBtn: string
     mockBadge: string
+    optionalDetails: string
+    currentPlaceLabel: string
+    currentPlacePlaceholder: string
+    lastMealLabel: string
+    lastMealPlaceholder: string
+    hungerScaleLabel: string
+    cookingAccessLabel: string
+    cookingAccessPlaceholder: string
+    budgetContextLabel: string
+    budgetContextPlaceholder: string
+    preferenceNoteLabel: string
+    preferenceNotePlaceholder: string
+    bestAligned: string
+    fastest: string
+    flexible: string
+    householdPortions: string
+    whyFitsGoal: string
+    substitutions: string
+    safetyNote: string
+  }
+  behaviorCoaching: {
+    title: string
+    subtitle: string
+    cravingTab: string
+    slipTab: string
+    contextTab: string
+    cravingFoodLabel: string
+    cravingFoodPlaceholder: string
+    cravingIntensityLabel: string
+    hungerScaleLabel: string
+    stressLabel: string
+    sleepQualityLabel: string
+    currentPlaceLabel: string
+    timeOfDayLabel: string
+    noteLabel: string
+    notePlaceholder: string
+    submitCraving: string
+    submittingCraving: string
+    slipWhatHappenedLabel: string
+    slipWhatHappenedPlaceholder: string
+    slipFoodsLabel: string
+    slipFoodsPlaceholder: string
+    slipAmountLabel: string
+    slipAmountPlaceholder: string
+    submitSlip: string
+    submittingSlip: string
+    contextTypeLabel: string
+    contextRestaurant: string
+    contextParty: string
+    contextTravel: string
+    contextWork: string
+    contextMixed: string
+    availableOptionsLabel: string
+    availableOptionsPlaceholder: string
+    preferredOptionLabel: string
+    preferredOptionPlaceholder: string
+    submitContext: string
+    submittingContext: string
+    calmingMessage: string
+    likelyTriggers: string
+    hungerVsCraving: string
+    immediateOptions: string
+    betterChoice: string
+    flexibleChoice: string
+    preventionTip: string
+    followUpQuestion: string
+    dataNotFailure: string
+    triggerQuestions: string
+    patternHypothesis: string
+    oneSmallAdjustment: string
+    nextMealPlan: string
+    tomorrowReset: string
+    noExtremeCompensation: string
+    bestAvailableChoice: string
+    portionStrategy: string
+    plateBalanceTip: string
+    drinkTip: string
+    dessertStrategy: string
+    highCalorieChoice: string
+    nextMealAdjustment: string
+    safetyNotes: string
+    humanReview: string
+    error: string
+  }
+  adaptPlan: {
+    revisionApplied: string
+    revisionNotApplied: string
+    revisionScope: string
+    revisedDate: string
+    changedItems: string
+    reasonForChanges: string
+    safetyNotes: string
+    humanReview: string
+    fallbackReason: string
   }
   companionChat: {
     title: string
@@ -561,6 +670,43 @@ export interface Dictionary {
     unitHours: string
     unitMinutes: string
     unitPercent: string
+    checkInWaist: string
+    checkInWaistUnit: string
+    checkInHunger10: string
+    checkInSleepQuality: string
+    checkInEnergy: string
+    checkInCravings: string
+    checkInCravingsPlaceholder: string
+    checkInCravingType: string
+    checkInCravingTypePlaceholder: string
+    checkInEatingLocation: string
+    checkInEatingLocationPlaceholder: string
+    checkInPlannedEatingOut: string
+    checkInAdherence: string
+    checkInSymptoms: string
+    checkInSymptomsPlaceholder: string
+    weeklySummaryTitle: string
+    weeklyWaistDelta: string
+    weeklyAdherenceSummary: string
+    weeklyRiskyMeals: string
+    weeklyRiskyWindows: string
+    weeklyCravingPatterns: string
+    weeklyQualityTitle: string
+    weeklyProteinQuality: string
+    weeklyFiberQuality: string
+    weeklyHydrationQuality: string
+    weeklySimpleSugarQuality: string
+    weeklySleepFood: string
+    weeklyStressFood: string
+    weeklyEatingOut: string
+    weeklyBehaviorPattern: string
+    weeklyStrengths: string
+    weeklyAdjustments: string
+    weeklyNextGoal: string
+    weeklyMonitoringNotes: string
+    weeklySafetyNotes: string
+    weeklyHumanReview: string
+    weeklyConfidence: string
   }
 }
 
@@ -969,6 +1115,20 @@ const fa: Dictionary = {
     snack: 'میان‌وعده',
     unknown: 'نامشخص',
     mockBadge: 'حالت آزمایشی',
+    likelyMeal: 'وعده احتمالی',
+    uncertainties: 'موارد نامطمئن',
+    nutritionQualityTitle: 'کیفیت تغذیه‌ای',
+    proteinQuality: 'کیفیت پروتئین',
+    fiberVegetableQuality: 'کیفیت فیبر و سبزیجات',
+    carbohydrateQuality: 'کیفیت کربوهیدرات',
+    fatQuality: 'کیفیت چربی',
+    simpleSugarQuality: 'کیفیت قند ساده',
+    portionVolumeAssessment: 'ارزیابی حجم وعده',
+    satietyAssessment: 'ارزیابی سیری',
+    goalEffect: 'اثر احتمالی روی هدف',
+    smallCorrection: 'یک اصلاح کوچک',
+    nextMealSuggestion: 'پیشنهاد وعده بعد',
+    noExtremeCompensation: 'بدون جبران افراطی',
   },
   whatToEat: {
     title: 'الان چی بخورم؟',
@@ -976,6 +1136,7 @@ const fa: Dictionary = {
     availableFoodsLabel: 'مواد موجود در خانه',
     availableFoodsPlaceholder: 'مثلاً: برنج، تخم‌مرغ، ماست، نان...',
     availableFoodsHint: 'Enter بزنید یا کاما بگذارید تا ماده اضافه شود',
+    removeFoodAriaLabel: 'حذف {food}',
     addFood: 'افزودن',
     hungerLevelLabel: 'سطح گرسنگی',
     hungerLow: 'کم',
@@ -994,6 +1155,100 @@ const fa: Dictionary = {
     warningsTitle: 'نکات مهم',
     tryAgainBtn: 'پیشنهاد جدید',
     mockBadge: 'حالت آزمایشی',
+    optionalDetails: 'جزئیات اختیاری',
+    currentPlaceLabel: 'محل فعلی',
+    currentPlacePlaceholder: 'خانه، محل کار، رستوران...',
+    lastMealLabel: 'آخرین وعده',
+    lastMealPlaceholder: 'مثلاً ۳ ساعت پیش ناهار سبک خوردم',
+    hungerScaleLabel: 'گرسنگی از ۱ تا ۱۰',
+    cookingAccessLabel: 'دسترسی به پخت‌وپز',
+    cookingAccessPlaceholder: 'مثلاً فقط مایکروویو یا آشپزخانه کامل',
+    budgetContextLabel: 'بودجه یا دسترسی',
+    budgetContextPlaceholder: 'مثلاً اقتصادی، غذای بیرون، مواد محدود',
+    preferenceNoteLabel: 'ترجیح امروز',
+    preferenceNotePlaceholder: 'مثلاً غذای ایرانی، سبک، بدون گوشت...',
+    bestAligned: 'هماهنگ‌تر با هدف',
+    fastest: 'سریع‌ترین',
+    flexible: 'انعطاف‌پذیر',
+    householdPortions: 'اندازه خانگی',
+    whyFitsGoal: 'چرا با هدف می‌خواند',
+    substitutions: 'جایگزین‌ها',
+    safetyNote: 'نکته ایمنی',
+  },
+  behaviorCoaching: {
+    title: 'راهنمایی رفتاری سریع',
+    subtitle: 'برای هوس، لغزش یا موقعیت‌های بیرون از خانه یک راهنمای کوتاه و بدون قضاوت بگیرید.',
+    cravingTab: 'هوس',
+    slipTab: 'لغزش',
+    contextTab: 'رستوران/سفر',
+    cravingFoodLabel: 'خوراکی مورد هوس',
+    cravingFoodPlaceholder: 'مثلاً شیرینی، چیپس، نان...',
+    cravingIntensityLabel: 'شدت هوس از ۱ تا ۱۰',
+    hungerScaleLabel: 'گرسنگی از ۱ تا ۱۰',
+    stressLabel: 'استرس از ۱ تا ۵',
+    sleepQualityLabel: 'کیفیت خواب از ۱ تا ۵',
+    currentPlaceLabel: 'محل فعلی',
+    timeOfDayLabel: 'زمان روز',
+    noteLabel: 'یادداشت کوتاه',
+    notePlaceholder: 'چه اتفاقی افتاده یا چه چیزی کمک می‌خواهید؟',
+    submitCraving: 'دریافت کمک برای هوس',
+    submittingCraving: 'در حال آماده‌سازی راهنمایی...',
+    slipWhatHappenedLabel: 'چه اتفاقی افتاد؟',
+    slipWhatHappenedPlaceholder: 'مثلاً شام بیشتر از برنامه خوردم',
+    slipFoodsLabel: 'خوراکی‌های خورده‌شده',
+    slipFoodsPlaceholder: 'مثلاً پیتزا، شیرینی',
+    slipAmountLabel: 'مقدار تقریبی',
+    slipAmountPlaceholder: 'مثلاً دو تکه، یک بشقاب',
+    submitSlip: 'دریافت راهنمای بازگشت',
+    submittingSlip: 'در حال آماده‌سازی راهنمای بازگشت...',
+    contextTypeLabel: 'نوع موقعیت',
+    contextRestaurant: 'رستوران',
+    contextParty: 'مهمانی',
+    contextTravel: 'سفر',
+    contextWork: 'محل کار',
+    contextMixed: 'ترکیبی',
+    availableOptionsLabel: 'گزینه‌های موجود',
+    availableOptionsPlaceholder: 'مثلاً کباب، سالاد، برنج',
+    preferredOptionLabel: 'گزینه دلخواه',
+    preferredOptionPlaceholder: 'اگر چیزی را ترجیح می‌دهید بنویسید',
+    submitContext: 'دریافت راهنمای موقعیت',
+    submittingContext: 'در حال آماده‌سازی راهنمای موقعیت...',
+    calmingMessage: 'پیام آرام‌کننده',
+    likelyTriggers: 'محرک‌های احتمالی',
+    hungerVsCraving: 'گرسنگی یا هوس',
+    immediateOptions: 'گزینه‌های فوری',
+    betterChoice: 'انتخاب هماهنگ‌تر',
+    flexibleChoice: 'انتخاب انعطاف‌پذیر',
+    preventionTip: 'نکته پیشگیری',
+    followUpQuestion: 'سؤال پیگیری',
+    dataNotFailure: 'داده است، نه شکست',
+    triggerQuestions: 'سؤال‌های شناخت محرک',
+    patternHypothesis: 'فرضیه الگو',
+    oneSmallAdjustment: 'یک تنظیم کوچک',
+    nextMealPlan: 'برنامه وعده بعد',
+    tomorrowReset: 'بازگشت فردا',
+    noExtremeCompensation: 'بدون جبران افراطی',
+    bestAvailableChoice: 'بهترین انتخاب موجود',
+    portionStrategy: 'راهبرد اندازه',
+    plateBalanceTip: 'تعادل بشقاب',
+    drinkTip: 'نوشیدنی',
+    dessertStrategy: 'دسر یا میان‌وعده',
+    highCalorieChoice: 'اگر گزینه پرکالری انتخاب شد',
+    nextMealAdjustment: 'تنظیم وعده بعد',
+    safetyNotes: 'نکات ایمنی',
+    humanReview: 'نیاز به مرور انسانی',
+    error: 'دریافت راهنمایی ناموفق بود. دوباره تلاش کنید.',
+  },
+  adaptPlan: {
+    revisionApplied: 'بازبینی روی برنامه اعمال شد',
+    revisionNotApplied: 'بازبینی فقط به صورت راهنمایی ارائه شد',
+    revisionScope: 'دامنه بازبینی',
+    revisedDate: 'تاریخ بازبینی',
+    changedItems: 'موارد تغییر کرده',
+    reasonForChanges: 'دلیل تغییرات',
+    safetyNotes: 'نکات ایمنی',
+    humanReview: 'نیاز به مرور انسانی',
+    fallbackReason: 'دلیل استفاده از پاسخ جایگزین',
   },
   companionChat: {
     title: 'گفتگو با مربی',
@@ -1117,6 +1372,43 @@ const fa: Dictionary = {
     unitHours: 'ساعت',
     unitMinutes: 'دقیقه',
     unitPercent: 'درصد',
+    checkInWaist: 'دور کمر',
+    checkInWaistUnit: 'سانتی‌متر',
+    checkInHunger10: 'گرسنگی (۱ تا ۱۰)',
+    checkInSleepQuality: 'کیفیت خواب (۱ تا ۵)',
+    checkInEnergy: 'انرژی (۱ تا ۵)',
+    checkInCravings: 'هوس‌های غذایی',
+    checkInCravingsPlaceholder: 'مثلاً شیرینی بعد از شام',
+    checkInCravingType: 'نوع هوس',
+    checkInCravingTypePlaceholder: 'شیرین، شور، نان، سرخ‌کردنی...',
+    checkInEatingLocation: 'محل غذا خوردن',
+    checkInEatingLocationPlaceholder: 'خانه، کار، رستوران...',
+    checkInPlannedEatingOut: 'امروز غذای بیرون یا رستوران داشتم',
+    checkInAdherence: 'پایبندی به برنامه (۱ تا ۵)',
+    checkInSymptoms: 'علائم یا نشانه‌ها',
+    checkInSymptomsPlaceholder: 'اگر علامت مهمی داشتید اینجا بنویسید',
+    weeklySummaryTitle: 'خلاصه انسانی',
+    weeklyWaistDelta: 'تغییر دور کمر',
+    weeklyAdherenceSummary: 'خلاصه پایبندی',
+    weeklyRiskyMeals: 'وعده‌های پرریسک',
+    weeklyRiskyWindows: 'زمان‌های پرریسک',
+    weeklyCravingPatterns: 'الگوی هوس‌ها',
+    weeklyQualityTitle: 'کیفیت تغذیه',
+    weeklyProteinQuality: 'پروتئین',
+    weeklyFiberQuality: 'فیبر و سبزیجات',
+    weeklyHydrationQuality: 'آب و مایعات',
+    weeklySimpleSugarQuality: 'قند ساده',
+    weeklySleepFood: 'رابطه خواب و خوردن',
+    weeklyStressFood: 'رابطه استرس و خوردن',
+    weeklyEatingOut: 'الگوی غذای بیرون',
+    weeklyBehaviorPattern: 'جمع‌بندی الگوها',
+    weeklyStrengths: 'سه نقطه قوت',
+    weeklyAdjustments: 'دو تنظیم کوچک',
+    weeklyNextGoal: 'هدف کوچک هفته بعد',
+    weeklyMonitoringNotes: 'نکات پایش',
+    weeklySafetyNotes: 'نکات ایمنی',
+    weeklyHumanReview: 'مرور با متخصص توصیه می‌شود',
+    weeklyConfidence: 'سطح اطمینان گزارش',
   },
 }
 

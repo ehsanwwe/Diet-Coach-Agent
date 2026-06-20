@@ -8,6 +8,7 @@ import type { Locale } from '@/lib/i18n'
 import type { CalendarResponse, NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
 import { getMealPlanCalendar, generateMealPlanWeek, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
 import ClinicalReviewState from './ClinicalReviewState'
+import BehaviorCoaching from './BehaviorCoaching'
 import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
@@ -215,6 +216,8 @@ export default function NutritionDashboard({ dict, locale }: Props) {
           />
         </div>
       </div>
+
+      <BehaviorCoaching dict={dict} locale={locale} />
     </div>
   )
 }

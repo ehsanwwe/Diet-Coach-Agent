@@ -1,11 +1,19 @@
 import { getToken } from './storage'
 import type {
+  AdaptPlanRequest,
+  AdaptPlanResponse,
   CalendarResponse,
+  ContextGuidanceRequest,
+  ContextGuidanceResponse,
+  CravingSupportRequest,
+  CravingSupportResponse,
   GenerateWeekResponse,
   MealAnalysisResponse,
   MealAnalyzeRequest,
   NutritionPlanResponse,
   NutritionProfileResponse,
+  SlipRecoveryRequest,
+  SlipRecoveryResponse,
   WhatToEatNowRequest,
   WhatToEatNowResponse,
 } from '@/types/nutrition'
@@ -71,6 +79,50 @@ export async function whatToEatNow(
     body: JSON.stringify(body),
   })
   return handleResponse<WhatToEatNowResponse>(res)
+}
+
+export async function getCravingSupport(
+  body: CravingSupportRequest,
+): Promise<CravingSupportResponse> {
+  const res = await fetch(`${BASE_URL}${BASE}/craving-support`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  })
+  return handleResponse<CravingSupportResponse>(res)
+}
+
+export async function getSlipRecovery(
+  body: SlipRecoveryRequest,
+): Promise<SlipRecoveryResponse> {
+  const res = await fetch(`${BASE_URL}${BASE}/slip-recovery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  })
+  return handleResponse<SlipRecoveryResponse>(res)
+}
+
+export async function getContextGuidance(
+  body: ContextGuidanceRequest,
+): Promise<ContextGuidanceResponse> {
+  const res = await fetch(`${BASE_URL}${BASE}/context-guidance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  })
+  return handleResponse<ContextGuidanceResponse>(res)
+}
+
+export async function adaptNutritionPlan(
+  body: AdaptPlanRequest,
+): Promise<AdaptPlanResponse> {
+  const res = await fetch(`${BASE_URL}${BASE}/adapt-plan`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify(body),
+  })
+  return handleResponse<AdaptPlanResponse>(res)
 }
 
 export async function getMealPlanCalendar(params?: {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
+import { DEFAULT_LOCALE, isValidLocale, getDictionary, type Locale, type Dictionary } from '@/lib/i18n'
 import AuthGuard from '@/components/auth/AuthGuard'
 import AppBottomNav from '@/components/layout/AppBottomNav'
 import MealAnalysisForm from '@/components/nutrition/MealAnalysisForm'
@@ -41,8 +41,7 @@ function MealAnalysisScreen({ locale, dict }: { locale: Locale; dict: Dictionary
 export default function MealAnalysisPage() {
   const params = useParams()
   const lang = params.lang as string
-  if (!isValidLocale(lang)) return null
-  const locale = lang as Locale
+  const locale: Locale = isValidLocale(lang) ? lang : DEFAULT_LOCALE
   const [dict, setDict] = useState<Dictionary | null>(null)
   useEffect(() => { getDictionary(locale).then(setDict) }, [locale])
   if (!dict) return null

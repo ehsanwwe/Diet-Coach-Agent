@@ -23,10 +23,23 @@ export interface MealItem {
 
 export interface FoodOption {
   name: string
-  description: string | null
-  calories_estimate: number | null
-  prep_time_minutes: number | null
-  tags: string[]
+  description?: string | null
+  calories_estimate?: number | null
+  prep_time_minutes?: number | null
+  tags?: string[]
+  option_type?: 'best_goal_aligned' | 'fastest' | 'flexible' | 'general' | null
+  household_portions?: string | null
+  why_it_fits_goal?: string | null
+  safety_note?: string | null
+  substitutions?: string[]
+}
+
+export interface CoachingOption {
+  title: string
+  description?: string | null
+  household_portions?: string | null
+  why_it_helps?: string | null
+  substitutions?: string[]
 }
 
 export interface NutritionProfileResponse {
@@ -63,17 +76,33 @@ export interface MealAnalyzeRequest {
   meal_text: string
   meal_time: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'unknown'
   context?: string
+  current_goal?: string
+  hunger_level_1_10?: number
+  eaten_at?: string
 }
 
 export interface MealAnalysisResponse {
   meal_id: string | null
   quality_score: number | null
   analysis_summary: string
+  likely_meal?: string | null
+  uncertainties?: string[]
   protein: string
   fiber: string
   sugar: string
   balance: string
   portion: string
+  protein_quality?: string | null
+  fiber_vegetable_quality?: string | null
+  carbohydrate_quality?: string | null
+  fat_quality?: string | null
+  simple_sugar_quality?: string | null
+  portion_volume_assessment?: string | null
+  satiety_assessment?: string | null
+  likely_goal_effect?: string | null
+  one_small_correction?: string | null
+  next_meal_suggestion?: string | null
+  no_extreme_compensation_note?: string | null
   suggestions: string[]
   warnings: string[]
   provider: string
@@ -85,12 +114,137 @@ export interface WhatToEatNowRequest {
   hunger_level: 'low' | 'medium' | 'high'
   meal_context?: string
   time_available_minutes?: number
+  current_place?: string
+  location_context?: string
+  last_meal_time?: string
+  last_meal_summary?: string
+  current_goal?: string
+  hunger_level_1_10?: number
+  cooking_access?: string
+  budget_context?: string
+  medical_constraints?: string
+  user_preference_note?: string
 }
 
 export interface WhatToEatNowResponse {
   options: FoodOption[]
+  best_goal_aligned_option?: FoodOption | null
+  fastest_option?: FoodOption | null
+  flexible_option?: FoodOption | null
   reasoning_summary: string
   warnings: string[]
+  provider: string
+  is_mock: boolean
+}
+
+export interface CravingSupportRequest {
+  craving_food?: string | null
+  craving_intensity_1_10?: number | null
+  hunger_level_1_10?: number | null
+  last_meal_time?: string | null
+  last_meal_summary?: string | null
+  sleep_quality?: number | null
+  stress_level?: number | null
+  emotion?: string | null
+  current_place?: string | null
+  available_foods?: string[]
+  time_of_day?: string | null
+  user_note?: string | null
+}
+
+export interface CravingSupportResponse {
+  calming_message: string
+  likely_triggers: string[]
+  hunger_vs_craving_assessment?: string | null
+  immediate_options: CoachingOption[]
+  better_choice?: CoachingOption | null
+  flexible_choice?: CoachingOption | null
+  prevention_tip?: string | null
+  follow_up_question?: string | null
+  safety_notes: string[]
+  requires_human_review: boolean
+  provider: string
+  is_mock: boolean
+}
+
+export interface SlipRecoveryRequest {
+  what_happened?: string | null
+  foods_eaten?: string[]
+  approximate_amount?: string | null
+  emotion_before?: string | null
+  emotion_after?: string | null
+  hunger_before_1_10?: number | null
+  stress_level?: number | null
+  sleep_quality?: number | null
+  restriction_before_slip?: boolean | null
+  last_meal_time?: string | null
+  user_note?: string | null
+}
+
+export interface SlipRecoveryResponse {
+  calming_message: string
+  data_not_failure_message: string
+  likely_trigger_questions: string[]
+  pattern_hypothesis?: string | null
+  one_small_adjustment?: string | null
+  next_meal_plan?: string | null
+  tomorrow_reset_note?: string | null
+  no_extreme_compensation_note?: string | null
+  safety_notes: string[]
+  requires_human_review: boolean
+  provider: string
+  is_mock: boolean
+}
+
+export interface ContextGuidanceRequest {
+  context_type: 'restaurant' | 'party' | 'travel' | 'work' | 'mixed'
+  available_options?: string[]
+  preferred_option?: string | null
+  current_goal?: string | null
+  hunger_level_1_10?: number | null
+  meal_timing?: string | null
+  budget_context?: string | null
+  medical_constraints?: string | null
+  user_note?: string | null
+}
+
+export interface ContextGuidanceResponse {
+  best_available_choice?: string | null
+  flexible_choice?: string | null
+  portion_strategy?: string | null
+  plate_balance_tip?: string | null
+  drink_tip?: string | null
+  dessert_or_snack_strategy?: string | null
+  if_user_chooses_high_calorie_option?: string | null
+  next_meal_adjustment?: string | null
+  safety_notes: string[]
+  requires_human_review: boolean
+  provider: string
+  is_mock: boolean
+}
+
+export interface AdaptPlanRequest {
+  reason: string
+  recent_hunger?: string | null
+  recent_sleep?: string | null
+  recent_stress?: string | null
+  recent_adherence?: string | null
+  notes?: string | null
+}
+
+export interface AdaptPlanResponse {
+  plan_id?: string | null
+  changes: string[]
+  updated_guidelines?: DailyGuidelines | null
+  warnings: string[]
+  revision_applied: boolean
+  revision_scope: 'none' | 'next_meal' | 'today' | 'remaining_day' | 'week' | 'guidance_only'
+  revised_date?: string | null
+  changed_items: string[]
+  reason_for_changes?: string | null
+  safety_notes: string[]
+  requires_human_review: boolean
+  fallback_reason?: string | null
   provider: string
   is_mock: boolean
 }

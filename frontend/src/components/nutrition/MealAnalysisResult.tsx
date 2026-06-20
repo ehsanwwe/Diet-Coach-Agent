@@ -8,6 +8,22 @@ interface Props {
   onReset: () => void
 }
 
+function DetailRows({ rows }: { rows: { label: string; value?: string | null }[] }) {
+  const visible = rows.filter((row) => row.value)
+  if (visible.length === 0) return null
+
+  return (
+    <div className="rounded-2xl bg-elevated p-5 shadow-sm space-y-3">
+      {visible.map((row) => (
+        <div key={row.label}>
+          <span className="text-xs font-semibold text-brand">{row.label}</span>
+          <p className="text-sm text-ink-2 mt-0.5 leading-relaxed">{row.value}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function MealAnalysisResult({ result, dict, onReset }: Props) {
   const scoreColor =
     (result.quality_score ?? 0) >= 8
@@ -18,7 +34,6 @@ export default function MealAnalysisResult({ result, dict, onReset }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Score */}
       {result.quality_score != null && (
         <div className="rounded-2xl bg-elevated p-5 shadow-sm flex items-center gap-4">
           <div className={`text-4xl font-bold ${scoreColor}`}>
@@ -38,37 +53,75 @@ export default function MealAnalysisResult({ result, dict, onReset }: Props) {
         </div>
       )}
 
-      {/* Summary */}
       <div className="rounded-2xl bg-elevated p-5 shadow-sm">
         <p className="text-sm text-ink-2 leading-relaxed">{result.analysis_summary}</p>
       </div>
 
-      {/* Nutrient details */}
-      <div className="rounded-2xl bg-elevated p-5 shadow-sm space-y-3">
-        {[
+      <DetailRows
+        rows={[
+          { label: dict.mealAnalysis.likelyMeal, value: result.likely_meal },
+          { label: dict.mealAnalysis.goalEffect, value: result.likely_goal_effect },
+        ]}
+      />
+
+      {(result.uncertainties?.length ?? 0) > 0 && (
+        <div className="rounded-2xl bg-surface p-5">
+          <h3 className="text-sm font-semibold text-ink mb-3">
+            {dict.mealAnalysis.uncertainties}
+          </h3>
+          <ul className="space-y-2">
+            {result.uncertainties?.map((item, i) => (
+              <li key={i} className="text-sm text-ink-2 flex gap-2">
+                <span className="text-ink-3 shrink-0">-</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <DetailRows
+        rows={[
           { label: dict.mealAnalysis.protein, value: result.protein },
           { label: dict.mealAnalysis.fiber, value: result.fiber },
           { label: dict.mealAnalysis.sugar, value: result.sugar },
           { label: dict.mealAnalysis.balance, value: result.balance },
           { label: dict.mealAnalysis.portion, value: result.portion },
-        ]
-          .filter((r) => r.value)
-          .map((row) => (
-            <div key={row.label}>
-              <span className="text-xs font-semibold text-brand">{row.label}</span>
-              <p className="text-sm text-ink-2 mt-0.5">{row.value}</p>
-            </div>
-          ))}
+        ]}
+      />
+
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-ink">
+          {dict.mealAnalysis.nutritionQualityTitle}
+        </h3>
+        <DetailRows
+          rows={[
+            { label: dict.mealAnalysis.proteinQuality, value: result.protein_quality },
+            { label: dict.mealAnalysis.fiberVegetableQuality, value: result.fiber_vegetable_quality },
+            { label: dict.mealAnalysis.carbohydrateQuality, value: result.carbohydrate_quality },
+            { label: dict.mealAnalysis.fatQuality, value: result.fat_quality },
+            { label: dict.mealAnalysis.simpleSugarQuality, value: result.simple_sugar_quality },
+            { label: dict.mealAnalysis.portionVolumeAssessment, value: result.portion_volume_assessment },
+            { label: dict.mealAnalysis.satietyAssessment, value: result.satiety_assessment },
+          ]}
+        />
       </div>
 
-      {/* Suggestions */}
-      {result.suggestions.length > 0 && (
+      <DetailRows
+        rows={[
+          { label: dict.mealAnalysis.smallCorrection, value: result.one_small_correction },
+          { label: dict.mealAnalysis.nextMealSuggestion, value: result.next_meal_suggestion },
+          { label: dict.mealAnalysis.noExtremeCompensation, value: result.no_extreme_compensation_note },
+        ]}
+      />
+
+      {(result.suggestions?.length ?? 0) > 0 && (
         <div className="rounded-2xl bg-brand-muted p-5">
           <h3 className="text-sm font-semibold text-ink mb-3">
             {dict.mealAnalysis.suggestionsTitle}
           </h3>
           <ul className="space-y-2">
-            {result.suggestions.map((s, i) => (
+            {result.suggestions?.map((s, i) => (
               <li key={i} className="text-sm text-ink-2 flex gap-2">
                 <AppIcon name="check" className="text-brand shrink-0 mt-0.5" size={15} />
                 {s}
@@ -78,16 +131,15 @@ export default function MealAnalysisResult({ result, dict, onReset }: Props) {
         </div>
       )}
 
-      {/* Warnings */}
-      {result.warnings.length > 0 && (
+      {(result.warnings?.length ?? 0) > 0 && (
         <div className="rounded-2xl bg-warm-muted border border-warm/20 p-5">
           <h3 className="text-sm font-semibold text-ink mb-3">
             {dict.mealAnalysis.warningsTitle}
           </h3>
           <ul className="space-y-2">
-            {result.warnings.map((w, i) => (
+            {result.warnings?.map((w, i) => (
               <li key={i} className="text-sm text-ink-2 flex gap-2">
-                <span className="text-warm shrink-0">•</span>
+                <span className="text-warm shrink-0">-</span>
                 {w}
               </li>
             ))}

@@ -12,7 +12,7 @@ function trimChip(text: string): string {
   return text.length > 32 ? text.slice(0, 30) + '…' : text
 }
 
-export default function ChatBubble({ message, youLabel, coachLabel, actions }: Props) {
+export default function ChatBubble({ message, coachLabel, actions }: Props) {
   const isUser = message.role === 'user'
 
   return (
