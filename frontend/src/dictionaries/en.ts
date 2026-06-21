@@ -334,6 +334,7 @@ const en: Dictionary = {
     clinicalAlertTitle: 'Note: Specialist Review Recommended',
     clinicalAlertDesc: 'Based on your health info, consult a doctor or dietitian before starting any diet plan.',
     behaviorGuide: 'Quick Behavioral Coaching',
+    calendarPlanDesc: 'Your weekly meal plan is ready.',
   },
   plan: {
     title: 'Meal Plan',

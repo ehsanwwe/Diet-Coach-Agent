@@ -95,15 +95,19 @@ export default function NutritionDashboard({ dict, locale }: Props) {
   const isClinical = profile?.clinical_review_required ?? false
   const riskLevel = profile?.risk_level ?? 'low'
   const renewal = calendar?.renewal_status
+  const hasCalendarPlan =
+    Boolean(calendar?.calendar_id) ||
+    (calendar?.days?.length ?? 0) > 0 ||
+    (calendar?.coverage?.planned_days_count ?? 0) > 0
+  const hasAnyPlan = plan?.has_plan === true || hasCalendarPlan
   const showNextWeekPreparationCard = Boolean(renewal?.should_prompt_next_week)
-  const shouldHideEmptyPlanCard = showNextWeekPreparationCard && !plan?.has_plan
+  const shouldHideEmptyPlanCard = showNextWeekPreparationCard && !hasAnyPlan
 
   async function handleGenerateNextWeek() {
     setGenerating(true)
     try {
       await generateMealPlanWeek({ locale })
-      const cal = await getMealPlanCalendar({ locale, days: 14 })
-      setCalendar(cal)
+      await reload()
     } finally {
       setGenerating(false)
     }
@@ -161,7 +165,7 @@ export default function NutritionDashboard({ dict, locale }: Props) {
       {!shouldHideEmptyPlanCard && <div className="rounded-2xl bg-elevated p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-ink">
-            {plan?.has_plan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanTitle}
+            {hasAnyPlan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanTitle}
           </h2>
           {profile && (
             <span className={[
@@ -180,6 +184,8 @@ export default function NutritionDashboard({ dict, locale }: Props) {
         </div>
         {plan?.has_plan && plan.summary ? (
           <p className="text-sm text-ink-2 leading-relaxed">{plan.summary}</p>
+        ) : hasCalendarPlan ? (
+          <p className="text-sm text-ink-2">{dict.dashboard.calendarPlanDesc}</p>
         ) : (
           <p className="text-sm text-ink-2">{dict.dashboard.noPlanDesc}</p>
         )}
@@ -187,7 +193,7 @@ export default function NutritionDashboard({ dict, locale }: Props) {
           href={`/${locale}/nutrition/plan`}
           className="mt-4 block text-center py-3 rounded-2xl bg-brand text-elevated font-semibold text-sm"
         >
-          {plan?.has_plan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanCta}
+          {hasAnyPlan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanCta}
         </Link>
       </div>}
 

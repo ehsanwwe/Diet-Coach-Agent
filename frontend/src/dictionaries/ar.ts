@@ -334,6 +334,7 @@ const ar: Dictionary = {
     clinicalAlertTitle: 'تنبيه: يُنصح باستشارة متخصص',
     clinicalAlertDesc: 'بناءً على معلوماتك الصحية، استشر طبيباً أو أخصائي تغذية قبل البدء بأي نظام غذائي.',
     behaviorGuide: 'الإرشاد السلوكي السريع',
+    calendarPlanDesc: 'خطة وجباتك الأسبوعية جاهزة.',
   },
   plan: {
     title: 'الخطة الغذائية',

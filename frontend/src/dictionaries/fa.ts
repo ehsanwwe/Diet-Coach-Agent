@@ -355,6 +355,7 @@ export interface Dictionary {
     clinicalAlertTitle: string
     clinicalAlertDesc: string
     behaviorGuide: string
+    calendarPlanDesc: string
   }
   plan: {
     title: string
@@ -1057,6 +1058,7 @@ const fa: Dictionary = {
     clinicalAlertTitle: 'توجه: بررسی متخصص توصیه می‌شود',
     clinicalAlertDesc: 'بر اساس وضعیت سلامت شما، پیش از شروع هر رژیم غذایی با پزشک یا متخصص تغذیه مشورت کنید.',
     behaviorGuide: 'راهنمایی رفتاری سریع',
+    calendarPlanDesc: 'برنامه غذایی هفتگی شما آماده است.',
   },
   plan: {
     title: 'برنامه غذایی',
