@@ -95,6 +95,8 @@ export default function NutritionDashboard({ dict, locale }: Props) {
   const isClinical = profile?.clinical_review_required ?? false
   const riskLevel = profile?.risk_level ?? 'low'
   const renewal = calendar?.renewal_status
+  const showNextWeekPreparationCard = Boolean(renewal?.should_prompt_next_week)
+  const shouldHideEmptyPlanCard = showNextWeekPreparationCard && !plan?.has_plan
 
   async function handleGenerateNextWeek() {
     setGenerating(true)
@@ -155,8 +157,8 @@ export default function NutritionDashboard({ dict, locale }: Props) {
         </div>
       )}
 
-      {/* Current plan summary */}
-      <div className="rounded-2xl bg-elevated p-5 shadow-sm">
+      {/* Current plan summary — hidden when next-week renewal banner is visible and no plan exists */}
+      {!shouldHideEmptyPlanCard && <div className="rounded-2xl bg-elevated p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-ink">
             {plan?.has_plan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanTitle}
@@ -187,7 +189,7 @@ export default function NutritionDashboard({ dict, locale }: Props) {
         >
           {plan?.has_plan ? dict.dashboard.currentPlanLabel : dict.dashboard.noPlanCta}
         </Link>
-      </div>
+      </div>}
 
       {/* Quick actions */}
       <div>
