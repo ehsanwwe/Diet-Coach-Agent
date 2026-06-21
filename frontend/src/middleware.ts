@@ -88,6 +88,6 @@ export function middleware(request: NextRequest): NextResponse {
 export const config = {
   // Run middleware on all routes except Next.js internals and static public files
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|icons|manifest\\.json|sw\\.js|offline\\.html).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|icons|manifest\\.json|sw\\.js|offline\\.html|assets).*)',
   ],
 }
