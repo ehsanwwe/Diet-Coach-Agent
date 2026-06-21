@@ -354,6 +354,7 @@ export interface Dictionary {
     providerLive: string
     clinicalAlertTitle: string
     clinicalAlertDesc: string
+    behaviorGuide: string
   }
   plan: {
     title: string
@@ -539,6 +540,8 @@ export interface Dictionary {
     safetyNotes: string
     humanReview: string
     error: string
+    scaleError10: string
+    scaleError5: string
   }
   adaptPlan: {
     revisionApplied: string
@@ -1053,6 +1056,7 @@ const fa: Dictionary = {
     providerLive: 'هوش مصنوعی فعال',
     clinicalAlertTitle: 'توجه: بررسی متخصص توصیه می‌شود',
     clinicalAlertDesc: 'بر اساس وضعیت سلامت شما، پیش از شروع هر رژیم غذایی با پزشک یا متخصص تغذیه مشورت کنید.',
+    behaviorGuide: 'راهنمایی رفتاری سریع',
   },
   plan: {
     title: 'برنامه غذایی',
@@ -1238,6 +1242,8 @@ const fa: Dictionary = {
     safetyNotes: 'نکات ایمنی',
     humanReview: 'نیاز به مرور انسانی',
     error: 'دریافت راهنمایی ناموفق بود. دوباره تلاش کنید.',
+    scaleError10: 'عدد باید بین ۱ تا ۱۰ باشد.',
+    scaleError5: 'عدد باید بین ۱ تا ۵ باشد.',
   },
   adaptPlan: {
     revisionApplied: 'بازبینی روی برنامه اعمال شد',

@@ -30,6 +30,10 @@ function Field({
   onChange,
   placeholder,
   type = 'text',
+  min,
+  max,
+  step,
+  inputMode,
 }: {
   id: string
   label: string
@@ -37,6 +41,10 @@ function Field({
   onChange: (value: string) => void
   placeholder?: string
   type?: 'text' | 'number'
+  min?: number
+  max?: number
+  step?: number
+  inputMode?: 'text' | 'numeric' | 'decimal'
 }) {
   return (
     <div>
@@ -49,6 +57,10 @@ function Field({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        min={min}
+        max={max}
+        step={step}
+        inputMode={inputMode ?? (type === 'number' ? 'numeric' : undefined)}
         className="w-full px-3 py-3 rounded-2xl bg-surface border border-line text-sm text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand transition-colors"
       />
     </div>
@@ -136,10 +148,26 @@ export default function BehaviorCoaching({ dict, locale }: Props) {
     { mode: 'context', label: dict.behaviorCoaching.contextTab },
   ]
 
+  function validateScale(value: string, min: number, max: number): boolean {
+    if (value === '') return true
+    const n = Number(value)
+    return Number.isInteger(n) && n >= min && n <= max
+  }
+
   async function submit(e: FormEvent) {
     e.preventDefault()
-    setLoading(true)
     setError(null)
+
+    if (!validateScale(cravingIntensity, 1, 10) || !validateScale(hunger, 1, 10)) {
+      setError(dict.behaviorCoaching.scaleError10)
+      return
+    }
+    if (!validateScale(stress, 1, 5) || !validateScale(sleepQuality, 1, 5)) {
+      setError(dict.behaviorCoaching.scaleError5)
+      return
+    }
+
+    setLoading(true)
     try {
       if (mode === 'craving') {
         const data = await getCravingSupport({
@@ -225,8 +253,8 @@ export default function BehaviorCoaching({ dict, locale }: Props) {
           <>
             <Field id="coach-craving-food" label={dict.behaviorCoaching.cravingFoodLabel} value={cravingFood} onChange={setCravingFood} placeholder={dict.behaviorCoaching.cravingFoodPlaceholder} />
             <div className="grid grid-cols-2 gap-3">
-              <Field id="coach-craving-intensity" type="number" label={dict.behaviorCoaching.cravingIntensityLabel} value={cravingIntensity} onChange={setCravingIntensity} />
-              <Field id="coach-hunger" type="number" label={dict.behaviorCoaching.hungerScaleLabel} value={hunger} onChange={setHunger} />
+              <Field id="coach-craving-intensity" type="number" min={1} max={10} step={1} label={dict.behaviorCoaching.cravingIntensityLabel} value={cravingIntensity} onChange={setCravingIntensity} />
+              <Field id="coach-hunger" type="number" min={1} max={10} step={1} label={dict.behaviorCoaching.hungerScaleLabel} value={hunger} onChange={setHunger} />
             </div>
           </>
         )}
@@ -266,8 +294,8 @@ export default function BehaviorCoaching({ dict, locale }: Props) {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Field id="coach-stress" type="number" label={dict.behaviorCoaching.stressLabel} value={stress} onChange={setStress} />
-          <Field id="coach-sleep" type="number" label={dict.behaviorCoaching.sleepQualityLabel} value={sleepQuality} onChange={setSleepQuality} />
+          <Field id="coach-stress" type="number" min={1} max={5} step={1} label={dict.behaviorCoaching.stressLabel} value={stress} onChange={setStress} />
+          <Field id="coach-sleep" type="number" min={1} max={5} step={1} label={dict.behaviorCoaching.sleepQualityLabel} value={sleepQuality} onChange={setSleepQuality} />
         </div>
 
         {mode !== 'slip' && (

@@ -333,6 +333,7 @@ const ar: Dictionary = {
     providerLive: 'الذكاء الاصطناعي نشط',
     clinicalAlertTitle: 'تنبيه: يُنصح باستشارة متخصص',
     clinicalAlertDesc: 'بناءً على معلوماتك الصحية، استشر طبيباً أو أخصائي تغذية قبل البدء بأي نظام غذائي.',
+    behaviorGuide: 'الإرشاد السلوكي السريع',
   },
   plan: {
     title: 'الخطة الغذائية',
@@ -518,6 +519,8 @@ const ar: Dictionary = {
     safetyNotes: 'ملاحظات أمان',
     humanReview: 'يلزم مراجعة بشرية',
     error: 'تعذر الحصول على الإرشاد. حاول مرة أخرى.',
+    scaleError10: 'يجب أن تكون القيمة بين 1 و10.',
+    scaleError5: 'يجب أن تكون القيمة بين 1 و5.',
   },
   adaptPlan: {
     revisionApplied: 'تم تطبيق التعديل على الخطة',

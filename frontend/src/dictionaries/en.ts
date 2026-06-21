@@ -333,6 +333,7 @@ const en: Dictionary = {
     providerLive: 'AI Active',
     clinicalAlertTitle: 'Note: Specialist Review Recommended',
     clinicalAlertDesc: 'Based on your health info, consult a doctor or dietitian before starting any diet plan.',
+    behaviorGuide: 'Quick Behavioral Coaching',
   },
   plan: {
     title: 'Meal Plan',
@@ -518,6 +519,8 @@ const en: Dictionary = {
     safetyNotes: 'Safety notes',
     humanReview: 'Human review needed',
     error: 'Could not get guidance. Please try again.',
+    scaleError10: 'The value must be between 1 and 10.',
+    scaleError5: 'The value must be between 1 and 5.',
   },
   adaptPlan: {
     revisionApplied: 'Revision applied to plan',

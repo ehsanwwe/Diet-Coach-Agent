@@ -8,7 +8,6 @@ import type { Locale } from '@/lib/i18n'
 import type { CalendarResponse, NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
 import { getMealPlanCalendar, generateMealPlanWeek, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
 import ClinicalReviewState from './ClinicalReviewState'
-import BehaviorCoaching from './BehaviorCoaching'
 import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
@@ -16,11 +15,11 @@ interface Props {
   locale: Locale
 }
 
-function QuickActionCard({ href, icon, label }: { href: string; icon: AppIconName; label: string }) {
+function QuickActionCard({ href, icon, label, className }: { href: string; icon: AppIconName; label: string; className?: string }) {
   return (
     <Link
       href={href}
-      className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-elevated shadow-sm hover:shadow-md transition-shadow"
+      className={['flex flex-col items-center gap-2 p-4 rounded-2xl bg-elevated shadow-sm hover:shadow-md transition-shadow', className].filter(Boolean).join(' ')}
     >
       <AppIcon name={icon} className="text-brand" size={24} />
       <span className="text-xs font-medium text-ink-2 text-center leading-tight">{label}</span>
@@ -214,10 +213,14 @@ export default function NutritionDashboard({ dict, locale }: Props) {
             icon="chat"
             label={dict.dashboard.openChat}
           />
+          <QuickActionCard
+            href={`/${locale}/behavior-guide`}
+            icon="brain"
+            label={dict.dashboard.behaviorGuide}
+            className="col-span-2"
+          />
         </div>
       </div>
-
-      <BehaviorCoaching dict={dict} locale={locale} />
     </div>
   )
 }
