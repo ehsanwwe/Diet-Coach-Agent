@@ -106,7 +106,7 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full min-h-0 flex flex-col">
       <div className="flex-1 overflow-y-auto min-h-0 px-6 py-2 space-y-6">
         <div>
           <h1 className="text-xl font-bold text-ink">{dict.behavTitle}</h1>
@@ -203,7 +203,10 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
 
         {/* Motivation */}
         <div>
-          <label className="text-sm font-semibold text-ink mb-2 block">{dict.behavMotivation}</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-ink">{dict.behavMotivation}</label>
+            <span className="text-sm font-semibold text-brand">{form.motivation_level} {dict.outOf10}</span>
+          </div>
           <SteppedRangeSlider
             value={form.motivation_level}
             onChange={(v) => setForm((f) => ({ ...f, motivation_level: v }))}

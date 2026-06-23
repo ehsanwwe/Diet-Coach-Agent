@@ -245,6 +245,8 @@ const ar: Dictionary = {
     sleepRange: 'يجب أن تكون ساعات النوم بين 0 و24',
     stressRange: 'يجب أن يكون مستوى الإجهاد بين 1 و10',
     exerciseRange: 'يجب أن تكون أيام الرياضة بين 0 و7',
+    outOf10: 'من ١٠',
+    daysUnit: 'أيام',
     prefTitle: 'تفضيلات الطعام',
     prefSubtitle: 'أخبرنا بما تحب لنجعل خطتك ممتعة.',
     prefIranianFood: 'أحب الطعام الإيراني',

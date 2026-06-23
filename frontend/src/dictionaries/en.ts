@@ -245,6 +245,8 @@ const en: Dictionary = {
     sleepRange: 'Sleep hours must be between 0 and 24',
     stressRange: 'Stress level must be between 1 and 10',
     exerciseRange: 'Exercise days must be between 0 and 7',
+    outOf10: 'of 10',
+    daysUnit: 'days',
     prefTitle: 'Food Preferences',
     prefSubtitle: 'Help us make your plan enjoyable.',
     prefIranianFood: 'I enjoy Iranian food',

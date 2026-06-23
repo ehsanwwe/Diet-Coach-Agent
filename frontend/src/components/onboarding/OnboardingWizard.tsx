@@ -329,7 +329,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
           animate="center"
           exit="exit"
           transition={{ duration: 0.28, ease: [0.32, 0, 0.67, 0] }}
-          className="absolute inset-0 flex flex-col min-h-0"
+          className="h-full min-h-0 flex flex-col"
         >
           {renderStep()}
         </motion.div>

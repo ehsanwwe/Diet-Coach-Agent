@@ -49,7 +49,7 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
   const exerciseVal = watch('exercise_days_per_week')
 
   return (
-    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
+    <form onSubmit={handleSubmit((d) => onSubmit(d))} className="h-full min-h-0 flex flex-col">
       <div className="flex-1 overflow-y-auto min-h-0 px-6 py-2 space-y-6">
         <div>
           <h1 className="text-xl font-bold text-ink">{dict.lifestyleTitle}</h1>
@@ -69,7 +69,10 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
 
         {/* Stress */}
         <div>
-          <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeStress}</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-ink-2">{dict.lifeStress}</label>
+            <span className="text-sm font-semibold text-brand">{stressVal} {dict.outOf10}</span>
+          </div>
           <SteppedRangeSlider
             value={stressVal}
             onChange={(v) => setValue('stress_level', v)}
@@ -106,7 +109,10 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
 
         {/* Exercise days */}
         <div>
-          <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeExercise}</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-ink-2">{dict.lifeExercise}</label>
+            <span className="text-sm font-semibold text-brand">{exerciseVal} {dict.daysUnit}</span>
+          </div>
           <SteppedRangeSlider
             value={exerciseVal}
             onChange={(v) => setValue('exercise_days_per_week', v)}
@@ -170,7 +176,7 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
         {apiError && <p className="text-sm text-error bg-error/10 rounded-xl px-4 py-3">{apiError}</p>}
       </div>
 
-      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line">
+      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line shrink-0">
         <button type="submit" disabled={isSubmitting}
           className="w-full py-3.5 rounded-2xl bg-brand text-white font-semibold text-base disabled:opacity-60 transition-opacity">
           {isSubmitting ? dict.saving : dict.next}

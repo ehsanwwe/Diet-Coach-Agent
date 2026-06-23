@@ -263,6 +263,8 @@ export interface Dictionary {
     sleepRange: string
     stressRange: string
     exerciseRange: string
+    outOf10: string
+    daysUnit: string
     // ── Preferences step ──────────────────────────────────────
     prefTitle: string
     prefSubtitle: string
@@ -981,6 +983,8 @@ const fa: Dictionary = {
     sleepRange: 'ساعات خواب باید بین ۰ و ۲۴ باشد',
     stressRange: 'سطح استرس باید بین ۱ و ۱۰ باشد',
     exerciseRange: 'تعداد روزهای ورزش باید بین ۰ و ۷ باشد',
+    outOf10: 'از ۱۰',
+    daysUnit: 'روز',
     // Preferences
     prefTitle: 'ترجیحات غذایی',
     prefSubtitle: 'بگویید چه غذاهایی دوست دارید تا برنامه شما دلپذیرتر باشد.',
