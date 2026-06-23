@@ -3,47 +3,35 @@
  *
  * Responsibilities:
  *   1. If the request path already starts with a valid locale (/fa, /en, /ar),
- *      update the NEXT_LOCALE cookie and continue.
- *   2. Otherwise, detect the preferred locale from cookie → Accept-Language → default (fa),
- *      then redirect to /{locale}{rest-of-path}.
+ *      write NEXT_LOCALE cookie (for root layout SSR) and continue.
+ *   2. Otherwise, redirect to /{locale}{rest-of-path} where locale is:
+ *        - the cookie value, but ONLY if NEXT_LOCALE_SRC=manual (explicit user pick)
+ *        - 'fa' in all other cases (no Accept-Language fallback)
  *
- * The cookie NEXT_LOCALE is read by app/layout.tsx to set <html lang dir> server-side
- * with zero client-side flicker.
+ * The two-cookie design prevents a stale automatic NEXT_LOCALE=en cookie
+ * (written when a user once visited /en) from hijacking the Persian default
+ * on a fresh visit to the root domain.
  */
 import { NextRequest, NextResponse } from 'next/server'
 import {
   SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
   LOCALE_COOKIE,
+  LOCALE_SRC_COOKIE,
+  LOCALE_SRC_MANUAL,
   isValidLocale,
   type Locale,
 } from '@/lib/i18n'
 
-/** Parse Accept-Language header into an ordered list of language codes. */
-function parseAcceptLanguage(header: string): string[] {
-  return header
-    .split(',')
-    .map((entry) => {
-      const [lang, q] = entry.trim().split(';q=')
-      return { lang: lang.trim().split('-')[0].toLowerCase(), q: q ? parseFloat(q) : 1 }
-    })
-    .sort((a, b) => b.q - a.q)
-    .map((e) => e.lang)
-    .filter(Boolean)
-}
-
-/** Detect the best locale for this request. */
+/** Detect the best locale for this request — only trusts an explicit user selection. */
 function detectLocale(request: NextRequest): Locale {
-  // 1. Prefer the persisted cookie
-  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value
-  if (cookieLocale && isValidLocale(cookieLocale)) return cookieLocale
-
-  // 2. Accept-Language header
-  const acceptLang = request.headers.get('Accept-Language') ?? ''
-  for (const lang of parseAcceptLanguage(acceptLang)) {
-    if (isValidLocale(lang)) return lang
+  // Only use the persisted locale if the user explicitly selected it
+  const src = request.cookies.get(LOCALE_SRC_COOKIE)?.value
+  if (src === LOCALE_SRC_MANUAL) {
+    const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value
+    if (cookieLocale && isValidLocale(cookieLocale)) return cookieLocale
   }
-
+  // Persian is the unconditional hard default — never fall back to Accept-Language
   return DEFAULT_LOCALE
 }
 
@@ -56,13 +44,14 @@ export function middleware(request: NextRequest): NextResponse {
   )
 
   if (pathnameLocale) {
-    // Valid locale already in URL — refresh the cookie and continue
+    // Valid locale already in URL — refresh NEXT_LOCALE for root layout SSR.
+    // Do NOT write NEXT_LOCALE_SRC here: visiting /en directly is not a manual selection.
     const response = NextResponse.next()
     response.cookies.set(LOCALE_COOKIE, pathnameLocale, {
       path: '/',
       maxAge: 60 * 60 * 24 * 365, // 1 year
       sameSite: 'lax',
-      httpOnly: false, // needs to be readable by JS for locale switching without reload
+      httpOnly: false, // readable by JS for cookie updates without reload
     })
     return response
   }

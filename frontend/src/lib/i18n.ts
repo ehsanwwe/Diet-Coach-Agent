@@ -19,6 +19,14 @@ export const RTL_LOCALES: readonly Locale[] = ['fa', 'ar'] as const
 
 export const LOCALE_COOKIE = 'NEXT_LOCALE'
 
+/**
+ * Second cookie written only when the user explicitly clicks a language option.
+ * Middleware ignores NEXT_LOCALE unless this marker is also present, which prevents
+ * a stale automatic NEXT_LOCALE=en cookie from overriding the Persian default.
+ */
+export const LOCALE_SRC_COOKIE = 'NEXT_LOCALE_SRC'
+export const LOCALE_SRC_MANUAL = 'manual'
+
 export function isValidLocale(value: string): value is Locale {
   return (SUPPORTED_LOCALES as readonly string[]).includes(value)
 }

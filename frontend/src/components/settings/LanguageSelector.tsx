@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { api, ApiRequestError } from '@/lib/api'
 import { cn } from '@/lib/cn'
-import { LOCALE_COOKIE, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
+import { LOCALE_COOKIE, LOCALE_SRC_COOKIE, LOCALE_SRC_MANUAL, SUPPORTED_LOCALES, type Locale } from '@/lib/i18n'
 import type { Dictionary } from '@/dictionaries/fa'
 
 interface Props {
@@ -27,8 +27,10 @@ export default function LanguageSelector({ locale, dict }: Props) {
     if (newLocale === locale || pending) return
     setPending(newLocale)
 
-    // 1. Write NEXT_LOCALE cookie (httpOnly:false confirmed in middleware.ts)
-    document.cookie = `${LOCALE_COOKIE}=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+    // 1. Write NEXT_LOCALE + manual-source marker (explicit user selection)
+    const cookieOpts = `path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`
+    document.cookie = `${LOCALE_COOKIE}=${newLocale}; ${cookieOpts}`
+    document.cookie = `${LOCALE_SRC_COOKIE}=${LOCALE_SRC_MANUAL}; ${cookieOpts}`
 
     // 2. Fire-and-forget backend persist (cookie is canonical client-side; errors silently swallowed)
     void api

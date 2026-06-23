@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { getDictionary, isValidLocale, type Locale } from '@/lib/i18n'
 import OtpVerifyForm from '@/components/auth/OtpVerifyForm'
+import LocaleFlagSwitcher from '@/components/LocaleFlagSwitcher'
 
 type Props = {
   params: Promise<{ lang: string }>
@@ -51,6 +52,11 @@ export default async function OtpVerifyPage({ params, searchParams }: Props) {
             {dict.common.back}
           </a>
         </div>
+      </div>
+
+      {/* Language selector */}
+      <div className="app-container pb-safe pb-8 flex flex-col items-center">
+        <LocaleFlagSwitcher locale={locale} dict={dict} />
       </div>
     </div>
   )

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getDictionary, isValidLocale, type Locale } from '@/lib/i18n'
 import PhoneLoginForm from '@/components/auth/PhoneLoginForm'
+import LocaleFlagSwitcher from '@/components/LocaleFlagSwitcher'
 
 type Props = {
   params: Promise<{ lang: string }>
@@ -31,6 +32,11 @@ export default async function LoginPage({ params }: Props) {
           dict={{ ...dict.auth, loading: dict.common.loading }}
           locale={locale}
         />
+      </div>
+
+      {/* Language selector */}
+      <div className="app-container pb-safe pb-8 flex flex-col items-center">
+        <LocaleFlagSwitcher locale={locale} dict={dict} />
       </div>
     </div>
   )
