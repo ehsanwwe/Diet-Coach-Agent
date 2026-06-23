@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { LifestyleRequest } from '@/types/onboarding'
+import SteppedScale from '@/components/ui/SteppedScale'
 
 interface Props {
   dict: Dictionary['onboarding']
@@ -68,16 +69,15 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
 
         {/* Stress */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-ink-2">{dict.lifeStress}</label>
-            <span className="text-sm font-semibold text-brand">{stressVal}/10</span>
-          </div>
-          <input {...register('stress_level', { valueAsNumber: true, min: 1, max: 10 })}
-            type="range" min={1} max={10} step={1} className="w-full h-2 rounded-full accent-brand" />
-          <div className="flex justify-between mt-1">
-            <span className="text-xs text-ink-3">{dict.lifeStressLow}</span>
-            <span className="text-xs text-ink-3">{dict.lifeStressHigh}</span>
-          </div>
+          <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeStress}</label>
+          <SteppedScale
+            value={stressVal}
+            onChange={(v) => setValue('stress_level', v)}
+            min={1}
+            max={10}
+            lowLabel={dict.lifeStressLow}
+            highLabel={dict.lifeStressHigh}
+          />
         </div>
 
         {/* Work schedule */}
@@ -106,12 +106,15 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
 
         {/* Exercise days */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium text-ink-2">{dict.lifeExercise}</label>
-            <span className="text-sm font-semibold text-brand">{exerciseVal} {dict.lifeExerciseUnit}</span>
-          </div>
-          <input {...register('exercise_days_per_week', { valueAsNumber: true, min: 0, max: 7 })}
-            type="range" min={0} max={7} step={1} className="w-full h-2 rounded-full accent-brand" />
+          <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeExercise}</label>
+          <SteppedScale
+            value={exerciseVal}
+            onChange={(v) => setValue('exercise_days_per_week', v)}
+            min={0}
+            max={7}
+            lowLabel="0"
+            highLabel={`7 ${dict.lifeExerciseUnit}`}
+          />
         </div>
 
         {/* Cooking ability */}

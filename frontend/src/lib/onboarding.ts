@@ -2,6 +2,8 @@ import { api } from './api'
 import type {
   BehaviorRequest,
   BehaviorResponse,
+  GoalRequest,
+  GoalResponse,
   LifestyleRequest,
   LifestyleResponse,
   MedicalRequest,
@@ -18,6 +20,10 @@ const BASE = '/api/v1/onboarding'
 
 export function getOnboardingStatus() {
   return api.get<OnboardingStatusResponse>(`${BASE}/status`, true)
+}
+
+export function submitGoals(body: GoalRequest) {
+  return api.post<GoalResponse>(`${BASE}/goals`, body, true)
 }
 
 export function submitProfile(body: ProfileRequest) {

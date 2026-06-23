@@ -10,6 +10,7 @@ import { getSlideX } from '@/lib/direction'
 import { ApiRequestError } from '@/lib/api'
 import {
   getOnboardingStatus,
+  submitGoals,
   submitProfile,
   submitMedical,
   submitLifestyle,
@@ -67,7 +68,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
 
   // Preserved form data for back navigation
   const [profileData, setProfileData] = useState<ProfileFormData | null>(null)
-  const [goalType, setGoalType] = useState<GoalType | null>(null)
+  const [goalTypes, setGoalTypes] = useState<GoalType[]>([])
   const [medicalData, setMedicalData] = useState<MedicalFormData | null>(null)
   const [lifestyleData, setLifestyleData] = useState<LifestyleFormData | null>(null)
   const [preferencesData, setPreferencesData] = useState<PreferencesFormData | null>(null)
@@ -132,9 +133,12 @@ export default function OnboardingWizard({ dict, locale }: Props) {
     })
   }
 
-  function handleGoalSubmit(goal: GoalType) {
-    setGoalType(goal)
-    goForward()
+  async function handleGoalSubmit(goals: GoalType[]) {
+    await withSubmit(async () => {
+      await submitGoals({ goal_types: goals })
+      setGoalTypes(goals)
+      goForward()
+    })
   }
 
   async function handleMedicalSubmit(data: MedicalRequest) {
@@ -240,7 +244,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
         return (
           <GoalStep
             dict={d}
-            defaultValue={goalType}
+            defaultValue={goalTypes}
+            isSubmitting={isSubmitting}
+            apiError={apiError}
             onSubmit={handleGoalSubmit}
             onBack={goBack}
           />
@@ -323,7 +329,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
           animate="center"
           exit="exit"
           transition={{ duration: 0.28, ease: [0.32, 0, 0.67, 0] }}
-          className="absolute inset-0 flex flex-col overflow-hidden"
+          className="absolute inset-0 flex flex-col min-h-0"
         >
           {renderStep()}
         </motion.div>

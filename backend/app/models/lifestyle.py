@@ -134,6 +134,7 @@ class BehaviorProfile(Base):
     diet_history: Mapped[str | None] = mapped_column(Text, nullable=True)
     previous_failures: Mapped[str | None] = mapped_column(Text, nullable=True)
     hunger_pattern: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    hunger_patterns: Mapped[str | None] = mapped_column(Text, nullable=True)
     motivation_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False

@@ -1,7 +1,7 @@
 """
 Onboarding step request/response Pydantic v2 schemas.
 
-Covers all 5 data-collection steps + status + complete.
+Covers all 5 data-collection steps + goal step + status + complete.
 """
 from __future__ import annotations
 
@@ -16,6 +16,34 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 RiskLevel = Literal["low", "medium", "high", "clinical_review_required"]
 
 ONBOARDING_STEP_ORDER = ["profile", "medical", "lifestyle", "preferences", "behavior"]
+
+
+# ─── Goal ─────────────────────────────────────────────────────────────────────
+
+class GoalRequest(BaseModel):
+    goal_types: list[str] = Field(..., min_length=1)
+
+
+class GoalResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    goal_types: list[str]
+
+    @field_validator("goal_types", mode="before")
+    @classmethod
+    def deserialize_goal_types(cls, v: object) -> list[str]:
+        """Read goal_types_json first; fall back to wrapping legacy goal_type."""
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                result = json.loads(v)
+                return result if isinstance(result, list) else [result]
+            except (json.JSONDecodeError, ValueError):
+                return [v] if v else []
+        return []
 
 MEDICAL_CONDITION_CODES = [
     "diabetes",
@@ -42,6 +70,8 @@ class ProfileRequest(BaseModel):
     current_weight_kg: float = Field(..., ge=20.0, le=300.0)
     target_weight_kg: float | None = Field(default=None, ge=20.0, le=300.0)
     waist_circumference_cm: float | None = Field(default=None, ge=40.0, le=200.0)
+    wrist_circumference_cm: float | None = Field(default=None, ge=10.0, le=30.0)
+    thigh_circumference_cm: float | None = Field(default=None, ge=30.0, le=100.0)
 
     @model_validator(mode="after")
     def require_age_or_birth_date(self) -> "ProfileRequest":
@@ -61,6 +91,8 @@ class ProfileResponse(BaseModel):
     weight_kg: float | None
     target_weight_kg: float | None
     waist_cm: float | None
+    wrist_cm: float | None = None
+    thigh_cm: float | None = None
 
 
 # ─── Step 2: Medical ──────────────────────────────────────────────────────────
@@ -200,7 +232,7 @@ class BehaviorRequest(BaseModel):
     binge_history: bool = False
     diet_history: str = Field(default="", max_length=2000)
     previous_failures: str = Field(default="", max_length=2000)
-    hunger_pattern: str = Field(default="", max_length=50)
+    hunger_patterns: list[str] = Field(default_factory=list)
     motivation_level: int = Field(default=5, ge=1, le=10)
 
 
@@ -216,7 +248,7 @@ class BehaviorResponse(BaseModel):
     binge_history: bool
     diet_history: str | None = None
     previous_failures: str | None = None
-    hunger_pattern: str | None = None
+    hunger_patterns: list[str] = Field(default_factory=list)
     motivation_level: int | None = None
 
     @field_validator("cravings", mode="before")
@@ -229,6 +261,20 @@ class BehaviorResponse(BaseModel):
             except (json.JSONDecodeError, ValueError):
                 return [v] if v else []
         return v if isinstance(v, list) else []
+
+    @field_validator("hunger_patterns", mode="before")
+    @classmethod
+    def deserialize_hunger_patterns(cls, v: object) -> list[str]:
+        """Read hunger_patterns JSON; fall back to wrapping legacy hunger_pattern."""
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            try:
+                result = json.loads(v)
+                return result if isinstance(result, list) else [result]
+            except (json.JSONDecodeError, ValueError):
+                return [v] if v else []
+        return []
 
 
 # ─── Status ───────────────────────────────────────────────────────────────────

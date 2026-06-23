@@ -55,6 +55,13 @@ const WARNING_SYMPTOMS: Array<{ value: string; labelKey: keyof Dictionary['onboa
   { value: 'fainting', labelKey: 'medSymFainting' },
 ]
 
+const ALLERGY_PRESETS: Array<{ value: string; labelKey: keyof Dictionary['onboarding'] }> = [
+  { value: 'گلوتن', labelKey: 'medAllergyPresetGluten' },
+  { value: 'لاکتوز', labelKey: 'medAllergyPresetLactose' },
+  { value: 'بادام زمینی', labelKey: 'medAllergyPresetPeanut' },
+  { value: 'بادمجان', labelKey: 'medAllergyPresetEggplant' },
+]
+
 const defaultMedical: MedicalFormData = {
   diabetes: false,
   kidney_disease: false,
@@ -73,6 +80,9 @@ const defaultMedical: MedicalFormData = {
 
 export default function MedicalStep({ dict, defaultValues, isSubmitting, apiError, onSubmit }: Props) {
   const [form, setForm] = useState<MedicalFormData>({ ...defaultMedical, ...defaultValues })
+  const [hasAllergy, setHasAllergy] = useState(
+    (defaultValues?.allergies ?? []).length > 0,
+  )
 
   function toggleCondition(key: ConditionKey) {
     setForm((f) => ({ ...f, [key]: !f[key] }))
@@ -86,6 +96,23 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
         : [...f.warning_symptoms, value],
     }))
   }
+
+  function toggleAllergyPreset(value: string) {
+    setForm((f) => ({
+      ...f,
+      allergies: f.allergies.includes(value)
+        ? f.allergies.filter((a) => a !== value)
+        : [...f.allergies, value],
+    }))
+  }
+
+  function handleAllergyToggle(next: boolean) {
+    setHasAllergy(next)
+    if (!next) setForm((f) => ({ ...f, allergies: [] }))
+  }
+
+  const presetValues = ALLERGY_PRESETS.map((p) => p.value)
+  const customAllergies = form.allergies.filter((a) => !presetValues.includes(a))
 
   function handleSubmit() {
     onSubmit(form)
@@ -135,15 +162,71 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
           />
         </section>
 
-        {/* Allergies */}
+        {/* Allergies — yes/no toggle + presets */}
         <section>
-          <p className="text-sm font-semibold text-ink mb-2">{dict.medAllergies}</p>
-          <TagInput
-            value={form.allergies}
-            onChange={(v) => setForm((f) => ({ ...f, allergies: v }))}
-            placeholder={dict.medAllergiesPlaceholder}
-            addLabel={dict.medAddItem}
-          />
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold text-ink">{dict.medHasAllergy}</p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleAllergyToggle(false)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors',
+                  !hasAllergy ? 'bg-brand border-brand text-white' : 'bg-elevated border-line text-ink-2',
+                )}
+              >
+                {dict.medAllergyNo}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleAllergyToggle(true)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors',
+                  hasAllergy ? 'bg-brand border-brand text-white' : 'bg-elevated border-line text-ink-2',
+                )}
+              >
+                {dict.medAllergyYes}
+              </button>
+            </div>
+          </div>
+
+          {hasAllergy && (
+            <div className="space-y-3">
+              {/* Preset chips */}
+              <div className="flex flex-wrap gap-2">
+                {ALLERGY_PRESETS.map(({ value, labelKey }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleAllergyPreset(value)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full border text-sm transition-colors',
+                      form.allergies.includes(value)
+                        ? 'border-brand bg-brand-muted text-brand font-medium'
+                        : 'border-line bg-elevated text-ink-2',
+                    )}
+                  >
+                    {dict[labelKey] as string}
+                  </button>
+                ))}
+              </div>
+              {/* Custom tag input */}
+              <TagInput
+                value={customAllergies}
+                onChange={(custom) =>
+                  setForm((f) => ({
+                    ...f,
+                    allergies: [
+                      ...f.allergies.filter((a) => presetValues.includes(a)),
+                      ...custom,
+                    ],
+                  }))
+                }
+                placeholder={dict.medAllergiesPlaceholder}
+                addLabel={dict.medAddItem}
+              />
+            </div>
+          )}
         </section>
 
         {/* Warning symptoms */}
@@ -191,7 +274,7 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
         )}
       </div>
 
-      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line">
+      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line shrink-0">
         <button
           type="button"
           onClick={handleSubmit}

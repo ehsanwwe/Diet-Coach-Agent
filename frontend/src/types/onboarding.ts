@@ -1,5 +1,15 @@
 export type RiskLevel = 'low' | 'medium' | 'high' | 'clinical_review_required'
 
+export interface GoalRequest {
+  goal_types: GoalType[]
+}
+
+export interface GoalResponse {
+  id: string
+  user_id: string
+  goal_types: GoalType[]
+}
+
 export type GoalType =
   | 'weight_loss'
   | 'weight_gain'
@@ -48,6 +58,8 @@ export interface ProfileRequest {
   current_weight_kg: number
   target_weight_kg?: number | null
   waist_circumference_cm?: number | null
+  wrist_circumference_cm?: number | null
+  thigh_circumference_cm?: number | null
 }
 
 export interface ProfileResponse {
@@ -59,6 +71,8 @@ export interface ProfileResponse {
   weight_kg: number | null
   target_weight_kg: number | null
   waist_cm: number | null
+  wrist_cm: number | null
+  thigh_cm: number | null
 }
 
 export interface MedicalRequest {
@@ -153,7 +167,7 @@ export interface BehaviorRequest {
   binge_history: boolean
   diet_history: string
   previous_failures: string
-  hunger_pattern: string
+  hunger_patterns: string[]
   motivation_level: number
 }
 
@@ -167,7 +181,7 @@ export interface BehaviorResponse {
   binge_history: boolean
   diet_history: string | null
   previous_failures: string | null
-  hunger_pattern: string | null
+  hunger_patterns: string[]
   motivation_level: number | null
 }
 

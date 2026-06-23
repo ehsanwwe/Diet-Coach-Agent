@@ -52,6 +52,8 @@ class UserProfile(Base):
     weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     target_weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     waist_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    wrist_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
+    thigh_cm: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

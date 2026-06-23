@@ -150,6 +150,13 @@ export interface Dictionary {
     targetWeightPlaceholder: string
     waist: string
     waistPlaceholder: string
+    profileMoreDetails: string
+    wrist: string
+    wristPlaceholder: string
+    wristRange: string
+    thigh: string
+    thighPlaceholder: string
+    thighRange: string
     // Profile validation
     nameRequired: string
     nameMin: string
@@ -195,6 +202,13 @@ export interface Dictionary {
     medMedicationsPlaceholder: string
     medAllergies: string
     medAllergiesPlaceholder: string
+    medHasAllergy: string
+    medAllergyNo: string
+    medAllergyYes: string
+    medAllergyPresetGluten: string
+    medAllergyPresetLactose: string
+    medAllergyPresetPeanut: string
+    medAllergyPresetEggplant: string
     medWarningSymptoms: string
     medSymChestPain: string
     medSymDizziness: string
@@ -293,6 +307,7 @@ export interface Dictionary {
     behavPreviousFails: string
     behavPreviousFailsPlaceholder: string
     behavHunger: string
+    behavHungerHint: string
     behavHungerMorning: string
     behavHungerAfternoon: string
     behavHungerEvening: string
@@ -852,6 +867,13 @@ const fa: Dictionary = {
     targetWeightPlaceholder: '۶۵',
     waist: 'دور کمر (سانتی‌متر)',
     waistPlaceholder: '۸۰',
+    profileMoreDetails: 'جزئیات بیشتر (اختیاری)',
+    wrist: 'دور مچ (سانتی‌متر)',
+    wristPlaceholder: '۱۷',
+    wristRange: 'دور مچ باید بین ۱۰ و ۳۰ سانتی‌متر باشد',
+    thigh: 'دور ران (سانتی‌متر)',
+    thighPlaceholder: '۵۵',
+    thighRange: 'دور ران باید بین ۳۰ و ۱۰۰ سانتی‌متر باشد',
     nameRequired: 'نام الزامی است',
     nameMin: 'نام باید حداقل ۲ کاراکتر باشد',
     genderRequired: 'انتخاب جنسیت الزامی است',
@@ -863,9 +885,9 @@ const fa: Dictionary = {
     targetWeightRange: 'وزن هدف باید بین ۲۰ و ۳۰۰ کیلوگرم باشد',
     waistRange: 'دور کمر باید بین ۴۰ و ۲۰۰ سانتی‌متر باشد',
     // Goal
-    goalTitle: 'هدف اصلی شما چیست؟',
-    goalSubtitle: 'یک هدف اصلی انتخاب کنید تا برنامه شما بر اساس آن تنظیم شود.',
-    goalSelectPrompt: 'لطفاً یک گزینه انتخاب کنید',
+    goalTitle: 'اهداف شما چیست؟',
+    goalSubtitle: 'یک یا چند هدف انتخاب کنید تا برنامه شما بر اساس آن‌ها تنظیم شود.',
+    goalSelectPrompt: 'لطفاً حداقل یک گزینه انتخاب کنید',
     goalWeightLoss: 'کاهش وزن',
     goalWeightGain: 'افزایش وزن',
     goalMuscleGain: 'عضله‌سازی',
@@ -895,7 +917,14 @@ const fa: Dictionary = {
     medMedications: 'داروهای مصرفی',
     medMedicationsPlaceholder: 'داروی مصرفی را وارد کنید',
     medAllergies: 'آلرژی‌ها و عدم تحمل غذایی',
-    medAllergiesPlaceholder: 'مثال: گلوتن، لاکتوز، بادام زمینی',
+    medAllergiesPlaceholder: 'مثال: گوجه‌فرنگی، آناناس...',
+    medHasAllergy: 'آیا به چیزی حساسیت دارید؟',
+    medAllergyNo: 'خیر',
+    medAllergyYes: 'بله',
+    medAllergyPresetGluten: 'گلوتن',
+    medAllergyPresetLactose: 'لاکتوز',
+    medAllergyPresetPeanut: 'بادام زمینی',
+    medAllergyPresetEggplant: 'بادمجان',
     medWarningSymptoms: 'علائم هشداردهنده (اگر دارید انتخاب کنید)',
     medSymChestPain: 'درد قفسه سینه',
     medSymDizziness: 'سرگیجه شدید',
@@ -993,6 +1022,7 @@ const fa: Dictionary = {
     behavPreviousFails: 'دلایل ناموفق بودن رژیم‌های قبلی',
     behavPreviousFailsPlaceholder: 'چه چیزی باعث شد رژیم‌های قبلی موفق نشوید؟',
     behavHunger: 'الگوی گرسنگی',
+    behavHungerHint: 'می‌توانید چند گزینه انتخاب کنید',
     behavHungerMorning: 'صبح‌ها بیشتر گرسنه می‌شوم',
     behavHungerAfternoon: 'بعد از ظهرها بیشتر گرسنه می‌شوم',
     behavHungerEvening: 'عصرها بیشتر گرسنه می‌شوم',

@@ -13,7 +13,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models.lifestyle import BehaviorProfile, FoodPreference, LifestyleProfile
-from app.models.nutrition import NutritionRiskAssessment
+from app.models.nutrition import NutritionGoal, NutritionRiskAssessment
 from app.models.profile import Allergy, Medication, UserMedicalFlag, UserProfile
 from app.models.user import User
 from app.services.safety_guardrail_service import SafetyAssessment
@@ -40,6 +40,8 @@ def upsert_profile(
     weight_kg: float,
     target_weight_kg: float | None,
     waist_cm: float | None,
+    wrist_cm: float | None = None,
+    thigh_cm: float | None = None,
 ) -> UserProfile:
     profile = get_profile(db, user_id)
     if profile is None:
@@ -53,6 +55,8 @@ def upsert_profile(
     profile.weight_kg = weight_kg
     profile.target_weight_kg = target_weight_kg
     profile.waist_cm = waist_cm
+    profile.wrist_cm = wrist_cm
+    profile.thigh_cm = thigh_cm
 
     db.flush()
     return profile
@@ -296,7 +300,7 @@ def upsert_behavior_profile(
     binge_history: bool,
     diet_history: str,
     previous_failures: str,
-    hunger_pattern: str,
+    hunger_patterns: list[str],
     motivation_level: int,
 ) -> BehaviorProfile:
     bp = get_behavior_profile(db, user_id)
@@ -311,11 +315,34 @@ def upsert_behavior_profile(
     bp.binge_history = binge_history
     bp.diet_history = diet_history or None
     bp.previous_failures = previous_failures or None
-    bp.hunger_pattern = hunger_pattern or None
+    bp.hunger_patterns = json.dumps(hunger_patterns, ensure_ascii=False) if hunger_patterns else None
+    bp.hunger_pattern = hunger_patterns[0] if hunger_patterns else None
     bp.motivation_level = motivation_level
 
     db.flush()
     return bp
+
+
+# ─── NutritionGoal (onboarding) ───────────────────────────────────────────────
+
+def get_nutrition_goal(db: Session, user_id: str) -> NutritionGoal | None:
+    result = db.execute(select(NutritionGoal).where(NutritionGoal.user_id == user_id))
+    return result.scalar_one_or_none()
+
+
+def upsert_onboarding_goals(
+    db: Session,
+    user_id: str,
+    goal_types: list[str],
+) -> NutritionGoal:
+    goal = get_nutrition_goal(db, user_id)
+    if goal is None:
+        goal = NutritionGoal(user_id=user_id)
+        db.add(goal)
+    goal.goal_type = goal_types[0]
+    goal.goal_types_json = json.dumps(goal_types, ensure_ascii=False)
+    db.flush()
+    return goal
 
 
 # ─── NutritionRiskAssessment ──────────────────────────────────────────────────

@@ -67,6 +67,7 @@ class NutritionGoal(Base):
         String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     goal_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    goal_types_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     target_calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(

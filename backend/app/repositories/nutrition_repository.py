@@ -29,6 +29,7 @@ def upsert_nutrition_goal(
     db: Session,
     user_id: str,
     goal_type: str,
+    goal_types: list[str] | None = None,
     target_calories: int | None = None,
     notes: str | None = None,
 ) -> NutritionGoal:
@@ -37,6 +38,8 @@ def upsert_nutrition_goal(
         goal = NutritionGoal(user_id=user_id)
         db.add(goal)
     goal.goal_type = goal_type
+    if goal_types is not None:
+        goal.goal_types_json = json.dumps(goal_types, ensure_ascii=False)
     goal.target_calories = target_calories
     goal.notes = notes
     db.flush()

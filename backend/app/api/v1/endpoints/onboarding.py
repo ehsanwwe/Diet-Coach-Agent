@@ -11,6 +11,7 @@ ONB-04: POST /onboarding/lifestyle
 ONB-05: POST /onboarding/preferences
 ONB-06: POST /onboarding/behavior
 ONB-07: POST /onboarding/complete
+ONB-08: POST /onboarding/goals
 """
 from __future__ import annotations
 
@@ -25,6 +26,8 @@ from app.schemas.common import SuccessResponse
 from app.schemas.onboarding import (
     BehaviorRequest,
     BehaviorResponse,
+    GoalRequest,
+    GoalResponse,
     LifestyleRequest,
     LifestyleResponse,
     MedicalRequest,
@@ -49,6 +52,20 @@ def get_status(
     """Return the current onboarding progress for the authenticated user."""
     try:
         result = onboarding_service.get_status(db, current_user)
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code, detail=exc.detail)
+    return SuccessResponse(data=result)
+
+
+@router.post("/goals", response_model=SuccessResponse[GoalResponse])
+def save_goals(
+    body: GoalRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> SuccessResponse[GoalResponse]:
+    """Save or update the user's nutrition goals (Step 1 / Goal step)."""
+    try:
+        result = onboarding_service.save_goals(db, current_user, body)
     except AppError as exc:
         raise_http_error(exc.message, status_code=exc.status_code, detail=exc.detail)
     return SuccessResponse(data=result)

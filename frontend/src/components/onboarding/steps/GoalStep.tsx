@@ -8,8 +8,10 @@ import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Dictionary['onboarding']
-  defaultValue: GoalType | null
-  onSubmit: (goal: GoalType) => void
+  defaultValue: GoalType[]
+  isSubmitting: boolean
+  apiError: string | null
+  onSubmit: (goals: GoalType[]) => void
   onBack: () => void
 }
 
@@ -41,13 +43,19 @@ const GOAL_ICONS: Record<GoalType, AppIconName> = {
   general_health_companion: 'generalHealth',
 }
 
-export default function GoalStep({ dict, defaultValue, onSubmit }: Props) {
-  const [selected, setSelected] = useState<GoalType | null>(defaultValue)
+export default function GoalStep({ dict, defaultValue, isSubmitting, apiError, onSubmit }: Props) {
+  const [selected, setSelected] = useState<GoalType[]>(defaultValue)
   const [touched, setTouched] = useState(false)
+
+  function toggleGoal(goal: GoalType) {
+    setSelected((prev) =>
+      prev.includes(goal) ? prev.filter((g) => g !== goal) : [...prev, goal],
+    )
+  }
 
   function handleNext() {
     setTouched(true)
-    if (selected) onSubmit(selected)
+    if (selected.length > 0) onSubmit(selected)
   }
 
   return (
@@ -59,37 +67,44 @@ export default function GoalStep({ dict, defaultValue, onSubmit }: Props) {
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {ALL_GOALS.map((goal) => (
-            <button
-              key={goal}
-              type="button"
-              onClick={() => setSelected(goal)}
-              className={cn(
-                'flex flex-col items-center gap-2 p-4 rounded-2xl border text-center transition-all',
-                selected === goal
-                  ? 'border-brand bg-brand-muted shadow-sm'
-                  : 'border-line bg-elevated hover:border-brand-light',
-              )}
-            >
-              <AppIcon
-                name={GOAL_ICONS[goal]}
-                className={selected === goal ? 'text-brand' : 'text-ink-2'}
-                size={24}
-              />
-              <span
+          {ALL_GOALS.map((goal) => {
+            const isActive = selected.includes(goal)
+            return (
+              <button
+                key={goal}
+                type="button"
+                onClick={() => toggleGoal(goal)}
                 className={cn(
-                  'text-xs font-medium leading-snug',
-                  selected === goal ? 'text-brand' : 'text-ink',
+                  'flex flex-col items-center gap-2 p-4 rounded-2xl border text-center transition-all',
+                  isActive
+                    ? 'border-brand bg-brand-muted shadow-sm'
+                    : 'border-line bg-elevated hover:border-brand-light',
                 )}
               >
-                {dict[GOAL_LABEL_KEYS[goal]] as string}
-              </span>
-            </button>
-          ))}
+                <AppIcon
+                  name={GOAL_ICONS[goal]}
+                  className={isActive ? 'text-brand' : 'text-ink-2'}
+                  size={24}
+                />
+                <span
+                  className={cn(
+                    'text-xs font-medium leading-snug',
+                    isActive ? 'text-brand' : 'text-ink',
+                  )}
+                >
+                  {dict[GOAL_LABEL_KEYS[goal]] as string}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
-        {touched && !selected && (
+        {touched && selected.length === 0 && (
           <p className="text-xs text-error mt-3">{dict.goalSelectPrompt}</p>
+        )}
+
+        {apiError && (
+          <p className="text-sm text-error bg-error/10 rounded-xl px-4 py-3 mt-3">{apiError}</p>
         )}
       </div>
 
@@ -97,9 +112,10 @@ export default function GoalStep({ dict, defaultValue, onSubmit }: Props) {
         <button
           type="button"
           onClick={handleNext}
+          disabled={isSubmitting}
           className="w-full py-3.5 rounded-2xl bg-brand text-white font-semibold text-base transition-opacity disabled:opacity-60"
         >
-          {dict.next}
+          {isSubmitting ? dict.saving : dict.next}
         </button>
       </div>
     </div>

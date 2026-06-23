@@ -6,7 +6,7 @@ propagation here. DB operations are delegated to onboarding_repository.
 """
 from __future__ import annotations
 
-import json
+import json as _json
 from datetime import date
 
 from sqlalchemy.orm import Session
@@ -18,6 +18,8 @@ from app.schemas.onboarding import (
     ONBOARDING_STEP_ORDER,
     BehaviorRequest,
     BehaviorResponse,
+    GoalRequest,
+    GoalResponse,
     LifestyleRequest,
     LifestyleResponse,
     MedicalFlagItem,
@@ -98,6 +100,19 @@ def get_status(db: Session, user: User) -> OnboardingStatusResponse:
     )
 
 
+def save_goals(db: Session, user: User, body: GoalRequest) -> GoalResponse:
+    goal = onboarding_repository.upsert_onboarding_goals(
+        db,
+        user.id,
+        goal_types=body.goal_types,
+    )
+    return GoalResponse(
+        id=goal.id,
+        user_id=goal.user_id,
+        goal_types=body.goal_types,
+    )
+
+
 def save_profile(db: Session, user: User, body: ProfileRequest) -> ProfileResponse:
     birth_date: date | None
     if body.birth_date is not None:
@@ -117,6 +132,8 @@ def save_profile(db: Session, user: User, body: ProfileRequest) -> ProfileRespon
         weight_kg=body.current_weight_kg,
         target_weight_kg=body.target_weight_kg,
         waist_cm=body.waist_circumference_cm,
+        wrist_cm=body.wrist_circumference_cm,
+        thigh_cm=body.thigh_circumference_cm,
     )
     return ProfileResponse.model_validate(profile)
 
@@ -205,10 +222,23 @@ def save_behavior(
         binge_history=body.binge_history,
         diet_history=body.diet_history,
         previous_failures=body.previous_failures,
-        hunger_pattern=body.hunger_pattern,
+        hunger_patterns=body.hunger_patterns,
         motivation_level=body.motivation_level,
     )
-    return BehaviorResponse.model_validate(bp)
+    # Build response, falling back to legacy hunger_pattern for old records
+    hunger_patterns: list[str] = []
+    if bp.hunger_patterns:
+        try:
+            parsed = _json.loads(bp.hunger_patterns)
+            hunger_patterns = parsed if isinstance(parsed, list) else [parsed]
+        except (ValueError, TypeError):
+            hunger_patterns = [bp.hunger_patterns]
+    elif bp.hunger_pattern:
+        hunger_patterns = [bp.hunger_pattern]
+
+    resp = BehaviorResponse.model_validate(bp)
+    resp.hunger_patterns = hunger_patterns
+    return resp
 
 
 def complete_onboarding(db: Session, user: User) -> OnboardingCompleteResponse:

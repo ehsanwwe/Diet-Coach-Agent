@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { ProfileRequest } from '@/types/onboarding'
@@ -22,6 +24,8 @@ export interface ProfileFormData {
   current_weight_kg: number
   target_weight_kg: number | null
   waist_circumference_cm: number | null
+  wrist_circumference_cm: number | null
+  thigh_circumference_cm: number | null
 }
 
 const GENDERS: Array<{ value: ProfileFormData['gender']; labelKey: keyof Dictionary['onboarding'] }> = [
@@ -32,6 +36,8 @@ const GENDERS: Array<{ value: ProfileFormData['gender']; labelKey: keyof Diction
 ]
 
 export default function ProfileStep({ dict, defaultValues, isSubmitting, apiError, onSubmit }: Props) {
+  const [moreOpen, setMoreOpen] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -46,6 +52,8 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
       current_weight_kg: defaultValues?.current_weight_kg ?? undefined,
       target_weight_kg: defaultValues?.target_weight_kg ?? null,
       waist_circumference_cm: defaultValues?.waist_circumference_cm ?? null,
+      wrist_circumference_cm: defaultValues?.wrist_circumference_cm ?? null,
+      thigh_circumference_cm: defaultValues?.thigh_circumference_cm ?? null,
     },
   })
 
@@ -60,6 +68,8 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
       current_weight_kg: data.current_weight_kg,
       target_weight_kg: data.target_weight_kg || null,
       waist_circumference_cm: data.waist_circumference_cm || null,
+      wrist_circumference_cm: data.wrist_circumference_cm || null,
+      thigh_circumference_cm: data.thigh_circumference_cm || null,
     })
   }
 
@@ -177,23 +187,77 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
           />
         </Field>
 
-        {/* Waist (optional) */}
-        <Field
-          label={`${dict.waist} ${dict.optional}`}
-          error={errors.waist_circumference_cm?.message}
-        >
-          <input
-            {...register('waist_circumference_cm', {
-              valueAsNumber: true,
-              min: { value: 40, message: dict.waistRange },
-              max: { value: 200, message: dict.waistRange },
-            })}
-            type="number"
-            step="0.1"
-            placeholder={dict.waistPlaceholder}
-            className={inputCls(!!errors.waist_circumference_cm)}
-          />
-        </Field>
+        {/* Collapsed "more details" section */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setMoreOpen((o) => !o)}
+            className="flex items-center gap-2 text-sm font-medium text-brand py-2"
+          >
+            {moreOpen
+              ? <ChevronUp size={16} />
+              : <ChevronDown size={16} />}
+            {dict.profileMoreDetails}
+          </button>
+
+          {moreOpen && (
+            <div className="space-y-5 pt-2">
+              {/* Waist (optional) */}
+              <Field
+                label={`${dict.waist} ${dict.optional}`}
+                error={errors.waist_circumference_cm?.message}
+              >
+                <input
+                  {...register('waist_circumference_cm', {
+                    valueAsNumber: true,
+                    min: { value: 40, message: dict.waistRange },
+                    max: { value: 200, message: dict.waistRange },
+                  })}
+                  type="number"
+                  step="0.1"
+                  placeholder={dict.waistPlaceholder}
+                  className={inputCls(!!errors.waist_circumference_cm)}
+                />
+              </Field>
+
+              {/* Wrist (optional) */}
+              <Field
+                label={`${dict.wrist} ${dict.optional}`}
+                error={errors.wrist_circumference_cm?.message}
+              >
+                <input
+                  {...register('wrist_circumference_cm', {
+                    valueAsNumber: true,
+                    min: { value: 10, message: dict.wristRange },
+                    max: { value: 30, message: dict.wristRange },
+                  })}
+                  type="number"
+                  step="0.1"
+                  placeholder={dict.wristPlaceholder}
+                  className={inputCls(!!errors.wrist_circumference_cm)}
+                />
+              </Field>
+
+              {/* Thigh (optional) */}
+              <Field
+                label={`${dict.thigh} ${dict.optional}`}
+                error={errors.thigh_circumference_cm?.message}
+              >
+                <input
+                  {...register('thigh_circumference_cm', {
+                    valueAsNumber: true,
+                    min: { value: 30, message: dict.thighRange },
+                    max: { value: 100, message: dict.thighRange },
+                  })}
+                  type="number"
+                  step="0.1"
+                  placeholder={dict.thighPlaceholder}
+                  className={inputCls(!!errors.thigh_circumference_cm)}
+                />
+              </Field>
+            </div>
+          )}
+        </div>
 
         {apiError && (
           <p className="text-sm text-error bg-error/10 rounded-xl px-4 py-3">{apiError}</p>

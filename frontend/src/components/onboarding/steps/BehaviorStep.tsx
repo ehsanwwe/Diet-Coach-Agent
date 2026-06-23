@@ -5,6 +5,7 @@ import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { BehaviorRequest } from '@/types/onboarding'
 import TagInput from '../TagInput'
+import SteppedScale from '@/components/ui/SteppedScale'
 
 interface Props {
   dict: Dictionary['onboarding']
@@ -23,7 +24,7 @@ export interface BehaviorFormData {
   cravings: string[]
   diet_history: string
   previous_failures: string
-  hunger_pattern: string
+  hunger_patterns: string[]
   motivation_level: number
 }
 
@@ -43,6 +44,8 @@ const HUNGER_OPTIONS: Array<{ value: string; labelKey: keyof Dictionary['onboard
   { value: 'random', labelKey: 'behavHungerRandom' },
 ]
 
+const RANDOM_HUNGER = 'random'
+
 const defaultBehavior: BehaviorFormData = {
   emotional_eating: false,
   night_eating: false,
@@ -51,7 +54,7 @@ const defaultBehavior: BehaviorFormData = {
   cravings: [],
   diet_history: '',
   previous_failures: '',
-  hunger_pattern: 'evening',
+  hunger_patterns: [],
   motivation_level: 7,
 }
 
@@ -71,6 +74,23 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
     }))
   }
 
+  function toggleHunger(value: string) {
+    setForm((f) => {
+      if (value === RANDOM_HUNGER) {
+        // "no specific pattern" is exclusive
+        return { ...f, hunger_patterns: [RANDOM_HUNGER] }
+      }
+      // selecting a specific option deselects "random"
+      const without = f.hunger_patterns.filter((h) => h !== RANDOM_HUNGER && h !== value)
+      return {
+        ...f,
+        hunger_patterns: f.hunger_patterns.includes(value)
+          ? without
+          : [...without, value],
+      }
+    })
+  }
+
   function handleSubmit() {
     onSubmit({
       emotional_eating: form.emotional_eating,
@@ -80,7 +100,7 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
       cravings: form.cravings,
       diet_history: form.diet_history,
       previous_failures: form.previous_failures,
-      hunger_pattern: form.hunger_pattern,
+      hunger_patterns: form.hunger_patterns,
       motivation_level: form.motivation_level,
     })
   }
@@ -152,47 +172,46 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
           />
         </section>
 
-        {/* Hunger pattern */}
+        {/* Hunger pattern — multi-select */}
         <section>
-          <p className="text-sm font-semibold text-ink mb-2">{dict.behavHunger}</p>
+          <p className="text-sm font-semibold text-ink mb-1">{dict.behavHunger}</p>
+          <p className="text-xs text-ink-3 mb-3">{dict.behavHungerHint}</p>
           <div className="space-y-2">
-            {HUNGER_OPTIONS.map(({ value, labelKey }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setForm((f) => ({ ...f, hunger_pattern: value }))}
-                className={cn(
-                  'w-full text-start px-4 py-2.5 rounded-xl border text-sm transition-colors',
-                  form.hunger_pattern === value
-                    ? 'border-brand bg-brand-muted text-brand font-medium'
-                    : 'border-line bg-elevated text-ink-2',
-                )}
-              >
-                {dict[labelKey]}
-              </button>
-            ))}
+            {HUNGER_OPTIONS.map(({ value, labelKey }) => {
+              const isActive = form.hunger_patterns.includes(value)
+              const isRandom = value === RANDOM_HUNGER
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => toggleHunger(value)}
+                  className={cn(
+                    'w-full text-start px-4 py-2.5 rounded-xl border text-sm transition-colors',
+                    isActive
+                      ? isRandom
+                        ? 'border-ink-2 bg-elevated text-ink font-medium'
+                        : 'border-brand bg-brand-muted text-brand font-medium'
+                      : 'border-line bg-elevated text-ink-2',
+                  )}
+                >
+                  {dict[labelKey]}
+                </button>
+              )
+            })}
           </div>
         </section>
 
         {/* Motivation */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-ink">{dict.behavMotivation}</label>
-            <span className="text-sm font-semibold text-brand">{form.motivation_level}/10</span>
-          </div>
-          <input
-            type="range"
+          <label className="text-sm font-semibold text-ink mb-2 block">{dict.behavMotivation}</label>
+          <SteppedScale
+            value={form.motivation_level}
+            onChange={(v) => setForm((f) => ({ ...f, motivation_level: v }))}
             min={1}
             max={10}
-            step={1}
-            value={form.motivation_level}
-            onChange={(e) => setForm((f) => ({ ...f, motivation_level: Number(e.target.value) }))}
-            className="w-full h-2 rounded-full accent-brand"
+            lowLabel={dict.behavMotivationLow}
+            highLabel={dict.behavMotivationHigh}
           />
-          <div className="flex justify-between mt-1">
-            <span className="text-xs text-ink-3">{dict.behavMotivationLow}</span>
-            <span className="text-xs text-ink-3">{dict.behavMotivationHigh}</span>
-          </div>
         </div>
 
         {/* Diet history */}
@@ -226,7 +245,7 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
         )}
       </div>
 
-      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line">
+      <div className="px-6 pb-safe pb-8 pt-4 border-t border-line shrink-0">
         <button
           type="button"
           onClick={handleSubmit}
