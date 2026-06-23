@@ -233,39 +233,36 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
         <section>
           <p className="text-sm font-semibold text-ink mb-3">{dict.medWarningSymptoms}</p>
           <div className="space-y-2">
-            {WARNING_SYMPTOMS.map(({ value, labelKey }) => (
-              <label
-                key={value}
-                className={cn(
-                  'flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors',
-                  form.warning_symptoms.includes(value)
-                    ? 'border-warm bg-warm-muted'
-                    : 'border-line bg-elevated',
-                )}
-              >
-                <div
+            {WARNING_SYMPTOMS.map(({ value, labelKey }) => {
+              const selected = form.warning_symptoms.includes(value)
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  role="checkbox"
+                  aria-checked={selected}
+                  onClick={() => toggleSymptom(value)}
                   className={cn(
-                    'w-4.5 h-4.5 rounded border flex items-center justify-center transition-colors shrink-0',
-                    form.warning_symptoms.includes(value)
-                      ? 'bg-warm border-warm text-white'
-                      : 'border-line',
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-start transition-colors focus:outline-none focus:ring-2 focus:ring-brand/30',
+                    selected ? 'border-warm bg-warm-muted' : 'border-line bg-elevated',
                   )}
                 >
-                  {form.warning_symptoms.includes(value) && (
-                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                      <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-sm text-ink">{dict[labelKey] as string}</span>
-                <input
-                  type="checkbox"
-                  checked={form.warning_symptoms.includes(value)}
-                  onChange={() => toggleSymptom(value)}
-                  className="sr-only"
-                />
-              </label>
-            ))}
+                  <div
+                    className={cn(
+                      'w-4.5 h-4.5 rounded border flex items-center justify-center transition-colors shrink-0',
+                      selected ? 'bg-warm border-warm text-white' : 'border-line',
+                    )}
+                  >
+                    {selected && (
+                      <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                        <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-sm text-ink">{dict[labelKey] as string}</span>
+                </button>
+              )
+            })}
           </div>
         </section>
 
