@@ -7,6 +7,12 @@ import type { Locale } from '@/lib/i18n'
 import { SUPPORTED_LOCALES } from '@/lib/i18n'
 import { useAuth } from '@/hooks/useAuth'
 
+const LOCALE_FLAGS: Record<string, string> = {
+  fa: '🇮🇷',
+  en: '🇬🇧',
+  ar: '🇸🇦',
+}
+
 interface Props {
   dict: Dictionary
   locale: Locale
@@ -100,23 +106,33 @@ export default function SplashOrRedirect({ dict, locale }: Props) {
         </div>
       </div>
 
-      <div className="app-container pb-safe pb-8 flex justify-center items-center gap-6">
-        {SUPPORTED_LOCALES.map((loc) => (
-          <a
-            key={loc}
-            href={`/${loc}`}
-            className={[
-              'text-sm transition-colors',
-              loc === locale
-                ? 'text-brand font-semibold'
-                : 'text-ink-3 hover:text-ink-2',
-            ].join(' ')}
-            aria-current={loc === locale ? 'page' : undefined}
-            aria-label={dict.language[loc]}
-          >
-            {dict.language[loc]}
-          </a>
-        ))}
+      <div className="app-container pb-safe pb-8 flex flex-col items-center gap-3">
+        <p className="text-xs text-ink-3">{dict.language.change}</p>
+        {/* dir="ltr" keeps fa→en→ar order consistent regardless of document direction */}
+        <div className="flex items-center gap-3" dir="ltr">
+          {SUPPORTED_LOCALES.map((loc) => (
+            <a
+              key={loc}
+              href={`/${loc}`}
+              className={[
+                'flex flex-col items-center gap-1.5 px-4 py-3 rounded-2xl border transition-colors',
+                loc === locale
+                  ? 'bg-brand-muted border-brand/20 text-brand'
+                  : 'bg-elevated border-line text-ink-2 hover:text-ink hover:border-ink-3',
+              ].join(' ')}
+              aria-current={loc === locale ? 'page' : undefined}
+              aria-label={dict.language[loc]}
+              title={dict.language[loc]}
+            >
+              <span className="text-2xl leading-none" aria-hidden="true">
+                {LOCALE_FLAGS[loc]}
+              </span>
+              <span className={`text-xs ${loc === locale ? 'font-semibold' : 'font-medium'}`}>
+                {dict.language[loc]}
+              </span>
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   )
