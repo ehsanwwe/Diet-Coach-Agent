@@ -26,8 +26,8 @@ export default function OnboardingShell({
   children,
 }: Props) {
   return (
-    <div className="min-h-dvh bg-surface flex flex-col">
-      <div className="app-container flex-1 flex flex-col">
+    <div className="h-dvh bg-surface flex flex-col overflow-hidden">
+      <div className="app-container flex-1 flex flex-col" style={{ minHeight: 0 }}>
         {/* Header */}
         <div className="flex items-center pt-safe pt-4 px-4 pb-2 min-h-[56px]">
           {showBack && onBack ? (

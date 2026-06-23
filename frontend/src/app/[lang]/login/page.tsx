@@ -33,11 +33,6 @@ export default async function LoginPage({ params }: Props) {
           locale={locale}
         />
       </div>
-
-      {/* Language selector */}
-      <div className="app-container pb-safe pb-8 flex flex-col items-center">
-        <LocaleFlagSwitcher locale={locale} dict={dict} />
-      </div>
     </div>
   )
 }

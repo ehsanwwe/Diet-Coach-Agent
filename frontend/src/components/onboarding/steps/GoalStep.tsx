@@ -60,7 +60,7 @@ export default function GoalStep({ dict, defaultValue, isSubmitting, apiError, o
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-2">
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-2">
         <div className="mb-4">
           <h1 className="text-xl font-bold text-ink">{dict.goalTitle}</h1>
           <p className="text-sm text-ink-2 mt-1">{dict.goalSubtitle}</p>

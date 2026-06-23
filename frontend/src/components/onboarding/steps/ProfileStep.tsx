@@ -75,7 +75,7 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
 
   return (
     <form onSubmit={handleSubmit(submit)} className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-2 space-y-5">
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-2 space-y-5">
         <div className="mb-2">
           <h1 className="text-xl font-bold text-ink">{dict.profileTitle}</h1>
           <p className="text-sm text-ink-2 mt-1">{dict.profileSubtitle}</p>

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { LifestyleRequest } from '@/types/onboarding'
-import SteppedScale from '@/components/ui/SteppedScale'
+import SteppedRangeSlider from '@/components/ui/SteppedRangeSlider'
 
 interface Props {
   dict: Dictionary['onboarding']
@@ -50,7 +50,7 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
 
   return (
     <form onSubmit={handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-6 py-2 space-y-6">
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 py-2 space-y-6">
         <div>
           <h1 className="text-xl font-bold text-ink">{dict.lifestyleTitle}</h1>
           <p className="text-sm text-ink-2 mt-1">{dict.lifestyleSubtitle}</p>
@@ -70,7 +70,7 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
         {/* Stress */}
         <div>
           <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeStress}</label>
-          <SteppedScale
+          <SteppedRangeSlider
             value={stressVal}
             onChange={(v) => setValue('stress_level', v)}
             min={1}
@@ -107,7 +107,7 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
         {/* Exercise days */}
         <div>
           <label className="text-sm font-medium text-ink-2 mb-2 block">{dict.lifeExercise}</label>
-          <SteppedScale
+          <SteppedRangeSlider
             value={exerciseVal}
             onChange={(v) => setValue('exercise_days_per_week', v)}
             min={0}

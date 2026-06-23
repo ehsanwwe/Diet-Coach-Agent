@@ -104,6 +104,9 @@ const ar: Dictionary = {
     loginSuccess: 'تم تسجيل الدخول بنجاح',
     logoutSuccess: 'تم تسجيل الخروج بنجاح',
     networkError: 'خطأ في الشبكة. يرجى المحاولة مرة أخرى.',
+    countryLabel: 'الدولة',
+    countrySearch: 'البحث عن دولة...',
+    phoneInvalidForCountry: 'رقم غير صالح لهذه الدولة',
   },
   onboarding: {
     step1: 'الملف الشخصي',

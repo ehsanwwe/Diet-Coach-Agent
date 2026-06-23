@@ -104,6 +104,9 @@ const en: Dictionary = {
     loginSuccess: 'Signed in successfully',
     logoutSuccess: 'Signed out successfully',
     networkError: 'Network error. Please try again.',
+    countryLabel: 'Country',
+    countrySearch: 'Search country...',
+    phoneInvalidForCountry: 'Invalid number for this country',
   },
   onboarding: {
     step1: 'Profile',

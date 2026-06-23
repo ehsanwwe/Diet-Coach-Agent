@@ -114,6 +114,9 @@ export interface Dictionary {
     loginSuccess: string
     logoutSuccess: string
     networkError: string
+    countryLabel: string
+    countrySearch: string
+    phoneInvalidForCountry: string
   }
   onboarding: {
     // Step labels for progress bar
@@ -833,6 +836,9 @@ const fa: Dictionary = {
     loginSuccess: 'با موفقیت وارد شدید',
     logoutSuccess: 'از حساب خارج شدید',
     networkError: 'خطای شبکه. لطفاً دوباره تلاش کنید.',
+    countryLabel: 'کشور',
+    countrySearch: 'جستجوی کشور...',
+    phoneInvalidForCountry: 'شماره موبایل برای این کشور معتبر نیست',
   },
   onboarding: {
     step1: 'اطلاعات پایه',
