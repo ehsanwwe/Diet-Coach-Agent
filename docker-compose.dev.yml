@@ -102,8 +102,8 @@ services:
       - "${FRONTEND_BIND_IP:-0.0.0.0}:${FRONTEND_PORT:-9003}:3000"
     volumes:
       - ./frontend/persistent/dev:/app/persistent
-    command: >
-      sh -c "cd /app && python -m alembic upgrade head"
+#    command: >
+#      sh -c "cd /app && python -m alembic upgrade head"
     networks:
       - diet-coach-dev-net
 

@@ -76,8 +76,8 @@ services:
       - "${BACKEND_BIND_IP:-0.0.0.0}:${BACKEND_PORT:-9002}:8000"
     volumes:
       - ./backend/persistent/prod:/app/persistent
-    command: >
-       sh -c "cd /app && python -m alembic upgrade head"
+#    command: >
+#       sh -c "cd /app && python -m alembic upgrade head"
     networks:
       - diet-coach-prod-net
 
