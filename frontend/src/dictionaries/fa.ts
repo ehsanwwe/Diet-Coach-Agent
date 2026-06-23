@@ -757,7 +757,7 @@ const fa: Dictionary = {
     transcriptionNotConfigured: 'صدا ذخیره شد',
   },
   common: {
-    appName: 'مربی تغذیه',
+    appName: 'کالریا',
     loading: 'در حال بارگذاری...',
     error: 'خطایی رخ داد',
     retry: 'تلاش مجدد',

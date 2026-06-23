@@ -28,7 +28,7 @@ const ar: Dictionary = {
     transcriptionNotConfigured: 'تم حفظ الصوت',
   },
   common: {
-    appName: 'مدرب التغذية',
+    appName: 'کالریا',
     loading: 'جارٍ التحميل...',
     error: 'حدث خطأ',
     retry: 'حاول مرة أخرى',

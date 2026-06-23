@@ -28,7 +28,7 @@ const en: Dictionary = {
     transcriptionNotConfigured: 'Audio saved',
   },
   common: {
-    appName: 'Diet Coach',
+    appName: 'Caloria',
     loading: 'Loading...',
     error: 'Something went wrong',
     retry: 'Try again',

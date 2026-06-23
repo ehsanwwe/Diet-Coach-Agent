@@ -77,7 +77,9 @@ export default function SplashOrRedirect({ dict, locale }: Props) {
         <div className="w-20 h-20 rounded-full bg-brand-muted flex items-center justify-center mb-8 text-brand">
           <AppIcon />
         </div>
-
+        <div className="flex pb-8 flex-col items-center">
+          <LocaleFlagSwitcher locale={locale} dict={dict} />
+        </div>
         <h1 className="text-3xl font-bold text-ink mb-3 leading-tight">
           {dict.common.appName}
         </h1>
@@ -100,9 +102,6 @@ export default function SplashOrRedirect({ dict, locale }: Props) {
         </div>
       </div>
 
-      <div className="app-container pb-safe pb-8 flex flex-col items-center">
-        <LocaleFlagSwitcher locale={locale} dict={dict} />
-      </div>
     </div>
   )
 }
