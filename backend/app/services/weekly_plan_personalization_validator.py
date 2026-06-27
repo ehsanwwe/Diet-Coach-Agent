@@ -37,183 +37,842 @@ _ALLERGEN_VARIANTS: dict[str, list[str]] = {
         "اُملت", "امـلت", "آملت", "آمیلت", "املت",
         "عجة", "بيض", "بيضة", "بيضتان",
     ],
-    "gluten": ["wheat", "gluten", "گندم"],
+    "gluten": ["wheat", "gluten", "bread", "pasta", "گندم", "نان", "رشته", "آرد", "خبز"],
     "peanut": ["peanut", "بادام زمینی"],
-    "lactose": ["milk", "dairy", "lactose", "شیر", "لبنیات"],
+    "lactose": [
+        "milk", "dairy", "lactose", "yogurt", "cheese", "cream",
+        "شیر", "لبنیات", "ماست", "یوگورت", "پنیر", "خامه",
+        "زبادي", "جبن",
+    ],
     "fish": ["fish", "salmon", "tuna", "cod", "ماهی", "سالمون", "تن"],
     "shellfish": ["shrimp", "crab", "lobster", "میگو", "خرچنگ"],
     "soy": ["soy", "tofu", "سویا"],
-    "tree_nut": ["walnut", "almond", "cashew", "pistachio", "گردو", "بادام", "پسته"],
+    "tree_nut": [
+        "walnut", "almond", "cashew", "pistachio", "nuts", "nut",
+        "گردو", "بادام", "پسته", "آجیل", "مغز", "مكسرات",
+    ],
 }
 
-_SAFE_REPLACEMENTS: dict[str, dict[str, dict]] = {
+# Ordered candidates per locale+slot. Candidate 0 has NO common allergens;
+# later candidates progressively allow dairy, then gluten/nuts.
+# _safe_replacement() iterates until one passes _meal_is_safe().
+_REPLACEMENT_CANDIDATES: dict[str, dict[str, list[dict]]] = {
     "fa": {
-        "breakfast": {
-            "title": "صبحانه: نان و پنیر با گردو",
-            "description": "نان سبوس‌دار با پنیر کم‌چرب، گردو و چای کمرنگ",
-            "portion_guidance": "دو برش نان، ۳۰ گرم پنیر",
-            "alternatives": ["ماست با میوه", "نان و کره"],
-        },
-        "morning_snack": {
-            "title": "میان‌وعده صبح: میوه فصلی",
-            "description": "یک عدد میوه فصلی تازه",
-            "portion_guidance": "یک عدد میوه متوسط",
-            "alternatives": ["ماست کم‌چرب", "هویج خام"],
-        },
-        "lunch": {
-            "title": "ناهار: عدسی با نان",
-            "description": "عدس پخته با ادویه ملایم و نان سبوس‌دار",
-            "portion_guidance": "یک کاسه عدسی، یک برش نان",
-            "alternatives": ["سوپ سبزیجات", "آش رشته"],
-        },
-        "dinner": {
-            "title": "شام: سوپ سبزیجات",
-            "description": "سوپ سبک با سبزیجات فصلی",
-            "portion_guidance": "یک کاسه سوپ",
-            "alternatives": ["عدسی", "ماست و خیار"],
-        },
-        "snack": {
-            "title": "میان‌وعده: ماست با خیار",
-            "description": "ماست کم‌چرب با خیار و نعنا",
-            "portion_guidance": "یک کاسه کوچک",
-            "alternatives": ["میوه فصلی", "آجیل بدون نمک"],
-        },
-        "afternoon_snack": {
-            "title": "میان‌وعده بعدازظهر: میوه و آجیل",
-            "description": "یک عدد میوه فصلی با چند عدد بادام یا گردو",
-            "portion_guidance": "یک میوه، ۲۰ گرم آجیل",
-            "alternatives": ["ماست کم‌چرب", "هویج خام"],
-        },
-        "pre_workout": {
-            "title": "پیش از تمرین: موز با نان",
-            "description": "موز با نان سبوس‌دار برای انرژی",
-            "portion_guidance": "یک موز، یک برش نان",
-            "alternatives": ["ماست با عسل", "میوه فصلی"],
-        },
-        "post_workout": {
-            "title": "پس از تمرین: ماست و میوه",
-            "description": "ماست کم‌چرب با میوه فصلی برای بازیابی",
-            "portion_guidance": "یک کاسه ماست، یک میوه",
-            "alternatives": ["دوغ کم‌نمک", "آب میوه طبیعی"],
-        },
-        "optional_evening_snack": {
-            "title": "میان‌وعده شبانه: ماست ساده",
-            "description": "ماست کم‌چرب ساده",
-            "portion_guidance": "یک کاسه کوچک",
-            "alternatives": ["کمپوت", "میوه سبک"],
-        },
+        "breakfast": [
+            {
+                "title": "صبحانه: سیب‌زمینی آب‌پز با میوه",
+                "description": "سیب‌زمینی آب‌پز با میوه فصلی و چای کمرنگ",
+                "portion_guidance": "یک عدد سیب‌زمینی متوسط، یک میوه فصلی",
+                "alternatives": ["خرما با میوه", "موز"],
+                "food_items": [
+                    {"name": "سیب‌زمینی آب‌پز", "amount": "150", "unit": "گرم", "calories_estimate": 120},
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "صبحانه: ماست ساده با میوه",
+                "description": "ماست کم‌چرب با میوه فصلی",
+                "portion_guidance": "یک کاسه ماست، یک میوه",
+                "alternatives": ["دوغ با میوه", "میوه فصلی"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "200", "unit": "گرم", "calories_estimate": 100},
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "صبحانه: نان و پنیر",
+                "description": "نان سبوس‌دار با پنیر کم‌چرب و چای",
+                "portion_guidance": "دو برش نان، ۳۰ گرم پنیر",
+                "alternatives": ["ماست با میوه", "نان و کره"],
+                "food_items": [
+                    {"name": "نان سبوس‌دار", "amount": "60", "unit": "گرم", "calories_estimate": 150},
+                    {"name": "پنیر کم‌چرب", "amount": "30", "unit": "گرم", "calories_estimate": 70},
+                ],
+            },
+        ],
+        "morning_snack": [
+            {
+                "title": "میان‌وعده صبح: میوه فصلی",
+                "description": "یک عدد میوه فصلی تازه",
+                "portion_guidance": "یک عدد میوه متوسط",
+                "alternatives": ["هویج خام", "خیار تازه"],
+                "food_items": [
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "میان‌وعده صبح: هویج و خیار",
+                "description": "هویج و خیار تازه برش‌خورده",
+                "portion_guidance": "دو هویج کوچک، یک خیار",
+                "alternatives": ["میوه فصلی", "کرفس تازه"],
+                "food_items": [
+                    {"name": "هویج", "amount": "100", "unit": "گرم", "calories_estimate": 40},
+                    {"name": "خیار", "amount": "100", "unit": "گرم", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "میان‌وعده صبح: ماست کم‌چرب",
+                "description": "ماست ساده کم‌چرب",
+                "portion_guidance": "یک کاسه کوچک",
+                "alternatives": ["میوه فصلی", "هویج خام"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "150", "unit": "گرم", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "lunch": [
+            {
+                "title": "ناهار: عدسی با برنج",
+                "description": "عدس پخته با ادویه ملایم و برنج",
+                "portion_guidance": "یک کاسه عدسی، نصف کاسه برنج",
+                "alternatives": ["سوپ سبزیجات", "مرغ با سبزیجات"],
+                "food_items": [
+                    {"name": "عدس پخته", "amount": "150", "unit": "گرم", "calories_estimate": 180},
+                    {"name": "برنج", "amount": "100", "unit": "گرم", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "ناهار: مرغ آب‌پز با سبزیجات",
+                "description": "مرغ آب‌پز با سبزیجات فصلی",
+                "portion_guidance": "۱۲۰ گرم مرغ، یک کاسه سبزیجات",
+                "alternatives": ["عدسی با برنج", "سوپ سبزیجات"],
+                "food_items": [
+                    {"name": "مرغ آب‌پز", "amount": "120", "unit": "گرم", "calories_estimate": 200},
+                    {"name": "سبزیجات فصلی", "amount": "150", "unit": "گرم", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "ناهار: عدسی با نان",
+                "description": "عدس پخته با ادویه ملایم و نان سبوس‌دار",
+                "portion_guidance": "یک کاسه عدسی، یک برش نان",
+                "alternatives": ["سوپ سبزیجات", "مرغ با سبزیجات"],
+                "food_items": [
+                    {"name": "عدس پخته", "amount": "150", "unit": "گرم", "calories_estimate": 180},
+                    {"name": "نان سبوس‌دار", "amount": "40", "unit": "گرم", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "dinner": [
+            {
+                "title": "شام: سوپ سبزیجات",
+                "description": "سوپ سبک با سبزیجات فصلی",
+                "portion_guidance": "یک کاسه سوپ",
+                "alternatives": ["عدسی", "مرغ با سبزیجات"],
+                "food_items": [
+                    {"name": "سوپ سبزیجات", "amount": "300", "unit": "میلی‌لیتر", "calories_estimate": 120},
+                ],
+            },
+            {
+                "title": "شام: مرغ آب‌پز با سبزیجات",
+                "description": "مرغ آب‌پز سبک با سبزیجات بخارپز",
+                "portion_guidance": "۱۰۰ گرم مرغ، یک کاسه سبزیجات",
+                "alternatives": ["سوپ سبزیجات", "عدسی"],
+                "food_items": [
+                    {"name": "مرغ آب‌پز", "amount": "100", "unit": "گرم", "calories_estimate": 165},
+                    {"name": "سبزیجات بخارپز", "amount": "150", "unit": "گرم", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "شام: عدسی با نان",
+                "description": "عدسی ساده با نان سبوس‌دار",
+                "portion_guidance": "یک کاسه، یک برش نان",
+                "alternatives": ["سوپ سبزیجات", "مرغ با سبزیجات"],
+                "food_items": [
+                    {"name": "عدسی", "amount": "200", "unit": "گرم", "calories_estimate": 150},
+                    {"name": "نان سبوس‌دار", "amount": "40", "unit": "گرم", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "snack": [
+            {
+                "title": "میان‌وعده: میوه فصلی",
+                "description": "میوه فصلی تازه",
+                "portion_guidance": "یک عدد میوه متوسط",
+                "alternatives": ["هویج خام", "خیار تازه"],
+                "food_items": [
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "میان‌وعده: هویج و خیار",
+                "description": "هویج و خیار تازه",
+                "portion_guidance": "دو هویج، یک خیار",
+                "alternatives": ["میوه فصلی", "کرفس"],
+                "food_items": [
+                    {"name": "هویج", "amount": "100", "unit": "گرم", "calories_estimate": 40},
+                    {"name": "خیار", "amount": "100", "unit": "گرم", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "میان‌وعده: ماست با خیار",
+                "description": "ماست کم‌چرب با خیار و نعنا",
+                "portion_guidance": "یک کاسه کوچک",
+                "alternatives": ["میوه فصلی", "هویج خام"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "150", "unit": "گرم", "calories_estimate": 75},
+                    {"name": "خیار", "amount": "50", "unit": "گرم", "calories_estimate": 8},
+                ],
+            },
+        ],
+        "afternoon_snack": [
+            {
+                "title": "میان‌وعده بعدازظهر: میوه فصلی",
+                "description": "یک عدد میوه فصلی تازه",
+                "portion_guidance": "یک میوه متوسط",
+                "alternatives": ["هویج خام", "خیار تازه"],
+                "food_items": [
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "میان‌وعده بعدازظهر: هویج و خیار",
+                "description": "هویج و خیار تازه برش‌خورده",
+                "portion_guidance": "دو هویج کوچک، یک خیار",
+                "alternatives": ["میوه فصلی", "کرفس"],
+                "food_items": [
+                    {"name": "هویج", "amount": "100", "unit": "گرم", "calories_estimate": 40},
+                    {"name": "خیار", "amount": "100", "unit": "گرم", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "میان‌وعده بعدازظهر: ماست کم‌چرب",
+                "description": "ماست ساده کم‌چرب",
+                "portion_guidance": "یک کاسه کوچک",
+                "alternatives": ["میوه فصلی", "هویج خام"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "150", "unit": "گرم", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "pre_workout": [
+            {
+                "title": "پیش از تمرین: موز",
+                "description": "موز رسیده برای انرژی سریع",
+                "portion_guidance": "یک تا دو موز",
+                "alternatives": ["خرما", "میوه فصلی شیرین"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "عدد", "calories_estimate": 100},
+                ],
+            },
+            {
+                "title": "پیش از تمرین: موز با برنج",
+                "description": "موز با برنج برای انرژی پایدار",
+                "portion_guidance": "یک موز، نصف کاسه برنج",
+                "alternatives": ["خرما", "میوه فصلی"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "عدد", "calories_estimate": 100},
+                    {"name": "برنج", "amount": "100", "unit": "گرم", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "پیش از تمرین: موز با نان",
+                "description": "موز با نان سبوس‌دار برای انرژی",
+                "portion_guidance": "یک موز، یک برش نان",
+                "alternatives": ["میوه فصلی", "خرما"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "عدد", "calories_estimate": 100},
+                    {"name": "نان سبوس‌دار", "amount": "40", "unit": "گرم", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "post_workout": [
+            {
+                "title": "پس از تمرین: مرغ آب‌پز با سبزیجات",
+                "description": "مرغ آب‌پز با سبزیجات بخارپز برای بازیابی",
+                "portion_guidance": "۱۲۰ گرم مرغ، یک کاسه سبزیجات",
+                "alternatives": ["عدسی", "نخود پخته"],
+                "food_items": [
+                    {"name": "مرغ آب‌پز", "amount": "120", "unit": "گرم", "calories_estimate": 200},
+                    {"name": "سبزیجات بخارپز", "amount": "150", "unit": "گرم", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "پس از تمرین: ماست و میوه",
+                "description": "ماست کم‌چرب با میوه فصلی برای بازیابی",
+                "portion_guidance": "یک کاسه ماست، یک میوه",
+                "alternatives": ["دوغ کم‌نمک", "آب میوه طبیعی"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "200", "unit": "گرم", "calories_estimate": 100},
+                    {"name": "میوه فصلی", "amount": "1", "unit": "عدد", "calories_estimate": 60},
+                ],
+            },
+        ],
+        "optional_evening_snack": [
+            {
+                "title": "میان‌وعده شبانه: میوه سبک",
+                "description": "میوه سبک مثل سیب یا گلابی",
+                "portion_guidance": "یک عدد کوچک",
+                "alternatives": ["کمپوت بدون شکر", "خیار"],
+                "food_items": [
+                    {"name": "سیب", "amount": "1", "unit": "عدد", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "میان‌وعده شبانه: ماست ساده",
+                "description": "ماست کم‌چرب ساده",
+                "portion_guidance": "یک کاسه کوچک",
+                "alternatives": ["کمپوت", "میوه سبک"],
+                "food_items": [
+                    {"name": "ماست کم‌چرب", "amount": "150", "unit": "گرم", "calories_estimate": 75},
+                ],
+            },
+        ],
     },
     "en": {
-        "breakfast": {
-            "title": "Breakfast: Whole-Grain Bread with Cheese",
-            "description": "Whole-grain bread with low-fat cheese and walnuts",
-            "portion_guidance": "Two slices of bread, 30g cheese",
-            "alternatives": ["Yogurt with fruit", "Oatmeal"],
-        },
-        "morning_snack": {
-            "title": "Morning Snack: Seasonal Fruit",
-            "description": "One fresh seasonal fruit",
-            "portion_guidance": "One medium fruit",
-            "alternatives": ["Low-fat yogurt", "Raw carrot sticks"],
-        },
-        "lunch": {
-            "title": "Lunch: Lentil Soup with Bread",
-            "description": "Cooked lentils with mild spices and whole-grain bread",
-            "portion_guidance": "One bowl of lentils, one slice of bread",
-            "alternatives": ["Vegetable soup", "Bean stew"],
-        },
-        "dinner": {
-            "title": "Dinner: Vegetable Soup",
-            "description": "Light mixed vegetable soup",
-            "portion_guidance": "One bowl of soup",
-            "alternatives": ["Lentils", "Yogurt with cucumber and bread"],
-        },
-        "snack": {
-            "title": "Snack: Yogurt with Cucumber",
-            "description": "Low-fat yogurt with cucumber and fresh mint",
-            "portion_guidance": "One small bowl",
-            "alternatives": ["Seasonal fruit", "Unsalted nuts"],
-        },
-        "afternoon_snack": {
-            "title": "Afternoon Snack: Fruit and Nuts",
-            "description": "One seasonal fruit with almonds or walnuts",
-            "portion_guidance": "One fruit, 20g nuts",
-            "alternatives": ["Low-fat yogurt", "Raw carrot sticks"],
-        },
-        "pre_workout": {
-            "title": "Pre-Workout: Banana with Bread",
-            "description": "Banana with whole-grain bread for energy",
-            "portion_guidance": "One banana, one slice of bread",
-            "alternatives": ["Yogurt with honey", "Seasonal fruit"],
-        },
-        "post_workout": {
-            "title": "Post-Workout: Yogurt and Fruit",
-            "description": "Low-fat yogurt with seasonal fruit for recovery",
-            "portion_guidance": "One bowl of yogurt, one fruit",
-            "alternatives": ["Doogh (low-salt yogurt drink)", "Fresh fruit juice"],
-        },
-        "optional_evening_snack": {
-            "title": "Evening Snack: Plain Yogurt",
-            "description": "Simple low-fat yogurt",
-            "portion_guidance": "One small bowl",
-            "alternatives": ["Stewed fruit", "Light fruit"],
-        },
+        "breakfast": [
+            {
+                "title": "Breakfast: Boiled Potato with Fruit",
+                "description": "Boiled potato with seasonal fruit and herbal tea",
+                "portion_guidance": "One medium potato, one piece of fruit",
+                "alternatives": ["Dates with fruit", "Banana"],
+                "food_items": [
+                    {"name": "Boiled potato", "amount": "150", "unit": "g", "calories_estimate": 120},
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "Breakfast: Low-fat Yogurt with Fruit",
+                "description": "Low-fat yogurt with seasonal fruit",
+                "portion_guidance": "One bowl yogurt, one fruit",
+                "alternatives": ["Kefir with fruit", "Seasonal fruit"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "200", "unit": "g", "calories_estimate": 100},
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "Breakfast: Whole-Grain Bread with Cheese",
+                "description": "Whole-grain bread with low-fat cheese and tea",
+                "portion_guidance": "Two slices of bread, 30g cheese",
+                "alternatives": ["Yogurt with fruit", "Oatmeal"],
+                "food_items": [
+                    {"name": "Whole-grain bread", "amount": "60", "unit": "g", "calories_estimate": 150},
+                    {"name": "Low-fat cheese", "amount": "30", "unit": "g", "calories_estimate": 70},
+                ],
+            },
+        ],
+        "morning_snack": [
+            {
+                "title": "Morning Snack: Seasonal Fruit",
+                "description": "One fresh seasonal fruit",
+                "portion_guidance": "One medium fruit",
+                "alternatives": ["Raw carrot sticks", "Cucumber slices"],
+                "food_items": [
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "Morning Snack: Carrot and Cucumber",
+                "description": "Fresh sliced carrot and cucumber",
+                "portion_guidance": "Two small carrots, one cucumber",
+                "alternatives": ["Seasonal fruit", "Celery sticks"],
+                "food_items": [
+                    {"name": "Carrot", "amount": "100", "unit": "g", "calories_estimate": 40},
+                    {"name": "Cucumber", "amount": "100", "unit": "g", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "Morning Snack: Low-fat Yogurt",
+                "description": "Plain low-fat yogurt",
+                "portion_guidance": "One small bowl",
+                "alternatives": ["Seasonal fruit", "Raw carrot sticks"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "150", "unit": "g", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "lunch": [
+            {
+                "title": "Lunch: Lentil Soup with Rice",
+                "description": "Cooked lentils with mild spices and rice",
+                "portion_guidance": "One bowl lentils, half bowl rice",
+                "alternatives": ["Vegetable soup", "Chicken with vegetables"],
+                "food_items": [
+                    {"name": "Cooked lentils", "amount": "150", "unit": "g", "calories_estimate": 180},
+                    {"name": "Rice", "amount": "100", "unit": "g", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "Lunch: Steamed Chicken with Vegetables",
+                "description": "Boiled chicken with seasonal vegetables",
+                "portion_guidance": "120g chicken, one bowl vegetables",
+                "alternatives": ["Lentil soup with rice", "Vegetable soup"],
+                "food_items": [
+                    {"name": "Boiled chicken", "amount": "120", "unit": "g", "calories_estimate": 200},
+                    {"name": "Seasonal vegetables", "amount": "150", "unit": "g", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "Lunch: Lentil Soup with Bread",
+                "description": "Cooked lentils with mild spices and whole-grain bread",
+                "portion_guidance": "One bowl of lentils, one slice of bread",
+                "alternatives": ["Vegetable soup", "Bean stew"],
+                "food_items": [
+                    {"name": "Cooked lentils", "amount": "150", "unit": "g", "calories_estimate": 180},
+                    {"name": "Whole-grain bread", "amount": "40", "unit": "g", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "dinner": [
+            {
+                "title": "Dinner: Vegetable Soup",
+                "description": "Light mixed vegetable soup",
+                "portion_guidance": "One bowl of soup",
+                "alternatives": ["Lentils", "Chicken with vegetables"],
+                "food_items": [
+                    {"name": "Vegetable soup", "amount": "300", "unit": "ml", "calories_estimate": 120},
+                ],
+            },
+            {
+                "title": "Dinner: Chicken with Steamed Vegetables",
+                "description": "Light boiled chicken with steamed vegetables",
+                "portion_guidance": "100g chicken, one bowl vegetables",
+                "alternatives": ["Vegetable soup", "Lentil soup"],
+                "food_items": [
+                    {"name": "Boiled chicken", "amount": "100", "unit": "g", "calories_estimate": 165},
+                    {"name": "Steamed vegetables", "amount": "150", "unit": "g", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "Dinner: Lentil Soup with Bread",
+                "description": "Simple lentil soup with whole-grain bread",
+                "portion_guidance": "One bowl, one slice of bread",
+                "alternatives": ["Vegetable soup", "Chicken with vegetables"],
+                "food_items": [
+                    {"name": "Lentil soup", "amount": "200", "unit": "g", "calories_estimate": 150},
+                    {"name": "Whole-grain bread", "amount": "40", "unit": "g", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "snack": [
+            {
+                "title": "Snack: Seasonal Fruit",
+                "description": "Fresh seasonal fruit",
+                "portion_guidance": "One medium fruit",
+                "alternatives": ["Raw carrot sticks", "Cucumber slices"],
+                "food_items": [
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "Snack: Carrot and Cucumber",
+                "description": "Fresh carrot and cucumber",
+                "portion_guidance": "Two carrots, one cucumber",
+                "alternatives": ["Seasonal fruit", "Celery"],
+                "food_items": [
+                    {"name": "Carrot", "amount": "100", "unit": "g", "calories_estimate": 40},
+                    {"name": "Cucumber", "amount": "100", "unit": "g", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "Snack: Yogurt with Cucumber",
+                "description": "Low-fat yogurt with cucumber and fresh mint",
+                "portion_guidance": "One small bowl",
+                "alternatives": ["Seasonal fruit", "Raw carrot sticks"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "150", "unit": "g", "calories_estimate": 75},
+                    {"name": "Cucumber", "amount": "50", "unit": "g", "calories_estimate": 8},
+                ],
+            },
+        ],
+        "afternoon_snack": [
+            {
+                "title": "Afternoon Snack: Seasonal Fruit",
+                "description": "One fresh seasonal fruit",
+                "portion_guidance": "One medium fruit",
+                "alternatives": ["Raw carrot sticks", "Cucumber slices"],
+                "food_items": [
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "Afternoon Snack: Carrot and Cucumber",
+                "description": "Fresh sliced carrot and cucumber",
+                "portion_guidance": "Two small carrots, one cucumber",
+                "alternatives": ["Seasonal fruit", "Celery sticks"],
+                "food_items": [
+                    {"name": "Carrot", "amount": "100", "unit": "g", "calories_estimate": 40},
+                    {"name": "Cucumber", "amount": "100", "unit": "g", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "Afternoon Snack: Low-fat Yogurt",
+                "description": "Plain low-fat yogurt",
+                "portion_guidance": "One small bowl",
+                "alternatives": ["Seasonal fruit", "Raw carrot sticks"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "150", "unit": "g", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "pre_workout": [
+            {
+                "title": "Pre-Workout: Banana",
+                "description": "Ripe banana for quick energy",
+                "portion_guidance": "One to two bananas",
+                "alternatives": ["Dates", "Sweet seasonal fruit"],
+                "food_items": [
+                    {"name": "Banana", "amount": "1", "unit": "piece", "calories_estimate": 100},
+                ],
+            },
+            {
+                "title": "Pre-Workout: Banana with Rice",
+                "description": "Banana with rice for sustained energy",
+                "portion_guidance": "One banana, half bowl rice",
+                "alternatives": ["Dates", "Seasonal fruit"],
+                "food_items": [
+                    {"name": "Banana", "amount": "1", "unit": "piece", "calories_estimate": 100},
+                    {"name": "Rice", "amount": "100", "unit": "g", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "Pre-Workout: Banana with Bread",
+                "description": "Banana with whole-grain bread for energy",
+                "portion_guidance": "One banana, one slice of bread",
+                "alternatives": ["Seasonal fruit", "Dates"],
+                "food_items": [
+                    {"name": "Banana", "amount": "1", "unit": "piece", "calories_estimate": 100},
+                    {"name": "Whole-grain bread", "amount": "40", "unit": "g", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "post_workout": [
+            {
+                "title": "Post-Workout: Chicken with Vegetables",
+                "description": "Boiled chicken with steamed vegetables for recovery",
+                "portion_guidance": "120g chicken, one bowl vegetables",
+                "alternatives": ["Lentil soup", "Cooked chickpeas"],
+                "food_items": [
+                    {"name": "Boiled chicken", "amount": "120", "unit": "g", "calories_estimate": 200},
+                    {"name": "Steamed vegetables", "amount": "150", "unit": "g", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "Post-Workout: Yogurt and Fruit",
+                "description": "Low-fat yogurt with seasonal fruit for recovery",
+                "portion_guidance": "One bowl of yogurt, one fruit",
+                "alternatives": ["Fresh fruit juice", "Fruit smoothie"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "200", "unit": "g", "calories_estimate": 100},
+                    {"name": "Seasonal fruit", "amount": "1", "unit": "piece", "calories_estimate": 60},
+                ],
+            },
+        ],
+        "optional_evening_snack": [
+            {
+                "title": "Evening Snack: Light Fruit",
+                "description": "Light fruit like apple or pear",
+                "portion_guidance": "One small piece",
+                "alternatives": ["Unsweetened stewed fruit", "Cucumber"],
+                "food_items": [
+                    {"name": "Apple", "amount": "1", "unit": "piece", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "Evening Snack: Plain Yogurt",
+                "description": "Simple low-fat yogurt",
+                "portion_guidance": "One small bowl",
+                "alternatives": ["Stewed fruit", "Light fruit"],
+                "food_items": [
+                    {"name": "Low-fat yogurt", "amount": "150", "unit": "g", "calories_estimate": 75},
+                ],
+            },
+        ],
     },
     "ar": {
-        "breakfast": {
-            "title": "الفطور: خبز حبوب كاملة مع جبن",
-            "description": "خبز حبوب كاملة مع جبن قليل الدسم وجوز",
-            "portion_guidance": "شريحتا خبز، ٣٠ جرام جبن",
-            "alternatives": ["زبادي مع فاكهة", "شوفان"],
-        },
-        "morning_snack": {
-            "title": "وجبة خفيفة صباحية: فاكهة موسمية",
-            "description": "فاكهة موسمية طازجة",
-            "portion_guidance": "فاكهة متوسطة",
-            "alternatives": ["زبادي قليل الدسم", "جزر نيء"],
-        },
-        "lunch": {
-            "title": "الغداء: شوربة عدس مع خبز",
-            "description": "عدس مطبوخ مع بهارات خفيفة وخبز حبوب كاملة",
-            "portion_guidance": "وعاء عدس وشريحة خبز",
-            "alternatives": ["شوربة خضار", "فاصوليا مطبوخة"],
-        },
-        "dinner": {
-            "title": "العشاء: شوربة خضار",
-            "description": "شوربة خضار مشكلة خفيفة",
-            "portion_guidance": "وعاء شوربة",
-            "alternatives": ["عدس مطبوخ", "زبادي مع خيار وخبز"],
-        },
-        "snack": {
-            "title": "وجبة خفيفة: زبادي مع خيار",
-            "description": "زبادي قليل الدسم مع خيار ونعناع",
-            "portion_guidance": "وعاء صغير",
-            "alternatives": ["فاكهة موسمية", "مكسرات غير مملحة"],
-        },
-        "afternoon_snack": {
-            "title": "وجبة خفيفة بعد الظهر: فاكهة ومكسرات",
-            "description": "فاكهة موسمية مع لوز أو جوز",
-            "portion_guidance": "فاكهة واحدة، ٢٠ جرام مكسرات",
-            "alternatives": ["زبادي قليل الدسم", "جزر نيء"],
-        },
-        "pre_workout": {
-            "title": "قبل التمرين: موز مع خبز",
-            "description": "موز مع خبز حبوب كاملة للطاقة",
-            "portion_guidance": "موزة واحدة وشريحة خبز",
-            "alternatives": ["زبادي مع عسل", "فاكهة موسمية"],
-        },
-        "post_workout": {
-            "title": "بعد التمرين: زبادي وفاكهة",
-            "description": "زبادي قليل الدسم مع فاكهة موسمية للتعافي",
-            "portion_guidance": "وعاء زبادي وفاكهة",
-            "alternatives": ["دوغ", "عصير فاكهة طازج"],
-        },
-        "optional_evening_snack": {
-            "title": "وجبة خفيفة مسائية: زبادي سادة",
-            "description": "زبادي قليل الدسم بسيط",
-            "portion_guidance": "وعاء صغير",
-            "alternatives": ["فاكهة مطبوخة", "فاكهة خفيفة"],
-        },
+        "breakfast": [
+            {
+                "title": "الفطور: بطاطا مسلوقة مع فاكهة",
+                "description": "بطاطا مسلوقة مع فاكهة موسمية وشاي أعشاب",
+                "portion_guidance": "بطاطا متوسطة واحدة وقطعة فاكهة",
+                "alternatives": ["تمر مع فاكهة", "موز"],
+                "food_items": [
+                    {"name": "بطاطا مسلوقة", "amount": "150", "unit": "جرام", "calories_estimate": 120},
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "الفطور: زبادي قليل الدسم مع فاكهة",
+                "description": "زبادي قليل الدسم مع فاكهة موسمية",
+                "portion_guidance": "وعاء زبادي وقطعة فاكهة",
+                "alternatives": ["كفير مع فاكهة", "فاكهة موسمية"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "200", "unit": "جرام", "calories_estimate": 100},
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 60},
+                ],
+            },
+            {
+                "title": "الفطور: خبز حبوب كاملة مع جبن",
+                "description": "خبز حبوب كاملة مع جبن قليل الدسم وشاي",
+                "portion_guidance": "شريحتا خبز، ٣٠ جرام جبن",
+                "alternatives": ["زبادي مع فاكهة", "فاكهة موسمية"],
+                "food_items": [
+                    {"name": "خبز حبوب كاملة", "amount": "60", "unit": "جرام", "calories_estimate": 150},
+                    {"name": "جبن قليل الدسم", "amount": "30", "unit": "جرام", "calories_estimate": 70},
+                ],
+            },
+        ],
+        "morning_snack": [
+            {
+                "title": "وجبة خفيفة صباحية: فاكهة موسمية",
+                "description": "فاكهة موسمية طازجة",
+                "portion_guidance": "فاكهة متوسطة",
+                "alternatives": ["جزر نيء", "خيار مقطع"],
+                "food_items": [
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة صباحية: جزر وخيار",
+                "description": "جزر وخيار طازج مقطع",
+                "portion_guidance": "جزرتان صغيرتان وخيارة واحدة",
+                "alternatives": ["فاكهة موسمية", "كرفس"],
+                "food_items": [
+                    {"name": "جزر", "amount": "100", "unit": "جرام", "calories_estimate": 40},
+                    {"name": "خيار", "amount": "100", "unit": "جرام", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة صباحية: زبادي قليل الدسم",
+                "description": "زبادي سادة قليل الدسم",
+                "portion_guidance": "وعاء صغير",
+                "alternatives": ["فاكهة موسمية", "جزر نيء"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "150", "unit": "جرام", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "lunch": [
+            {
+                "title": "الغداء: شوربة عدس مع أرز",
+                "description": "عدس مطبوخ مع بهارات خفيفة وأرز",
+                "portion_guidance": "وعاء عدس ونصف وعاء أرز",
+                "alternatives": ["شوربة خضار", "دجاج مع خضار"],
+                "food_items": [
+                    {"name": "عدس مطبوخ", "amount": "150", "unit": "جرام", "calories_estimate": 180},
+                    {"name": "أرز", "amount": "100", "unit": "جرام", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "الغداء: دجاج مسلوق مع خضار",
+                "description": "دجاج مسلوق مع خضار موسمية",
+                "portion_guidance": "١٢٠ جرام دجاج ووعاء خضار",
+                "alternatives": ["شوربة عدس مع أرز", "شوربة خضار"],
+                "food_items": [
+                    {"name": "دجاج مسلوق", "amount": "120", "unit": "جرام", "calories_estimate": 200},
+                    {"name": "خضار موسمية", "amount": "150", "unit": "جرام", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "الغداء: شوربة عدس مع خبز",
+                "description": "عدس مطبوخ مع بهارات خفيفة وخبز حبوب كاملة",
+                "portion_guidance": "وعاء عدس وشريحة خبز",
+                "alternatives": ["شوربة خضار", "فاصوليا مطبوخة"],
+                "food_items": [
+                    {"name": "عدس مطبوخ", "amount": "150", "unit": "جرام", "calories_estimate": 180},
+                    {"name": "خبز حبوب كاملة", "amount": "40", "unit": "جرام", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "dinner": [
+            {
+                "title": "العشاء: شوربة خضار",
+                "description": "شوربة خضار مشكلة خفيفة",
+                "portion_guidance": "وعاء شوربة",
+                "alternatives": ["عدس مطبوخ", "دجاج مع خضار"],
+                "food_items": [
+                    {"name": "شوربة خضار", "amount": "300", "unit": "مل", "calories_estimate": 120},
+                ],
+            },
+            {
+                "title": "العشاء: دجاج مع خضار مطبوخة على البخار",
+                "description": "دجاج مسلوق خفيف مع خضار مطبوخة على البخار",
+                "portion_guidance": "١٠٠ جرام دجاج ووعاء خضار",
+                "alternatives": ["شوربة خضار", "شوربة عدس"],
+                "food_items": [
+                    {"name": "دجاج مسلوق", "amount": "100", "unit": "جرام", "calories_estimate": 165},
+                    {"name": "خضار مطبوخة على البخار", "amount": "150", "unit": "جرام", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "العشاء: شوربة عدس مع خبز",
+                "description": "شوربة عدس بسيطة مع خبز حبوب كاملة",
+                "portion_guidance": "وعاء وشريحة خبز",
+                "alternatives": ["شوربة خضار", "دجاج مع خضار"],
+                "food_items": [
+                    {"name": "شوربة عدس", "amount": "200", "unit": "جرام", "calories_estimate": 150},
+                    {"name": "خبز حبوب كاملة", "amount": "40", "unit": "جرام", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "snack": [
+            {
+                "title": "وجبة خفيفة: فاكهة موسمية",
+                "description": "فاكهة موسمية طازجة",
+                "portion_guidance": "فاكهة متوسطة",
+                "alternatives": ["جزر نيء", "خيار مقطع"],
+                "food_items": [
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة: جزر وخيار",
+                "description": "جزر وخيار طازج",
+                "portion_guidance": "جزرتان وخيارة",
+                "alternatives": ["فاكهة موسمية", "كرفس"],
+                "food_items": [
+                    {"name": "جزر", "amount": "100", "unit": "جرام", "calories_estimate": 40},
+                    {"name": "خيار", "amount": "100", "unit": "جرام", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة: زبادي مع خيار",
+                "description": "زبادي قليل الدسم مع خيار ونعناع",
+                "portion_guidance": "وعاء صغير",
+                "alternatives": ["فاكهة موسمية", "جزر نيء"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "150", "unit": "جرام", "calories_estimate": 75},
+                    {"name": "خيار", "amount": "50", "unit": "جرام", "calories_estimate": 8},
+                ],
+            },
+        ],
+        "afternoon_snack": [
+            {
+                "title": "وجبة خفيفة بعد الظهر: فاكهة موسمية",
+                "description": "فاكهة موسمية طازجة",
+                "portion_guidance": "فاكهة متوسطة",
+                "alternatives": ["جزر نيء", "خيار"],
+                "food_items": [
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة بعد الظهر: جزر وخيار",
+                "description": "جزر وخيار طازج مقطع",
+                "portion_guidance": "جزرتان صغيرتان وخيارة",
+                "alternatives": ["فاكهة موسمية", "كرفس"],
+                "food_items": [
+                    {"name": "جزر", "amount": "100", "unit": "جرام", "calories_estimate": 40},
+                    {"name": "خيار", "amount": "100", "unit": "جرام", "calories_estimate": 15},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة بعد الظهر: زبادي قليل الدسم",
+                "description": "زبادي سادة قليل الدسم",
+                "portion_guidance": "وعاء صغير",
+                "alternatives": ["فاكهة موسمية", "جزر نيء"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "150", "unit": "جرام", "calories_estimate": 75},
+                ],
+            },
+        ],
+        "pre_workout": [
+            {
+                "title": "قبل التمرين: موز",
+                "description": "موز ناضج للطاقة السريعة",
+                "portion_guidance": "موزة إلى موزتان",
+                "alternatives": ["تمر", "فاكهة موسمية حلوة"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "قطعة", "calories_estimate": 100},
+                ],
+            },
+            {
+                "title": "قبل التمرين: موز مع أرز",
+                "description": "موز مع أرز للطاقة المستدامة",
+                "portion_guidance": "موزة ونصف وعاء أرز",
+                "alternatives": ["تمر", "فاكهة موسمية"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "قطعة", "calories_estimate": 100},
+                    {"name": "أرز", "amount": "100", "unit": "جرام", "calories_estimate": 130},
+                ],
+            },
+            {
+                "title": "قبل التمرين: موز مع خبز",
+                "description": "موز مع خبز حبوب كاملة للطاقة",
+                "portion_guidance": "موزة وشريحة خبز",
+                "alternatives": ["فاكهة موسمية", "تمر"],
+                "food_items": [
+                    {"name": "موز", "amount": "1", "unit": "قطعة", "calories_estimate": 100},
+                    {"name": "خبز حبوب كاملة", "amount": "40", "unit": "جرام", "calories_estimate": 100},
+                ],
+            },
+        ],
+        "post_workout": [
+            {
+                "title": "بعد التمرين: دجاج مع خضار",
+                "description": "دجاج مسلوق مع خضار مطبوخة على البخار للتعافي",
+                "portion_guidance": "١٢٠ جرام دجاج ووعاء خضار",
+                "alternatives": ["شوربة عدس", "حمص مطبوخ"],
+                "food_items": [
+                    {"name": "دجاج مسلوق", "amount": "120", "unit": "جرام", "calories_estimate": 200},
+                    {"name": "خضار مطبوخة على البخار", "amount": "150", "unit": "جرام", "calories_estimate": 50},
+                ],
+            },
+            {
+                "title": "بعد التمرين: زبادي وفاكهة",
+                "description": "زبادي قليل الدسم مع فاكهة موسمية للتعافي",
+                "portion_guidance": "وعاء زبادي وفاكهة",
+                "alternatives": ["عصير فاكهة طازج", "فاكهة موسمية"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "200", "unit": "جرام", "calories_estimate": 100},
+                    {"name": "فاكهة موسمية", "amount": "1", "unit": "قطعة", "calories_estimate": 60},
+                ],
+            },
+        ],
+        "optional_evening_snack": [
+            {
+                "title": "وجبة خفيفة مسائية: فاكهة خفيفة",
+                "description": "فاكهة خفيفة مثل تفاحة أو إجاص",
+                "portion_guidance": "قطعة صغيرة واحدة",
+                "alternatives": ["فاكهة مطبوخة بدون سكر", "خيار"],
+                "food_items": [
+                    {"name": "تفاحة", "amount": "1", "unit": "قطعة", "calories_estimate": 70},
+                ],
+            },
+            {
+                "title": "وجبة خفيفة مسائية: زبادي سادة",
+                "description": "زبادي قليل الدسم بسيط",
+                "portion_guidance": "وعاء صغير",
+                "alternatives": ["فاكهة مطبوخة", "فاكهة خفيفة"],
+                "food_items": [
+                    {"name": "زبادي قليل الدسم", "amount": "150", "unit": "جرام", "calories_estimate": 75},
+                ],
+            },
+        ],
+    },
+}
+
+# Last-resort fallback with no common allergens: rice + steamed vegetables
+_ULTRA_SAFE_FALLBACK: dict[str, dict] = {
+    "fa": {
+        "title": "وعده: برنج با سبزیجات بخارپز",
+        "description": "برنج ساده با سبزیجات بخارپز فصلی",
+        "portion_guidance": "یک کاسه کوچک برنج، یک کاسه سبزیجات",
+        "alternatives": ["عدسی ساده", "سوپ سبزیجات"],
+        "food_items": [
+            {"name": "برنج", "amount": "150", "unit": "گرم", "calories_estimate": 180},
+            {"name": "سبزیجات بخارپز", "amount": "150", "unit": "گرم", "calories_estimate": 50},
+        ],
+    },
+    "en": {
+        "title": "Meal: Steamed Rice with Vegetables",
+        "description": "Plain steamed rice with seasonal vegetables",
+        "portion_guidance": "One small bowl rice, one bowl vegetables",
+        "alternatives": ["Simple lentil soup", "Vegetable soup"],
+        "food_items": [
+            {"name": "Rice", "amount": "150", "unit": "g", "calories_estimate": 180},
+            {"name": "Steamed vegetables", "amount": "150", "unit": "g", "calories_estimate": 50},
+        ],
+    },
+    "ar": {
+        "title": "وجبة: أرز مع خضار مطبوخة على البخار",
+        "description": "أرز سادة مع خضار موسمية مطبوخة على البخار",
+        "portion_guidance": "وعاء صغير أرز ووعاء خضار",
+        "alternatives": ["شوربة عدس بسيطة", "شوربة خضار"],
+        "food_items": [
+            {"name": "أرز", "amount": "150", "unit": "جرام", "calories_estimate": 180},
+            {"name": "خضار مطبوخة على البخار", "amount": "150", "unit": "جرام", "calories_estimate": 50},
+        ],
     },
 }
 
@@ -256,24 +915,41 @@ def _meal_is_safe(meal: dict, forbidden_terms: set[str]) -> bool:
 
 
 def _safe_replacement(meal: dict, locale: str, forbidden_terms: set[str]) -> dict:
-    """Return a safe replacement meal for the given slot/locale."""
+    """Return the first allergen-safe candidate for this slot/locale, or the ultra-safe fallback."""
     slot = meal.get("meal_slot") or meal.get("meal_type") or "snack"
-    locale_replacements = _SAFE_REPLACEMENTS.get(locale, _SAFE_REPLACEMENTS["fa"])
-    replacement = locale_replacements.get(slot, locale_replacements.get("snack", {}))
+    locale_candidates = _REPLACEMENT_CANDIDATES.get(locale, _REPLACEMENT_CANDIDATES["fa"])
+    candidates = locale_candidates.get(slot, locale_candidates.get("snack", []))
 
-    result = dict(meal)  # keep meal_type, meal_slot, meal_order etc.
-    result.update({
-        "title": replacement.get("title", meal.get("title", "—")),
-        "description": replacement.get("description", ""),
-        "portion_guidance": replacement.get("portion_guidance"),
+    for candidate in candidates:
+        candidate_meal = {
+            **meal,
+            "title": candidate["title"],
+            "description": candidate.get("description", ""),
+            "portion_guidance": candidate.get("portion_guidance"),
+            "alternatives": [
+                a for a in (candidate.get("alternatives") or [])
+                if not _text_contains_forbidden(a, forbidden_terms)
+            ],
+            "preparation_notes": None,
+            "food_items": candidate.get("food_items") or [],
+        }
+        if _meal_is_safe(candidate_meal, forbidden_terms):
+            return candidate_meal
+
+    fallback_locale = locale if locale in _ULTRA_SAFE_FALLBACK else "fa"
+    fallback = _ULTRA_SAFE_FALLBACK[fallback_locale]
+    return {
+        **meal,
+        "title": fallback["title"],
+        "description": fallback.get("description", ""),
+        "portion_guidance": fallback.get("portion_guidance"),
         "alternatives": [
-            a for a in (replacement.get("alternatives") or [])
+            a for a in (fallback.get("alternatives") or [])
             if not _text_contains_forbidden(a, forbidden_terms)
         ],
         "preparation_notes": None,
-        "food_items": [],
-    })
-    return result
+        "food_items": fallback.get("food_items") or [],
+    }
 
 
 def _clean_alternatives(meal: dict, forbidden_terms: set[str]) -> dict:

@@ -268,3 +268,58 @@ def test_budget_tier_field_present_all_days():
         assert "budget_tier" in day
         assert "budget_guidance" in day
         assert "shopping_notes" in day
+
+
+# ── Validator hardening: allergen-safe replacement candidates ─────────────────
+
+def test_economic_tree_nut_allergy_safe_replacement():
+    ctx = _ctx(food_budget="اقتصادی", allergies=["tree_nut"])
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    text = _all_meal_text(result)
+    for term in ("گردو", "بادام", "پسته", "آجیل", "walnut", "almond", "cashew", "pistachio"):
+        assert term not in text, f"Tree-nut term '{term}' found after economic+tree_nut replacement"
+
+
+def test_economic_lactose_allergy_safe_replacement():
+    ctx = _ctx(food_budget="اقتصادی", allergies=["lactose"])
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    text = _all_meal_text(result)
+    for term in ("ماست", "پنیر", "شیر", "yogurt", "cheese", "milk", "dairy"):
+        assert term not in text, f"Dairy term '{term}' found after economic+lactose replacement"
+
+
+def test_economic_gluten_allergy_safe_replacement():
+    ctx = _ctx(food_budget="اقتصادی", allergies=["gluten"])
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    text = _all_meal_text(result)
+    for term in ("نان", "گندم", "wheat", "gluten", "pasta"):
+        assert term not in text, f"Gluten term '{term}' found after economic+gluten replacement"
+
+
+def test_allergen_replaced_meals_have_non_empty_food_items():
+    ctx = _ctx(allergies=["egg"])
+    plan = _plan_with_meal("صبحانه: تخم‌مرغ آب‌پز", "نیمرو", locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    for day in result["days"]:
+        for meal in day.get("meals", []):
+            items = meal.get("food_items") or []
+            assert len(items) > 0, f"Replaced meal has empty food_items: {meal.get('title')}"
+            for item in items:
+                assert item.get("amount"), f"food_item missing amount: {item}"
+                assert item.get("unit"), f"food_item missing unit: {item}"
+
+
+def test_budget_replaced_meals_have_non_empty_food_items():
+    ctx = _ctx(food_budget="اقتصادی")
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    for day in result["days"]:
+        for meal in day.get("meals", []):
+            items = meal.get("food_items") or []
+            assert len(items) > 0, f"Budget-replaced meal has empty food_items: {meal.get('title')}"
+            for item in items:
+                assert item.get("amount"), f"food_item missing amount: {item}"
+                assert item.get("unit"), f"food_item missing unit: {item}"
