@@ -41,10 +41,47 @@ interface Props {
 }
 
 const TOTAL_STEPS = 7
+const DRAFT_KEY = 'diet_coach_onboarding_draft'
+
+type DraftData = {
+  profileData?: ProfileFormData | null
+  goalTypes?: GoalType[]
+  medicalData?: MedicalFormData | null
+  lifestyleData?: LifestyleFormData | null
+  preferencesData?: PreferencesFormData | null
+  behaviorData?: BehaviorFormData | null
+}
+
+function loadDraft(): DraftData {
+  if (typeof window === 'undefined') return {}
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    return raw ? (JSON.parse(raw) as DraftData) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveDraft(patch: Partial<DraftData>) {
+  if (typeof window === 'undefined') return
+  try {
+    const raw = sessionStorage.getItem(DRAFT_KEY)
+    const existing: DraftData = raw ? JSON.parse(raw) : {}
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...existing, ...patch }))
+  } catch {
+    // quota exceeded or parse error — ignore
+  }
+}
+
+function clearDraft() {
+  if (typeof window === 'undefined') return
+  try { sessionStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+}
 
 function getInitialStep(status: OnboardingStatusResponse): number {
   switch (status.next_step) {
     case 'profile': return 0
+    case 'goals': return 1
     case 'medical': return 2
     case 'lifestyle': return 3
     case 'preferences': return 4
@@ -73,6 +110,17 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   const [lifestyleData, setLifestyleData] = useState<LifestyleFormData | null>(null)
   const [preferencesData, setPreferencesData] = useState<PreferencesFormData | null>(null)
   const [behaviorData, setBehaviorData] = useState<BehaviorFormData | null>(null)
+
+  // Restore any in-progress draft from sessionStorage on mount
+  useEffect(() => {
+    const draft = loadDraft()
+    if (draft.profileData) setProfileData(draft.profileData)
+    if (draft.goalTypes?.length) setGoalTypes(draft.goalTypes)
+    if (draft.medicalData) setMedicalData(draft.medicalData)
+    if (draft.lifestyleData) setLifestyleData(draft.lifestyleData)
+    if (draft.preferencesData) setPreferencesData(draft.preferencesData)
+    if (draft.behaviorData) setBehaviorData(draft.behaviorData)
+  }, [])
 
   useEffect(() => {
     getOnboardingStatus()
@@ -128,7 +176,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleProfileSubmit(data: ProfileRequest) {
     await withSubmit(async () => {
       await submitProfile(data)
-      setProfileData(data as unknown as ProfileFormData)
+      const fd = data as unknown as ProfileFormData
+      setProfileData(fd)
+      saveDraft({ profileData: fd })
       goForward()
     })
   }
@@ -137,6 +187,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
     await withSubmit(async () => {
       await submitGoals({ goal_types: goals })
       setGoalTypes(goals)
+      saveDraft({ goalTypes: goals })
       goForward()
     })
   }
@@ -144,7 +195,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleMedicalSubmit(data: MedicalRequest) {
     await withSubmit(async () => {
       const res = await submitMedical(data)
-      setMedicalData(data as unknown as MedicalFormData)
+      const fd = data as unknown as MedicalFormData
+      setMedicalData(fd)
+      saveDraft({ medicalData: fd })
       if (res.data.clinical_review_required) {
         setClinicalReviewRequired(true)
       }
@@ -155,7 +208,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleLifestyleSubmit(data: LifestyleRequest) {
     await withSubmit(async () => {
       await submitLifestyle(data)
-      setLifestyleData(data as unknown as LifestyleFormData)
+      const fd = data as unknown as LifestyleFormData
+      setLifestyleData(fd)
+      saveDraft({ lifestyleData: fd })
       goForward()
     })
   }
@@ -163,7 +218,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handlePreferencesSubmit(data: PreferencesRequest) {
     await withSubmit(async () => {
       await submitPreferences(data)
-      setPreferencesData(data as unknown as PreferencesFormData)
+      const fd = data as unknown as PreferencesFormData
+      setPreferencesData(fd)
+      saveDraft({ preferencesData: fd })
       goForward()
     })
   }
@@ -171,7 +228,9 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleBehaviorSubmit(data: BehaviorRequest) {
     await withSubmit(async () => {
       await submitBehavior(data)
-      setBehaviorData(data as unknown as BehaviorFormData)
+      const fd = data as unknown as BehaviorFormData
+      setBehaviorData(fd)
+      saveDraft({ behaviorData: fd })
       goForward()
     })
   }
@@ -179,6 +238,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   async function handleComplete() {
     await withSubmit(async () => {
       await completeOnboarding()
+      clearDraft()
       if (!hasNavigatedRef.current) {
         hasNavigatedRef.current = true
         router.replace(`/${locale}/dashboard`)

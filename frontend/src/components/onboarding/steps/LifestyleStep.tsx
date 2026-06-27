@@ -24,7 +24,6 @@ export interface LifestyleFormData {
   exercise_days_per_week: number
   cooking_ability: number
   food_budget: string
-  eating_out_frequency: string
   travel_frequency: string
 }
 
@@ -38,7 +37,6 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
       exercise_days_per_week: defaultValues?.exercise_days_per_week ?? 3,
       cooking_ability: defaultValues?.cooking_ability ?? 3,
       food_budget: defaultValues?.food_budget ?? '',
-      eating_out_frequency: defaultValues?.eating_out_frequency ?? '',
       travel_frequency: defaultValues?.travel_frequency ?? '',
     },
   })
@@ -62,9 +60,15 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
             <label className="text-sm font-medium text-ink-2">{dict.lifeSleep}</label>
             <span className="text-sm font-semibold text-brand">{sleepVal} {dict.lifeSleepUnit}</span>
           </div>
-          <input {...register('sleep_hours', { valueAsNumber: true, min: 0, max: 24 })}
-            type="range" min={0} max={24} step={0.5} className="w-full h-2 rounded-full accent-brand" />
-          {errors.sleep_hours && <p className="text-xs text-error mt-1">{dict.sleepRange}</p>}
+          <SteppedRangeSlider
+            value={Math.min(12, Math.max(3, sleepVal))}
+            onChange={(v) => setValue('sleep_hours', v)}
+            min={3}
+            max={12}
+            step={1}
+            lowLabel="3"
+            highLabel="12"
+          />
         </div>
 
         {/* Stress */}
@@ -151,16 +155,6 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
           <option value="low">{dict.lifeBudgetLow}</option>
           <option value="medium">{dict.lifeBudgetMedium}</option>
           <option value="high">{dict.lifeBudgetHigh}</option>
-        </SelectField>
-
-        {/* Eating out */}
-        <SelectField label={dict.lifeEatingOut} error={errors.eating_out_frequency && dict.lifeRequired}
-          {...register('eating_out_frequency', { required: true })}>
-          <option value="">{dict.lifeRequired}</option>
-          <option value="never">{dict.freqNever}</option>
-          <option value="rarely">{dict.freqRarely}</option>
-          <option value="few_weekly">{dict.freqFewWeekly}</option>
-          <option value="daily">{dict.freqDaily}</option>
         </SelectField>
 
         {/* Travel */}

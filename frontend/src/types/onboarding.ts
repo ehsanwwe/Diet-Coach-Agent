@@ -109,7 +109,7 @@ export interface LifestyleRequest {
   exercise_days_per_week: number
   cooking_ability: number
   food_budget: string
-  eating_out_frequency: string
+  eating_out_frequency?: string | null
   travel_frequency: string
 }
 
