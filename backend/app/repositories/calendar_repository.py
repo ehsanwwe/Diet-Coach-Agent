@@ -16,6 +16,36 @@ from app.models.calendar import NutritionPlanCalendar, NutritionPlanDay, Nutriti
 
 VALID_LOCALES = frozenset({"fa", "en", "ar"})
 
+# Canonical slot → sort index (must stay in sync with MEAL_ORDER in weekly_plan_personalization_validator)
+_CANONICAL_SLOT_IDX: dict[str, int] = {
+    "breakfast": 0, "morning_snack": 1, "lunch": 2,
+    "pre_workout": 3, "post_workout": 4, "afternoon_snack": 5,
+    "dinner": 6, "optional_evening_snack": 7, "snack": 8, "other": 9,
+}
+
+
+def _orm_meal_sort_key(m: NutritionPlanDayMeal) -> tuple:
+    """Canonical sort key for ORM meal objects.
+
+    Persisted meal_order may be stale from older generated plans, so canonical
+    slot is the primary sort key rather than the stored meal_order column.
+    """
+    slot = m.meal_slot or m.meal_type or "other"
+    # Upgrade legacy 'snack' slot by time of day (mirrors _infer_slot_from_time in validator)
+    if slot == "snack" and m.time_window_start:
+        try:
+            hour = int(str(m.time_window_start).split(":")[0])
+            if hour < 12:
+                slot = "morning_snack"
+            elif hour < 17:
+                slot = "afternoon_snack"
+            elif hour >= 20:
+                slot = "optional_evening_snack"
+        except (ValueError, AttributeError, IndexError):
+            pass
+    idx = _CANONICAL_SLOT_IDX.get(slot, len(_CANONICAL_SLOT_IDX))
+    return (idx, m.time_window_start or "", str(m.id or ""))
+
 
 # ─── Locale resolution ────────────────────────────────────────────────────────
 
@@ -258,9 +288,11 @@ def get_day_meals(db: Session, plan_day_id: str) -> list[NutritionPlanDayMeal]:
     result = db.execute(
         select(NutritionPlanDayMeal)
         .where(NutritionPlanDayMeal.plan_day_id == plan_day_id)
-        .order_by(NutritionPlanDayMeal.meal_order.asc().nulls_last(), NutritionPlanDayMeal.id)
     )
-    return list(result.scalars().all())
+    meals = list(result.scalars().all())
+    # Sort in Python by canonical slot order so stale DB meal_order values (from older
+    # generated plans) never affect the display order of existing persisted rows.
+    return sorted(meals, key=_orm_meal_sort_key)
 
 
 def create_plan_day_meal(

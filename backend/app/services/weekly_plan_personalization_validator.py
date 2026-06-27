@@ -1080,6 +1080,29 @@ def _meal_order_key(meal: dict) -> int:
         return len(MEAL_ORDER)
 
 
+def canonical_meal_order_value(slot: str) -> int:
+    """Return the 1-based canonical display order for a meal slot name. Unknown slots → 10."""
+    try:
+        return MEAL_ORDER.index(slot) + 1
+    except ValueError:
+        return len(MEAL_ORDER)
+
+
+def sort_meals_canonically(meals: list[dict]) -> list[dict]:
+    """Sort meal dicts by canonical slot order, then time_window_start, then id.
+
+    Canonical slot order is always primary — persisted meal_order values are NOT
+    used so stale DB values from older generated plans cannot affect display order.
+    Upgrades legacy 'snack' slot by time_window_start before sorting.
+    """
+    def _key(m: dict) -> tuple:
+        raw = (m.get("meal_slot") or m.get("meal_type") or "other").strip()
+        slot = _infer_slot_from_time(raw, m.get("time_window_start"))
+        idx = MEAL_ORDER.index(slot) if slot in MEAL_ORDER else len(MEAL_ORDER)
+        return (idx, m.get("time_window_start") or "", str(m.get("id") or ""))
+    return sorted(meals, key=_key)
+
+
 _EXPENSIVE_TERMS: set[str] = {
     # English / internal
     "salmon", "quinoa", "avocado", "blueberry", "blueberries", "steak", "shrimp",

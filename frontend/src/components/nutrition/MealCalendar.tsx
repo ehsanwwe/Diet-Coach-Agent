@@ -28,20 +28,20 @@ const MEAL_SLOT_ORDER: Record<string, number> = {
 
 function sortMeals(meals: import('@/types/nutrition').CalendarMeal[]): import('@/types/nutrition').CalendarMeal[] {
   return [...meals].sort((a, b) => {
-    // 1. meal_order if both present
-    if (a.meal_order != null && b.meal_order != null && a.meal_order !== b.meal_order) {
-      return a.meal_order - b.meal_order
-    }
-    if (a.meal_order != null && b.meal_order == null) return -1
-    if (a.meal_order == null && b.meal_order != null) return 1
-    // 2. canonical slot/type order
+    // 1. Canonical slot/type order is always primary.
+    // Persisted meal_order may be stale from older generated plans, so the UI
+    // uses canonical slot order first and treats meal_order only as a last resort.
     const aOrd = MEAL_SLOT_ORDER[a.meal_slot ?? a.meal_type] ?? 99
     const bOrd = MEAL_SLOT_ORDER[b.meal_slot ?? b.meal_type] ?? 99
     if (aOrd !== bOrd) return aOrd - bOrd
-    // 3. time_window_start
+    // 2. time_window_start (when same slot)
     if (a.time_window_start && b.time_window_start) {
       return a.time_window_start.localeCompare(b.time_window_start)
     }
+    if (a.time_window_start) return -1
+    if (b.time_window_start) return 1
+    // 3. meal_order as final stable fallback only (may be stale)
+    if (a.meal_order != null && b.meal_order != null) return a.meal_order - b.meal_order
     return 0
   })
 }

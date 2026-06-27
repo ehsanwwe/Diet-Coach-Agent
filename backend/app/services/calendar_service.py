@@ -23,9 +23,32 @@ from app.schemas.calendar import (
 )
 from app.services import nutrition_memory_service
 from app.services.nutrition_agent_service import NutritionAgentService
-from app.services.weekly_plan_personalization_validator import validate_and_sanitize
+from app.services.weekly_plan_personalization_validator import validate_and_sanitize, MEAL_ORDER
 
 logger = logging.getLogger(__name__)
+
+
+def _meal_schema_sort_key(m: CalendarMealSchema) -> tuple:
+    """Canonical sort key for CalendarMealSchema objects (defense-in-depth sort in _day_to_schema).
+
+    Persisted meal_order may be stale from older generated plans, so canonical
+    slot is primary regardless of the stored meal_order value.
+    """
+    slot = m.meal_slot or m.meal_type or "other"
+    if slot == "snack" and m.time_window_start:
+        try:
+            hour = int(str(m.time_window_start).split(":")[0])
+            if hour < 12:
+                slot = "morning_snack"
+            elif hour < 17:
+                slot = "afternoon_snack"
+            elif hour >= 20:
+                slot = "optional_evening_snack"
+        except (ValueError, AttributeError, IndexError):
+            pass
+    idx = MEAL_ORDER.index(slot) if slot in MEAL_ORDER else len(MEAL_ORDER)
+    return (idx, m.time_window_start or "", str(m.id or ""))
+
 
 _CLINICAL_WARNING_FA = (
     "بر اساس وضعیت پزشکی شما، پیش از اجرای این برنامه با پزشک یا متخصص تغذیه مشورت کنید."
@@ -70,6 +93,7 @@ def _day_to_schema(db: Session, day) -> PlanDaySchema:
         )
         for m in meals_db
     ]
+    meals.sort(key=_meal_schema_sort_key)
     return PlanDaySchema(
         id=day.id,
         plan_date=day.plan_date.isoformat(),

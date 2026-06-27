@@ -8,6 +8,8 @@ from app.services.weekly_plan_personalization_validator import (
     validate_and_sanitize,
     _build_forbidden_terms,
     collect_user_visible_text,
+    canonical_meal_order_value,
+    sort_meals_canonically,
     MEAL_ORDER,
 )
 
@@ -715,3 +717,91 @@ def test_validate_sanitize_does_not_repair_non_fa():
     pg = result["days"][0]["meals"][0].get("portion_guidance", "")
     # en locale: validator does not modify portion_guidance
     assert pg == "controlled amount"
+
+
+# ── Canonical meal ordering — end-to-end ordering guarantees ─────────────────
+
+def _day_with_meals(meals: list[dict]) -> dict:
+    """Helper: single-day plan with given meals."""
+    return {
+        "locale": "fa",
+        "days": [
+            {
+                "day_index": 1, "title": "Day 1", "summary": "", "warnings": [],
+                "meals": meals,
+            }
+        ] + [{"day_index": i + 2, "title": f"Day {i+2}", "summary": "", "warnings": [], "meals": []} for i in range(6)],
+    }
+
+
+def test_validator_canonical_order_shuffled_input():
+    """Validator must sort lunch→snack→dinner→breakfast into breakfast→lunch→dinner."""
+    ctx = _ctx()
+    plan = _day_with_meals([
+        {"meal_slot": "lunch",   "meal_type": "lunch",   "title": "Lunch",   "description": "", "alternatives": []},
+        {"meal_slot": "afternoon_snack", "meal_type": "afternoon_snack", "title": "Snack", "description": "", "alternatives": []},
+        {"meal_slot": "dinner",  "meal_type": "dinner",  "title": "Dinner",  "description": "", "alternatives": []},
+        {"meal_slot": "breakfast","meal_type": "breakfast","title": "Breakfast","description":"","alternatives": []},
+    ])
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    slots = [m.get("meal_slot") or m.get("meal_type") for m in result["days"][0]["meals"]]
+    assert slots == ["breakfast", "lunch", "afternoon_snack", "dinner"], f"Wrong order: {slots}"
+
+
+def test_validator_ignores_stale_meal_order():
+    """Validator ignores input meal_order and stamps canonical values regardless."""
+    ctx = _ctx()
+    plan = _day_with_meals([
+        {"meal_slot": "lunch",     "meal_type": "lunch",     "title": "Lunch",     "description": "", "alternatives": [], "meal_order": 1},
+        {"meal_slot": "breakfast", "meal_type": "breakfast", "title": "Breakfast", "description": "", "alternatives": [], "meal_order": 7},
+        {"meal_slot": "dinner",    "meal_type": "dinner",    "title": "Dinner",    "description": "", "alternatives": [], "meal_order": 2},
+    ])
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    meals = result["days"][0]["meals"]
+    slots = [m.get("meal_slot") or m.get("meal_type") for m in meals]
+    assert slots == ["breakfast", "lunch", "dinner"], f"Wrong order: {slots}"
+    orders = {m.get("meal_slot"): m.get("meal_order") for m in meals}
+    assert orders["breakfast"] == MEAL_ORDER.index("breakfast") + 1   # 1
+    assert orders["lunch"]     == MEAL_ORDER.index("lunch") + 1       # 3
+    assert orders["dinner"]    == MEAL_ORDER.index("dinner") + 1      # 7
+
+
+def test_snack_time_inference_order():
+    """'snack' slot is upgraded by time_window_start and sorted canonically."""
+    ctx = _ctx()
+    plan = _day_with_meals([
+        {"meal_slot": "snack", "meal_type": "snack", "title": "Evening snack", "description": "", "alternatives": [], "time_window_start": "21:00"},
+        {"meal_slot": "snack", "meal_type": "snack", "title": "Morning snack", "description": "", "alternatives": [], "time_window_start": "10:00"},
+        {"meal_slot": "snack", "meal_type": "snack", "title": "Afternoon snack","description": "", "alternatives": [], "time_window_start": "15:00"},
+    ])
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    meals = result["days"][0]["meals"]
+    slots = [m.get("meal_slot") or m.get("meal_type") for m in meals]
+    assert slots == ["morning_snack", "afternoon_snack", "optional_evening_snack"], f"Wrong snack order: {slots}"
+
+
+def test_sort_meals_canonically_helper():
+    """sort_meals_canonically() returns dicts sorted by canonical slot, ignoring meal_order."""
+    meals = [
+        {"meal_slot": "dinner",    "meal_type": "dinner",    "title": "Dinner",    "meal_order": 1},
+        {"meal_slot": "lunch",     "meal_type": "lunch",     "title": "Lunch",     "meal_order": 3},
+        {"meal_slot": "breakfast", "meal_type": "breakfast", "title": "Breakfast", "meal_order": 99},
+    ]
+    result = sort_meals_canonically(meals)
+    slots = [m["meal_slot"] for m in result]
+    assert slots == ["breakfast", "lunch", "dinner"], f"sort_meals_canonically produced: {slots}"
+
+
+def test_canonical_meal_order_value_helper():
+    """canonical_meal_order_value() returns correct 1-based positions."""
+    assert canonical_meal_order_value("breakfast")            == 1
+    assert canonical_meal_order_value("morning_snack")        == 2
+    assert canonical_meal_order_value("lunch")                == 3
+    assert canonical_meal_order_value("pre_workout")          == 4
+    assert canonical_meal_order_value("post_workout")         == 5
+    assert canonical_meal_order_value("afternoon_snack")      == 6
+    assert canonical_meal_order_value("dinner")               == 7
+    assert canonical_meal_order_value("optional_evening_snack") == 8
+    assert canonical_meal_order_value("snack")                == 9
+    assert canonical_meal_order_value("other")                == 10
+    assert canonical_meal_order_value("unknown_slot")         == 10
