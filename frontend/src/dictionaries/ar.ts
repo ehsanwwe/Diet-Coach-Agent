@@ -265,7 +265,7 @@ const ar: Dictionary = {
     prefRice: 'استهلاك الأرز',
     prefBread: 'استهلاك الخبز',
     prefSweets: 'الحلويات والسكر',
-    prefTea: 'الشاي والمشروبات المحلاة',
+    prefTea: 'الشاي والمشروبات',
     prefRestaurant: 'تكرار المطاعم',
     consumNever: 'أبداً',
     consumRarely: 'نادراً',

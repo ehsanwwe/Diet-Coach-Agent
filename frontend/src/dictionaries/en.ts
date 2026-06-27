@@ -265,7 +265,7 @@ const en: Dictionary = {
     prefRice: 'Rice consumption',
     prefBread: 'Bread consumption',
     prefSweets: 'Sweets & sugar',
-    prefTea: 'Tea & sugary drinks',
+    prefTea: 'Tea and beverages',
     prefRestaurant: 'Restaurant frequency',
     consumNever: 'Never',
     consumRarely: 'Rarely',

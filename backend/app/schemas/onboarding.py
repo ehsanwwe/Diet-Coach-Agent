@@ -155,7 +155,7 @@ class LifestyleRequest(BaseModel):
     exercise_days_per_week: int = Field(..., ge=0, le=7)
     cooking_ability: int = Field(..., ge=1, le=5)
     food_budget: str = Field(..., max_length=50)
-    eating_out_frequency: str = Field(..., max_length=50)
+    eating_out_frequency: str | None = Field(None, max_length=50)
     travel_frequency: str = Field(..., max_length=50)
 
 

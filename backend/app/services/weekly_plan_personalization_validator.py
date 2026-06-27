@@ -37,12 +37,20 @@ _ALLERGEN_VARIANTS: dict[str, list[str]] = {
         "اُملت", "امـلت", "آملت", "آمیلت", "املت",
         "عجة", "بيض", "بيضة", "بيضتان",
     ],
-    "gluten": ["wheat", "gluten", "bread", "pasta", "گندم", "نان", "رشته", "آرد", "خبز"],
+    "gluten": [
+        "wheat", "gluten", "bread", "pasta", "flour", "noodle", "lasagna",
+        "rye", "barley", "semolina", "couscous", "tortilla",
+        "گندم", "نان", "رشته", "آرد", "خبز",
+        "ماکارونی", "پاستا", "خمیر", "نان سبوس‌دار", "لازانیا",
+        "گلوتن", "طحين", "معكرونة",
+    ],
     "peanut": ["peanut", "بادام زمینی"],
     "lactose": [
-        "milk", "dairy", "lactose", "yogurt", "cheese", "cream",
+        "milk", "dairy", "lactose", "yogurt", "yoghurt", "cheese", "cream",
+        "kefir", "doogh", "whey", "butter",
         "شیر", "لبنیات", "ماست", "یوگورت", "پنیر", "خامه",
-        "زبادي", "جبن",
+        "لاکتوز", "دوغ", "کشک", "آب پنیر",
+        "زبادي", "جبن", "حليب", "لبن", "قشطة",
     ],
     "fish": ["fish", "salmon", "tuna", "cod", "ماهی", "سالمون", "تن"],
     "shellfish": ["shrimp", "crab", "lobster", "میگو", "خرچنگ"],
@@ -877,6 +885,110 @@ _ULTRA_SAFE_FALLBACK: dict[str, dict] = {
 }
 
 
+# Allergen-tagged economic shopping ingredients: (name, frozenset of allergen groups)
+_ECONOMIC_SHOPPING_ITEMS: dict[str, list[tuple[str, frozenset]]] = {
+    "fa": [
+        ("حبوبات خشک (عدس، لوبیا، نخود)", frozenset()),
+        ("مرغ", frozenset()),
+        ("سبزیجات فصلی", frozenset()),
+        ("برنج", frozenset()),
+        ("سیب‌زمینی", frozenset()),
+        ("میوه فصلی", frozenset()),
+        ("ماست ساده", frozenset({"lactose"})),
+        ("نان سبوس‌دار", frozenset({"gluten"})),
+        ("تخم‌مرغ", frozenset({"egg"})),
+    ],
+    "en": [
+        ("dry legumes (lentils, beans, chickpeas)", frozenset()),
+        ("chicken", frozenset()),
+        ("seasonal vegetables", frozenset()),
+        ("rice", frozenset()),
+        ("potatoes", frozenset()),
+        ("seasonal fruits", frozenset()),
+        ("plain yogurt", frozenset({"lactose"})),
+        ("whole-grain bread", frozenset({"gluten"})),
+        ("eggs", frozenset({"egg"})),
+    ],
+    "ar": [
+        ("البقوليات الجافة (عدس وفاصوليا وحمص)", frozenset()),
+        ("الدجاج", frozenset()),
+        ("الخضار الموسمية", frozenset()),
+        ("الأرز", frozenset()),
+        ("البطاطا", frozenset()),
+        ("الفواكه الموسمية", frozenset()),
+        ("الزبادي العادي", frozenset({"lactose"})),
+        ("الخبز الكامل", frozenset({"gluten"})),
+        ("البيض", frozenset({"egg"})),
+    ],
+}
+
+_ECONOMIC_BASE_ITEMS: dict[str, list[tuple[str, frozenset]]] = {
+    "fa": [
+        ("حبوبات", frozenset()),
+        ("مرغ", frozenset()),
+        ("سبزیجات فصلی", frozenset()),
+        ("برنج", frozenset()),
+        ("ماست", frozenset({"lactose"})),
+        ("نان سبوس‌دار", frozenset({"gluten"})),
+        ("تخم‌مرغ", frozenset({"egg"})),
+    ],
+    "en": [
+        ("legumes", frozenset()),
+        ("chicken", frozenset()),
+        ("seasonal vegetables", frozenset()),
+        ("rice", frozenset()),
+        ("yogurt", frozenset({"lactose"})),
+        ("whole-grain bread", frozenset({"gluten"})),
+        ("eggs", frozenset({"egg"})),
+    ],
+    "ar": [
+        ("البقوليات", frozenset()),
+        ("الدجاج", frozenset()),
+        ("الخضار الموسمية", frozenset()),
+        ("الأرز", frozenset()),
+        ("الزبادي", frozenset({"lactose"})),
+        ("الخبز الكامل", frozenset({"gluten"})),
+        ("البيض", frozenset({"egg"})),
+    ],
+}
+
+
+def _detect_active_allergen_groups(forbidden_terms: set[str]) -> set[str]:
+    """Return which allergen group keys have active restrictions."""
+    active: set[str] = set()
+    for group, variants in _ALLERGEN_VARIANTS.items():
+        if any(v.lower() in forbidden_terms for v in variants):
+            active.add(group)
+    return active
+
+
+def _build_economic_budget_guidance(locale: str, active_allergens: set[str]) -> str:
+    items_list = _ECONOMIC_BASE_ITEMS.get(locale, _ECONOMIC_BASE_ITEMS["fa"])
+    safe_items = [name for name, groups in items_list if not (groups & active_allergens)]
+    sep = "، " if locale != "en" else ", "
+    items_str = sep.join(safe_items)
+    templates = {
+        "fa": f"این برنامه برای بودجه اقتصادی طراحی شده است. {items_str} پایه این برنامه هستند.",
+        "en": f"This plan is designed for an economic budget. Affordable, nutritious staples — {items_str} — form the foundation.",
+        "ar": f"هذه الخطة مصممة لميزانية اقتصادية. تُشكّل المكونات الميسورة — {items_str} — أساس الخطة.",
+    }
+    return templates.get(locale, templates["fa"])
+
+
+def _build_economic_shopping_notes(locale: str, active_allergens: set[str]) -> str:
+    items_list = _ECONOMIC_SHOPPING_ITEMS.get(locale, _ECONOMIC_SHOPPING_ITEMS["fa"])
+    safe_items = [name for name, groups in items_list if not (groups & active_allergens)]
+    sep = "، " if locale != "en" else ", "
+    items_str = sep.join(safe_items)
+    prefixes = {"fa": "خرید پیشنهادی: ", "en": "Shopping tip: ", "ar": "نصيحة للتسوق: "}
+    suffixes = {
+        "fa": ". از خرید عمده حبوبات و سبزیجات فصلی صرفه‌جویی کنید.",
+        "en": ". Buy legumes and seasonal produce in bulk to save cost.",
+        "ar": ". اشتر البقوليات والخضار الموسمية بالجملة لتوفير التكاليف.",
+    }
+    return prefixes.get(locale, "") + items_str + suffixes.get(locale, "")
+
+
 def _build_forbidden_terms(ctx: NutritionMemoryContext) -> set[str]:
     """Build a set of all forbidden terms from allergies and disliked foods."""
     terms: set[str] = set()
@@ -905,7 +1017,7 @@ def _text_contains_forbidden(text: str | None, forbidden_terms: set[str]) -> boo
 def _meal_is_safe(meal: dict, forbidden_terms: set[str]) -> bool:
     if not forbidden_terms:
         return True
-    for field in ("title", "description", "portion_guidance", "preparation_notes", "rest_day_note"):
+    for field in ("title", "description", "portion_guidance", "preparation_notes", "rest_day_note", "drink_guidance", "workout_relation"):
         if _text_contains_forbidden(meal.get(field), forbidden_terms):
             return False
     for item in (meal.get("food_items") or []):
@@ -1073,14 +1185,21 @@ def _enforce_budget_tier(
 def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: str = "fa") -> dict:
     """Validate and sanitize a generated week plan dict. Returns cleaned plan."""
     forbidden_terms = _build_forbidden_terms(ctx)
+    active_allergens = _detect_active_allergen_groups(forbidden_terms)
     days = list(plan_data.get("days") or [])
 
     # Ensure at most 7 days
     days = days[:7]
 
     budget_tier = normalize_budget_tier(ctx.food_budget)
-    budget_guidance = _BUDGET_GUIDANCE.get(budget_tier, _BUDGET_GUIDANCE["unknown"]).get(locale, "")
-    shopping_notes = _SHOPPING_NOTES.get(budget_tier, _SHOPPING_NOTES["unknown"]).get(locale, "")
+
+    # Use dynamic allergen-aware notes for economic tier when restrictions exist
+    if budget_tier == "economic" and active_allergens:
+        default_budget_guidance = _build_economic_budget_guidance(locale, active_allergens)
+        default_shopping_notes = _build_economic_shopping_notes(locale, active_allergens)
+    else:
+        default_budget_guidance = _BUDGET_GUIDANCE.get(budget_tier, _BUDGET_GUIDANCE["unknown"]).get(locale, "")
+        default_shopping_notes = _SHOPPING_NOTES.get(budget_tier, _SHOPPING_NOTES["unknown"]).get(locale, "")
 
     sanitized_days = []
     for day in days:
@@ -1099,8 +1218,10 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
 
             sanitized_meals.append(meal)
 
-        # Sort by fixed meal order
+        # Sort by fixed meal order, then stamp meal_order integer so DB stores it correctly
         sanitized_meals.sort(key=_meal_order_key)
+        for idx, meal in enumerate(sanitized_meals):
+            sanitized_meals[idx] = {**meal, "meal_order": _meal_order_key(meal)}
 
         # Compute daily_calories from meals if missing
         day_calories = day.get("daily_calories")
@@ -1121,16 +1242,39 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
             if cw not in day_warnings:
                 day_warnings.append(cw)
 
+        # Select budget guidance/shopping notes; sanitize AI-generated ones if they contain allergens
+        day_bg = day.get("budget_guidance")
+        if day_bg and forbidden_terms and _text_contains_forbidden(day_bg, forbidden_terms) and budget_tier == "economic":
+            day_bg = _build_economic_budget_guidance(locale, active_allergens)
+        if not day_bg:
+            day_bg = default_budget_guidance
+
+        day_sn = day.get("shopping_notes")
+        if day_sn and forbidden_terms and _text_contains_forbidden(day_sn, forbidden_terms) and budget_tier == "economic":
+            day_sn = _build_economic_shopping_notes(locale, active_allergens)
+        if not day_sn:
+            day_sn = default_shopping_notes
+
         sanitized_days.append({
             **day,
             "meals": sanitized_meals,
             "warnings": day_warnings,
             "budget_tier": budget_tier,
-            "budget_guidance": day.get("budget_guidance") or budget_guidance,
-            "shopping_notes": day.get("shopping_notes") or shopping_notes,
+            "budget_guidance": day_bg,
+            "shopping_notes": day_sn,
         })
 
     # Apply budget enforcement (economic: replace expensive meals) after allergy pass
     sanitized_days = _enforce_budget_tier(sanitized_days, budget_tier, locale, forbidden_terms)
+
+    # Final guard: log any remaining forbidden terms in day-level text fields
+    if forbidden_terms:
+        for day in sanitized_days:
+            for field in ("budget_guidance", "shopping_notes", "summary"):
+                val = day.get(field)
+                if _text_contains_forbidden(val, forbidden_terms):
+                    logger.warning(
+                        "Forbidden term remains in day.%s after sanitization: %r", field, val[:80] if val else ""
+                    )
 
     return {**plan_data, "days": sanitized_days}

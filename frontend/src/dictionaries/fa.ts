@@ -1034,7 +1034,7 @@ const fa: Dictionary = {
     prefRice: 'مصرف برنج',
     prefBread: 'مصرف نان',
     prefSweets: 'مصرف شیرینی و شکر',
-    prefTea: 'مصرف چای و نوشیدنی شیرین',
+    prefTea: 'چایی و نوشیدنی',
     prefRestaurant: 'تناوب رستوران رفتن',
     consumNever: 'هرگز',
     consumRarely: 'به ندرت',
