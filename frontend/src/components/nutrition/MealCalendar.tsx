@@ -13,6 +13,39 @@ interface Props {
   generating: boolean
 }
 
+const MEAL_SLOT_ORDER: Record<string, number> = {
+  breakfast: 1,
+  morning_snack: 2,
+  lunch: 3,
+  pre_workout: 4,
+  post_workout: 5,
+  afternoon_snack: 6,
+  dinner: 7,
+  optional_evening_snack: 8,
+  snack: 9,
+  other: 10,
+}
+
+function sortMeals(meals: import('@/types/nutrition').CalendarMeal[]): import('@/types/nutrition').CalendarMeal[] {
+  return [...meals].sort((a, b) => {
+    // 1. meal_order if both present
+    if (a.meal_order != null && b.meal_order != null && a.meal_order !== b.meal_order) {
+      return a.meal_order - b.meal_order
+    }
+    if (a.meal_order != null && b.meal_order == null) return -1
+    if (a.meal_order == null && b.meal_order != null) return 1
+    // 2. canonical slot/type order
+    const aOrd = MEAL_SLOT_ORDER[a.meal_slot ?? a.meal_type] ?? 99
+    const bOrd = MEAL_SLOT_ORDER[b.meal_slot ?? b.meal_type] ?? 99
+    if (aOrd !== bOrd) return aOrd - bOrd
+    // 3. time_window_start
+    if (a.time_window_start && b.time_window_start) {
+      return a.time_window_start.localeCompare(b.time_window_start)
+    }
+    return 0
+  })
+}
+
 const MEAL_ICONS: Record<string, AppIconName> = {
   breakfast: 'sunrise',
   lunch: 'lunch',
@@ -114,7 +147,7 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
             </p>
           )}
           <div className="space-y-3">
-            {day.meals.map((meal) => {
+            {sortMeals(day.meals).map((meal) => {
               const slotKey = meal.meal_slot ?? meal.meal_type
               const icon = MEAL_ICONS[slotKey] ?? 'meal'
               const mealLabel = d[slotKey as keyof typeof d] ?? meal.meal_type

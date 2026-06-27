@@ -1182,6 +1182,239 @@ def _enforce_budget_tier(
     return result
 
 
+# ─── Safe replacement strings for day-level allergen repair ──────────────────
+
+_SAFE_HYDRATION_GUIDANCE: dict[str, str] = {
+    "fa": "آب کافی در طول روز بنوشید و از نوشیدنی‌های طبیعی مجاز استفاده کنید.",
+    "en": "Drink enough water throughout the day and choose naturally safe beverages.",
+    "ar": "اشرب كمية كافية من الماء طوال اليوم واختر المشروبات الطبيعية الآمنة.",
+}
+
+_SAFE_RESTAURANT_GUIDANCE: dict[str, str] = {
+    "fa": "در رستوران و مسافرت، غذاهای ساده مجاز را انتخاب کنید و درباره آلرژن‌ها از پرسنل بپرسید.",
+    "en": "At restaurants and while traveling, choose simple allowed foods and ask staff about allergen content.",
+    "ar": "في المطاعم وأثناء السفر، اختر الأطعمة البسيطة المسموح بها واسأل الموظفين عن مسببات الحساسية.",
+}
+
+_SAFE_SUPPLEMENTS_GUIDANCE: dict[str, str] = {
+    "fa": "با پزشک یا متخصص تغذیه در مورد مکمل‌های مناسب برای شما مشورت کنید.",
+    "en": "Consult your doctor or dietitian about appropriate supplements for your specific needs.",
+    "ar": "استشر طبيبك أو أخصائي التغذية حول المكملات الغذائية المناسبة لاحتياجاتك.",
+}
+
+_SAFE_CHEAT_MEAL_GUIDANCE: dict[str, str] = {
+    "fa": "اگر وعده‌ای آزاد می‌خواهید، از غذاهایی استفاده کنید که با آلرژی‌های شما سازگار باشند.",
+    "en": "If you want a flexible meal, choose foods that are safe and compatible with your allergies.",
+    "ar": "إذا أردت وجبة مرنة، اختر أطعمة آمنة ومتوافقة مع حساسيتك الغذائية.",
+}
+
+
+def _build_allergen_safe_budget_guidance(locale: str, budget_tier: str, active_allergens: set[str]) -> str:
+    if budget_tier == "economic":
+        return _build_economic_budget_guidance(locale, active_allergens)
+    phrases = {
+        "fa": "این برنامه غذایی با توجه به محدودیت‌های تغذیه‌ای شما طراحی شده است.",
+        "en": "This meal plan is designed with your dietary restrictions in mind.",
+        "ar": "تم تصميم هذه الخطة الغذائية مع مراعاة قيودك الغذائية.",
+    }
+    return phrases.get(locale, phrases["fa"])
+
+
+def _build_allergen_safe_shopping_notes(locale: str, budget_tier: str, active_allergens: set[str]) -> str:
+    if budget_tier == "economic":
+        return _build_economic_shopping_notes(locale, active_allergens)
+    phrases = {
+        "fa": "خرید پیشنهادی: مواد غذایی مجاز و متناسب با محدودیت‌های تغذیه‌ای شما.",
+        "en": "Shopping tip: Choose foods that are safe and compatible with your dietary restrictions.",
+        "ar": "نصيحة للتسوق: اختر الأطعمة الآمنة والمتوافقة مع قيودك الغذائية.",
+    }
+    return phrases.get(locale, phrases["fa"])
+
+
+def _infer_slot_from_time(slot: str, time_window_start: str | None) -> str:
+    """For legacy 'snack' slot, upgrade to a specific slot based on time of day."""
+    if slot != "snack" or not time_window_start:
+        return slot
+    try:
+        hour = int(str(time_window_start).split(":")[0])
+        if hour < 12:
+            return "morning_snack"
+        elif hour < 17:
+            return "afternoon_snack"
+        elif hour >= 20:
+            return "optional_evening_snack"
+    except (ValueError, AttributeError, IndexError):
+        pass
+    return slot
+
+
+def _clean_string_list(items: list, forbidden_terms: set[str]) -> list:
+    return [item for item in items if isinstance(item, str) and not _text_contains_forbidden(item, forbidden_terms)]
+
+
+def _repair_meal_in_final_pass(meal: dict, locale: str, forbidden_terms: set[str]) -> dict:
+    """Final-pass repair: replace any meal still containing forbidden terms after the main loop."""
+    if not forbidden_terms:
+        return meal
+
+    has_forbidden = any(
+        _text_contains_forbidden(meal.get(f), forbidden_terms)
+        for f in ("title", "description", "portion_guidance", "preparation_notes",
+                  "rest_day_note", "drink_guidance", "workout_relation")
+    )
+    if not has_forbidden:
+        has_forbidden = any(
+            isinstance(item, dict) and _text_contains_forbidden(item.get("name"), forbidden_terms)
+            for item in (meal.get("food_items") or [])
+        )
+    if not has_forbidden:
+        has_forbidden = any(
+            _text_contains_forbidden(alt, forbidden_terms)
+            for alt in (meal.get("alternatives") or [])
+        )
+
+    if not has_forbidden:
+        return meal
+
+    logger.warning(
+        "Final pass: replacing meal '%s' (slot=%s) still containing forbidden terms",
+        meal.get("title", ""), meal.get("meal_slot", ""),
+    )
+    replacement = _safe_replacement(meal, locale, forbidden_terms)
+    if _meal_is_safe(replacement, forbidden_terms):
+        return replacement
+
+    fallback_locale = locale if locale in _ULTRA_SAFE_FALLBACK else "fa"
+    fallback = _ULTRA_SAFE_FALLBACK[fallback_locale]
+    return {
+        **meal,
+        "title": fallback["title"],
+        "description": fallback.get("description", ""),
+        "portion_guidance": fallback.get("portion_guidance"),
+        "alternatives": [],
+        "preparation_notes": None,
+        "drink_guidance": None,
+        "workout_relation": None,
+        "rest_day_note": None,
+        "food_items": fallback.get("food_items") or [],
+    }
+
+
+def _repair_day_level_fields(
+    day: dict,
+    forbidden_terms: set[str],
+    budget_tier: str,
+    active_allergens: set[str],
+    locale: str,
+) -> dict:
+    """Repair all day-level string and list fields that still contain forbidden terms."""
+    if not forbidden_terms:
+        return day
+
+    day = dict(day)
+
+    for field in ("hydration_plan", "drinks_plan"):
+        if _text_contains_forbidden(day.get(field), forbidden_terms):
+            logger.info("Repairing forbidden term in day.%s", field)
+            day[field] = _SAFE_HYDRATION_GUIDANCE.get(locale, _SAFE_HYDRATION_GUIDANCE["fa"])
+
+    if _text_contains_forbidden(day.get("restaurant_party_travel_guidance"), forbidden_terms):
+        logger.info("Repairing forbidden term in day.restaurant_party_travel_guidance")
+        day["restaurant_party_travel_guidance"] = _SAFE_RESTAURANT_GUIDANCE.get(locale, _SAFE_RESTAURANT_GUIDANCE["fa"])
+
+    if _text_contains_forbidden(day.get("supplements_vitamins_guidance"), forbidden_terms):
+        logger.info("Repairing forbidden term in day.supplements_vitamins_guidance")
+        day["supplements_vitamins_guidance"] = _SAFE_SUPPLEMENTS_GUIDANCE.get(locale, _SAFE_SUPPLEMENTS_GUIDANCE["fa"])
+
+    if _text_contains_forbidden(day.get("cheat_meal_guidance"), forbidden_terms):
+        logger.info("Repairing forbidden term in day.cheat_meal_guidance")
+        day["cheat_meal_guidance"] = _SAFE_CHEAT_MEAL_GUIDANCE.get(locale, _SAFE_CHEAT_MEAL_GUIDANCE["fa"])
+
+    if _text_contains_forbidden(day.get("budget_guidance"), forbidden_terms):
+        logger.info("Repairing forbidden term in day.budget_guidance")
+        day["budget_guidance"] = _build_allergen_safe_budget_guidance(locale, budget_tier, active_allergens)
+
+    if _text_contains_forbidden(day.get("shopping_notes"), forbidden_terms):
+        logger.info("Repairing forbidden term in day.shopping_notes")
+        day["shopping_notes"] = _build_allergen_safe_shopping_notes(locale, budget_tier, active_allergens)
+
+    for field in ("summary", "training_guidance", "sleep_wake_guidance", "notes",
+                  "hydration_goal", "progress_tracking_guidance", "adjustment_rules"):
+        if _text_contains_forbidden(day.get(field), forbidden_terms):
+            logger.info("Nullifying day.%s containing forbidden term", field)
+            day[field] = None
+
+    for field in ("allowed_foods", "limited_foods", "warnings", "medical_warnings"):
+        items = day.get(field)
+        if isinstance(items, list):
+            cleaned = _clean_string_list(items, forbidden_terms)
+            if len(cleaned) != len(items):
+                logger.info("Removed %d forbidden items from day.%s", len(items) - len(cleaned), field)
+                day[field] = cleaned
+
+    return day
+
+
+def _final_recursive_repair(
+    days: list[dict],
+    forbidden_terms: set[str],
+    budget_tier: str,
+    active_allergens: set[str],
+    locale: str,
+) -> list[dict]:
+    """Full recursive scan and repair of all user-visible fields across all days."""
+    if not forbidden_terms:
+        return days
+
+    result = []
+    for day in days:
+        meals = [_repair_meal_in_final_pass(m, locale, forbidden_terms) for m in (day.get("meals") or [])]
+        day_repaired = _repair_day_level_fields(
+            {**day, "meals": meals},
+            forbidden_terms, budget_tier, active_allergens, locale,
+        )
+        result.append(day_repaired)
+    return result
+
+
+def collect_user_visible_text(plan: dict) -> str:
+    """Collect all user-visible text from a validated plan (used in tests and safety assertions)."""
+    _DAY_STR = (
+        "title", "summary", "hydration_goal", "hydration_plan", "drinks_plan",
+        "training_guidance", "sleep_wake_guidance", "cheat_meal_guidance",
+        "budget_guidance", "shopping_notes", "restaurant_party_travel_guidance",
+        "supplements_vitamins_guidance", "progress_tracking_guidance",
+        "adjustment_rules", "notes",
+    )
+    _DAY_LIST = ("allowed_foods", "limited_foods", "warnings", "medical_warnings")
+    _MEAL_STR = (
+        "title", "description", "portion_guidance", "preparation_notes",
+        "rest_day_note", "drink_guidance", "workout_relation",
+    )
+    parts: list[str] = []
+    for day in plan.get("days") or []:
+        for f in _DAY_STR:
+            v = day.get(f)
+            if v:
+                parts.append(str(v))
+        for f in _DAY_LIST:
+            for item in (day.get(f) or []):
+                if item:
+                    parts.append(str(item))
+        for meal in (day.get("meals") or []):
+            for f in _MEAL_STR:
+                v = meal.get(f)
+                if v:
+                    parts.append(str(v))
+            for alt in (meal.get("alternatives") or []):
+                if alt:
+                    parts.append(str(alt))
+            for fi in (meal.get("food_items") or []):
+                if isinstance(fi, dict) and fi.get("name"):
+                    parts.append(str(fi["name"]))
+    return " ".join(parts).lower()
+
+
 def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: str = "fa") -> dict:
     """Validate and sanitize a generated week plan dict. Returns cleaned plan."""
     forbidden_terms = _build_forbidden_terms(ctx)
@@ -1193,13 +1426,19 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
 
     budget_tier = normalize_budget_tier(ctx.food_budget)
 
-    # Use dynamic allergen-aware notes for economic tier when restrictions exist
+    # Build default budget guidance/shopping notes — allergen-aware for all budget tiers
     if budget_tier == "economic" and active_allergens:
         default_budget_guidance = _build_economic_budget_guidance(locale, active_allergens)
         default_shopping_notes = _build_economic_shopping_notes(locale, active_allergens)
     else:
         default_budget_guidance = _BUDGET_GUIDANCE.get(budget_tier, _BUDGET_GUIDANCE["unknown"]).get(locale, "")
         default_shopping_notes = _SHOPPING_NOTES.get(budget_tier, _SHOPPING_NOTES["unknown"]).get(locale, "")
+        # Static notes for standard/premium budgets may reference allergen foods (e.g. "لبنیات")
+        if active_allergens and forbidden_terms:
+            if _text_contains_forbidden(default_budget_guidance, forbidden_terms):
+                default_budget_guidance = _build_allergen_safe_budget_guidance(locale, budget_tier, active_allergens)
+            if _text_contains_forbidden(default_shopping_notes, forbidden_terms):
+                default_shopping_notes = _build_allergen_safe_shopping_notes(locale, budget_tier, active_allergens)
 
     sanitized_days = []
     for day in days:
@@ -1209,6 +1448,11 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
             # Set meal_slot from meal_type if missing
             if not meal.get("meal_slot") and meal.get("meal_type"):
                 meal = {**meal, "meal_slot": meal["meal_type"]}
+            # Upgrade legacy "snack" slot to a specific slot based on time of day
+            if (meal.get("meal_slot") or meal.get("meal_type")) == "snack":
+                upgraded = _infer_slot_from_time("snack", meal.get("time_window_start"))
+                if upgraded != "snack":
+                    meal = {**meal, "meal_slot": upgraded}
 
             if not _meal_is_safe(meal, forbidden_terms):
                 logger.info("Replacing unsafe meal '%s' (slot=%s)", meal.get("title", ""), meal.get("meal_slot", ""))
@@ -1218,10 +1462,10 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
 
             sanitized_meals.append(meal)
 
-        # Sort by fixed meal order, then stamp meal_order integer so DB stores it correctly
+        # Sort by canonical meal order, then stamp 1-based meal_order for stable DB storage
         sanitized_meals.sort(key=_meal_order_key)
         for idx, meal in enumerate(sanitized_meals):
-            sanitized_meals[idx] = {**meal, "meal_order": _meal_order_key(meal)}
+            sanitized_meals[idx] = {**meal, "meal_order": _meal_order_key(meal) + 1}
 
         # Compute daily_calories from meals if missing
         day_calories = day.get("daily_calories")
@@ -1242,16 +1486,16 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
             if cw not in day_warnings:
                 day_warnings.append(cw)
 
-        # Select budget guidance/shopping notes; sanitize AI-generated ones if they contain allergens
+        # Select budget guidance/shopping notes; repair AI-provided values that contain allergens
         day_bg = day.get("budget_guidance")
-        if day_bg and forbidden_terms and _text_contains_forbidden(day_bg, forbidden_terms) and budget_tier == "economic":
-            day_bg = _build_economic_budget_guidance(locale, active_allergens)
+        if day_bg and forbidden_terms and _text_contains_forbidden(day_bg, forbidden_terms):
+            day_bg = _build_allergen_safe_budget_guidance(locale, budget_tier, active_allergens)
         if not day_bg:
             day_bg = default_budget_guidance
 
         day_sn = day.get("shopping_notes")
-        if day_sn and forbidden_terms and _text_contains_forbidden(day_sn, forbidden_terms) and budget_tier == "economic":
-            day_sn = _build_economic_shopping_notes(locale, active_allergens)
+        if day_sn and forbidden_terms and _text_contains_forbidden(day_sn, forbidden_terms):
+            day_sn = _build_allergen_safe_shopping_notes(locale, budget_tier, active_allergens)
         if not day_sn:
             day_sn = default_shopping_notes
 
@@ -1267,14 +1511,9 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
     # Apply budget enforcement (economic: replace expensive meals) after allergy pass
     sanitized_days = _enforce_budget_tier(sanitized_days, budget_tier, locale, forbidden_terms)
 
-    # Final guard: log any remaining forbidden terms in day-level text fields
-    if forbidden_terms:
-        for day in sanitized_days:
-            for field in ("budget_guidance", "shopping_notes", "summary"):
-                val = day.get(field)
-                if _text_contains_forbidden(val, forbidden_terms):
-                    logger.warning(
-                        "Forbidden term remains in day.%s after sanitization: %r", field, val[:80] if val else ""
-                    )
+    # Final recursive repair: scan and fix all user-visible fields across all days
+    sanitized_days = _final_recursive_repair(
+        sanitized_days, forbidden_terms, budget_tier, active_allergens, locale
+    )
 
     return {**plan_data, "days": sanitized_days}
