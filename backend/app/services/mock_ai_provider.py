@@ -7,8 +7,12 @@ PromptBuilder embeds TASK:<type> markers that this provider reads to pick the ri
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING
 
 from app.services.ai_provider import AIProvider, AIProviderResult
+
+if TYPE_CHECKING:
+    from app.services.nutrition_memory_service import NutritionMemoryContext
 
 # Task markers injected by PromptBuilder into the system message
 TASK_GENERATE_PLAN = "TASK:generate_plan"
@@ -37,11 +41,11 @@ def _make_week_fa() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "صبحانه: املت با نان سنگک",
-                    "description": "دو تخم‌مرغ آب‌پز یا نیمرو با نان سنگک و خیار تازه",
-                    "portion_guidance": "یک تخم‌مرغ و یک برش نان متوسط",
-                    "alternatives": ["پنیر با گردو", "ماست با نان"],
-                    "preparation_notes": "تخم‌مرغ را با روغن کم بپزید.",
+                    "title": "صبحانه: نان و پنیر با گردو",
+                    "description": "نان سبوس‌دار با پنیر کم‌چرب، گردو و چای کمرنگ",
+                    "portion_guidance": "دو برش نان، ۳۰ گرم پنیر",
+                    "alternatives": ["ماست با میوه", "نان و کره"],
+                    "preparation_notes": None,
                 },
                 {
                     "meal_type": "lunch",
@@ -82,7 +86,7 @@ def _make_week_fa() -> dict:
                     "title": "صبحانه: نان و پنیر و گردو",
                     "description": "نان سبوس‌دار با پنیر کم‌چرب، گردو و چای کمرنگ",
                     "portion_guidance": "دو برش نان، ۳۰ گرم پنیر، ۵ عدد گردو",
-                    "alternatives": ["تخم‌مرغ آب‌پز", "ماست با عسل"],
+                    "alternatives": ["ماست با عسل", "نان و کره"],
                     "preparation_notes": None,
                 },
                 {
@@ -124,7 +128,7 @@ def _make_week_fa() -> dict:
                     "title": "صبحانه: ماست با میوه",
                     "description": "ماست کم‌چرب با میوه فصلی، عسل طبیعی و کمی دارچین",
                     "portion_guidance": "یک کاسه ماست، یک عدد میوه",
-                    "alternatives": ["پنیر با گوجه", "تخم‌مرغ آب‌پز"],
+                    "alternatives": ["پنیر با گوجه", "نان و کره"],
                     "preparation_notes": None,
                 },
                 {
@@ -137,10 +141,10 @@ def _make_week_fa() -> dict:
                 },
                 {
                     "meal_type": "dinner",
-                    "title": "شام: تخم‌مرغ با سبزیجات",
-                    "description": "نیمرو با فلفل دلمه و گوجه و نان سبوس‌دار",
-                    "portion_guidance": "دو تخم‌مرغ، یک برش نان",
-                    "alternatives": ["عدسی", "سوپ جو"],
+                    "title": "شام: عدسی با سالاد",
+                    "description": "عدسی گرم با سالاد ساده",
+                    "portion_guidance": "یک کاسه متوسط عدسی، یک بشقاب سالاد",
+                    "alternatives": ["سوپ جو", "لوبیا پخته"],
                     "preparation_notes": None,
                 },
                 {
@@ -163,10 +167,10 @@ def _make_week_fa() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "صبحانه: تخم‌مرغ آب‌پز",
-                    "description": "دو تخم‌مرغ آب‌پز با نان سبوس‌دار، گوجه و خیار",
-                    "portion_guidance": "دو تخم‌مرغ، یک برش نان",
-                    "alternatives": ["ماست با گردو", "پنیر و سبزی"],
+                    "title": "صبحانه: ماست چکیده با گردو",
+                    "description": "ماست چکیده با گردو و عسل طبیعی",
+                    "portion_guidance": "یک کاسه ماست، ۵ عدد گردو، یک قاشق عسل",
+                    "alternatives": ["پنیر و سبزی", "نان و کره"],
                     "preparation_notes": None,
                 },
                 {
@@ -208,7 +212,7 @@ def _make_week_fa() -> dict:
                     "title": "صبحانه: عسل و گردو با ماست",
                     "description": "ماست کم‌چرب با عسل طبیعی، گردو و میوه فصلی",
                     "portion_guidance": "یک کاسه ماست، یک قاشق عسل، ۵ عدد گردو",
-                    "alternatives": ["تخم‌مرغ آب‌پز", "پنیر با نان"],
+                    "alternatives": ["پنیر با نان", "نان و کره"],
                     "preparation_notes": None,
                 },
                 {
@@ -289,10 +293,10 @@ def _make_week_fa() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "صبحانه: اُملت با سبزیجات",
-                    "description": "دو تخم‌مرغ با فلفل، پیاز و گوجه",
-                    "portion_guidance": "دو تخم‌مرغ، یک برش نان سبوس‌دار",
-                    "alternatives": ["پنیر و گردو", "ماست با میوه"],
+                    "title": "صبحانه: ماست با میوه و گردو",
+                    "description": "ماست کم‌چرب با میوه فصلی و گردو",
+                    "portion_guidance": "یک کاسه ماست، یک میوه، ۵ عدد گردو",
+                    "alternatives": ["پنیر و گردو", "نان و کره"],
                     "preparation_notes": None,
                 },
                 {
@@ -337,11 +341,11 @@ def _make_week_en() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "Breakfast: Omelet with Whole-Grain Bread",
-                    "description": "Two eggs (omelet or poached) with whole-grain bread and fresh cucumber",
-                    "portion_guidance": "One egg, one medium slice of bread",
-                    "alternatives": ["Cheese with walnuts", "Yogurt with bread"],
-                    "preparation_notes": "Cook eggs with minimal oil.",
+                    "title": "Breakfast: Bread and Cheese with Walnuts",
+                    "description": "Whole-grain bread with low-fat cheese, walnuts, and light tea",
+                    "portion_guidance": "Two slices of bread, 30g cheese, 5 walnuts",
+                    "alternatives": ["Yogurt with fruit", "Oatmeal"],
+                    "preparation_notes": None,
                 },
                 {
                     "meal_type": "lunch",
@@ -382,7 +386,7 @@ def _make_week_en() -> dict:
                     "title": "Breakfast: Whole-Grain Bread with Cheese and Walnuts",
                     "description": "Whole-grain bread with low-fat cheese, walnuts, and light tea",
                     "portion_guidance": "Two slices of bread, 30 g cheese, 5 walnuts",
-                    "alternatives": ["Boiled eggs", "Yogurt with honey"],
+                    "alternatives": ["Yogurt with honey", "Cheese with bread"],
                     "preparation_notes": None,
                 },
                 {
@@ -424,7 +428,7 @@ def _make_week_en() -> dict:
                     "title": "Breakfast: Yogurt with Fruit",
                     "description": "Low-fat yogurt with seasonal fruit, natural honey, and a pinch of cinnamon",
                     "portion_guidance": "One bowl of yogurt, one fruit",
-                    "alternatives": ["Cheese with tomato", "Boiled eggs"],
+                    "alternatives": ["Cheese with tomato", "Whole-grain bread with cheese"],
                     "preparation_notes": None,
                 },
                 {
@@ -437,10 +441,10 @@ def _make_week_en() -> dict:
                 },
                 {
                     "meal_type": "dinner",
-                    "title": "Dinner: Eggs with Vegetables",
-                    "description": "Scrambled eggs with bell pepper and tomato on whole-grain bread",
-                    "portion_guidance": "Two eggs, one slice of bread",
-                    "alternatives": ["Lentil soup", "Barley soup"],
+                    "title": "Dinner: Lentil Soup",
+                    "description": "Homemade lentil soup with mild spices and fresh herbs",
+                    "portion_guidance": "One medium bowl of lentil soup",
+                    "alternatives": ["Barley soup", "Bean stew"],
                     "preparation_notes": None,
                 },
                 {
@@ -463,10 +467,10 @@ def _make_week_en() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "Breakfast: Boiled Eggs with Bread",
-                    "description": "Two boiled eggs with whole-grain bread, tomato, and cucumber",
-                    "portion_guidance": "Two eggs, one slice of bread",
-                    "alternatives": ["Yogurt with walnuts", "Cheese and herbs"],
+                    "title": "Breakfast: Yogurt with Walnuts and Honey",
+                    "description": "Thick yogurt with walnuts and natural honey",
+                    "portion_guidance": "One bowl of yogurt, 5 walnuts, one teaspoon of honey",
+                    "alternatives": ["Cheese and herbs", "Whole-grain bread with cheese"],
                     "preparation_notes": None,
                 },
                 {
@@ -508,7 +512,7 @@ def _make_week_en() -> dict:
                     "title": "Breakfast: Honey and Walnut Yogurt Bowl",
                     "description": "Low-fat yogurt with natural honey, walnuts, and seasonal fruit",
                     "portion_guidance": "One bowl of yogurt, one teaspoon of honey, 5 walnuts",
-                    "alternatives": ["Boiled eggs", "Cheese with bread"],
+                    "alternatives": ["Cheese with bread", "Whole-grain bread with olive oil"],
                     "preparation_notes": None,
                 },
                 {
@@ -589,10 +593,10 @@ def _make_week_en() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "Breakfast: Veggie Omelet",
-                    "description": "Two eggs with bell pepper, onion, and tomato",
-                    "portion_guidance": "Two eggs, one slice of whole-grain bread",
-                    "alternatives": ["Cheese with walnuts", "Yogurt with fruit"],
+                    "title": "Breakfast: Yogurt with Fruit and Walnuts",
+                    "description": "Low-fat yogurt with seasonal fruit and walnuts",
+                    "portion_guidance": "One bowl of yogurt, one fruit, 5 walnuts",
+                    "alternatives": ["Cheese with walnuts", "Whole-grain bread with cheese"],
                     "preparation_notes": None,
                 },
                 {
@@ -637,11 +641,11 @@ def _make_week_ar() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "الفطور: عجة مع خبز حبوب كاملة",
-                    "description": "بيضتان (عجة أو مسلوقة) مع خبز حبوب كاملة وخيار طازج",
-                    "portion_guidance": "بيضة واحدة وشريحة خبز متوسطة",
-                    "alternatives": ["جبن مع جوز", "زبادي مع خبز"],
-                    "preparation_notes": "اطهي البيض بزيت قليل.",
+                    "title": "الفطور: خبز حبوب كاملة مع جبن وجوز",
+                    "description": "خبز حبوب كاملة مع جبن قليل الدسم وجوز وشاي خفيف",
+                    "portion_guidance": "شريحتا خبز، ٣٠ جرام جبن، ٥ حبات جوز",
+                    "alternatives": ["زبادي مع فاكهة", "شوفان"],
+                    "preparation_notes": None,
                 },
                 {
                     "meal_type": "lunch",
@@ -682,7 +686,7 @@ def _make_week_ar() -> dict:
                     "title": "الفطور: خبز حبوب كاملة مع جبن وجوز",
                     "description": "خبز حبوب كاملة مع جبن قليل الدسم وجوز وشاي خفيف",
                     "portion_guidance": "شريحتا خبز، ٣٠ جرام جبن، ٥ حبات جوز",
-                    "alternatives": ["بيض مسلوق", "زبادي مع عسل"],
+                    "alternatives": ["زبادي مع عسل", "جبن مع خبز"],
                     "preparation_notes": None,
                 },
                 {
@@ -724,7 +728,7 @@ def _make_week_ar() -> dict:
                     "title": "الفطور: زبادي مع فاكهة",
                     "description": "زبادي قليل الدسم مع فاكهة موسمية وعسل طبيعي وقرفة",
                     "portion_guidance": "وعاء زبادي، فاكهة واحدة",
-                    "alternatives": ["جبن مع طماطم", "بيض مسلوق"],
+                    "alternatives": ["جبن مع طماطم", "خبز حبوب كاملة مع جبن"],
                     "preparation_notes": None,
                 },
                 {
@@ -737,10 +741,10 @@ def _make_week_ar() -> dict:
                 },
                 {
                     "meal_type": "dinner",
-                    "title": "العشاء: بيض مع خضار",
-                    "description": "بيض مخفوق مع فلفل وطماطم على خبز حبوب كاملة",
-                    "portion_guidance": "بيضتان وشريحة خبز",
-                    "alternatives": ["شوربة عدس", "شوربة شعير"],
+                    "title": "العشاء: شوربة عدس",
+                    "description": "شوربة عدس خفيفة مع بهارات معتدلة وأعشاب طازجة",
+                    "portion_guidance": "وعاء متوسط من شوربة العدس",
+                    "alternatives": ["شوربة شعير", "فاصوليا مطبوخة"],
                     "preparation_notes": None,
                 },
                 {
@@ -763,10 +767,10 @@ def _make_week_ar() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "الفطور: بيض مسلوق مع خبز",
-                    "description": "بيضتان مسلوقتان مع خبز حبوب كاملة وطماطم وخيار",
-                    "portion_guidance": "بيضتان وشريحة خبز",
-                    "alternatives": ["زبادي مع جوز", "جبن وأعشاب"],
+                    "title": "الفطور: زبادي مع جوز وعسل",
+                    "description": "زبادي مثخن مع جوز وعسل طبيعي",
+                    "portion_guidance": "وعاء زبادي، ٥ حبات جوز، ملعقة عسل",
+                    "alternatives": ["جبن وأعشاب", "خبز حبوب كاملة مع جبن"],
                     "preparation_notes": None,
                 },
                 {
@@ -808,7 +812,7 @@ def _make_week_ar() -> dict:
                     "title": "الفطور: وعاء زبادي بالعسل والجوز",
                     "description": "زبادي قليل الدسم مع عسل طبيعي وجوز وفاكهة موسمية",
                     "portion_guidance": "وعاء زبادي، ملعقة عسل، ٥ حبات جوز",
-                    "alternatives": ["بيض مسلوق", "جبن مع خبز"],
+                    "alternatives": ["جبن مع خبز", "خبز حبوب كاملة مع زيت الزيتون"],
                     "preparation_notes": None,
                 },
                 {
@@ -889,10 +893,10 @@ def _make_week_ar() -> dict:
             "meals": [
                 {
                     "meal_type": "breakfast",
-                    "title": "الفطور: عجة بالخضار",
-                    "description": "بيضتان مع فلفل وبصل وطماطم",
-                    "portion_guidance": "بيضتان وشريحة خبز حبوب كاملة",
-                    "alternatives": ["جبن مع جوز", "زبادي مع فاكهة"],
+                    "title": "الفطور: زبادي مع فاكهة وجوز",
+                    "description": "زبادي قليل الدسم مع فاكهة موسمية وجوز",
+                    "portion_guidance": "وعاء زبادي، فاكهة واحدة، ٥ حبات جوز",
+                    "alternatives": ["جبن مع جوز", "خبز حبوب كاملة مع جبن"],
                     "preparation_notes": None,
                 },
                 {
@@ -1046,16 +1050,16 @@ _MOCK_WHAT_TO_EAT = {
             "substitutions": ["ماست چکیده با نان", "تخم‌مرغ آب‌پز با خیار"],
         },
         {
-            "name": "تخم‌مرغ آب‌پز با نان",
-            "description": "منبع کامل پروتئین. آماده‌سازی ساده و سریع است.",
+            "name": "پنیر و گردو با نان",
+            "description": "منبع پروتئین و چربی سالم. آماده‌سازی ساده و سریع است.",
             "calories_estimate": 250,
-            "prep_time_minutes": 10,
+            "prep_time_minutes": 3,
             "tags": ["پروتئین‌دار", "ساده", "مقوی"],
             "option_type": "fastest",
-            "household_portions": "یک تا دو عدد تخم‌مرغ با یک برش نان",
+            "household_portions": "یک برش نان، ۳۰ گرم پنیر، چند عدد گردو",
             "why_it_fits_goal": "برای گرسنگی بالا سریع و سیرکننده است.",
             "safety_note": None,
-            "substitutions": ["پنیر و گردو", "عدسی آماده"],
+            "substitutions": ["ماست چکیده با نان", "عدسی آماده"],
         },
         {
             "name": "میوه فصلی با ماست",
@@ -1079,12 +1083,12 @@ _MOCK_WHAT_TO_EAT = {
         "substitutions": ["ماست چکیده با نان"],
     },
     "fastest_option": {
-        "name": "تخم‌مرغ آب‌پز با نان",
+        "name": "پنیر و گردو با نان",
         "description": "سریع و پروتئین‌دار.",
         "option_type": "fastest",
-        "household_portions": "یک تا دو تخم‌مرغ و یک برش نان",
+        "household_portions": "یک برش نان، ۳۰ گرم پنیر، چند عدد گردو",
         "why_it_fits_goal": "با زمان کم آماده می‌شود.",
-        "substitutions": ["پنیر و گردو"],
+        "substitutions": ["ماست چکیده با نان"],
     },
     "flexible_option": {
         "name": "میوه فصلی با ماست",
@@ -1221,7 +1225,7 @@ _MOCK_ADAPT_PLAN = {
             "title": "میان‌وعده سیرکننده: ماست و گردو",
             "description": "یک کاسه کوچک ماست کم‌چرب با ۲ عدد گردو و دارچین.",
             "portion_guidance": "یک کاسه کوچک + ۲ عدد گردو",
-            "alternatives": ["تخم‌مرغ آب‌پز با خیار", "میوه با چند بادام"],
+            "alternatives": ["پنیر و گردو", "میوه با چند بادام"],
             "preparation_notes": "برای کاهش هوس شیرینی، آرام و بدون عجله میل شود.",
         },
         {
@@ -1229,7 +1233,7 @@ _MOCK_ADAPT_PLAN = {
             "title": "شام متعادل: عدسی با سالاد",
             "description": "عدسی گرم با سالاد ساده و کمی نان سبوس‌دار.",
             "portion_guidance": "یک کاسه متوسط عدسی + یک بشقاب سالاد",
-            "alternatives": ["سوپ مرغ و سبزیجات", "املت سبک با نان"],
+            "alternatives": ["سوپ مرغ و سبزیجات", "سوپ جو با نان"],
             "preparation_notes": None,
         },
     ],
@@ -1246,7 +1250,7 @@ _MOCK_ADAPT_PLAN = {
                 "title": "میان‌وعده سیرکننده: ماست و گردو",
                 "description": "یک کاسه کوچک ماست کم‌چرب با ۲ عدد گردو و دارچین.",
                 "portion_guidance": "یک کاسه کوچک + ۲ عدد گردو",
-                "alternatives": ["تخم‌مرغ آب‌پز با خیار", "میوه با چند بادام"],
+                "alternatives": ["پنیر و گردو", "میوه با چند بادام"],
                 "preparation_notes": "برای کاهش هوس شیرینی، آرام و بدون عجله میل شود.",
             },
             {
@@ -1254,7 +1258,7 @@ _MOCK_ADAPT_PLAN = {
                 "title": "شام متعادل: عدسی با سالاد",
                 "description": "عدسی گرم با سالاد ساده و کمی نان سبوس‌دار.",
                 "portion_guidance": "یک کاسه متوسط عدسی + یک بشقاب سالاد",
-                "alternatives": ["سوپ مرغ و سبزیجات", "املت سبک با نان"],
+                "alternatives": ["سوپ مرغ و سبزیجات", "سوپ جو با نان"],
                 "preparation_notes": None,
             },
         ],
@@ -1266,6 +1270,17 @@ _MOCK_ADAPT_PLAN = {
     "follow_up_question": None,
     "warnings": [],
 }
+
+
+def generate_safe_week_mock(ctx: "NutritionMemoryContext", locale: str) -> dict:
+    """Return locale mock week data, then apply allergy/dislike sanitization."""
+    from app.services.weekly_plan_personalization_validator import validate_and_sanitize
+    mock_map = {"fa": _MOCK_WEEK_FA, "en": _MOCK_WEEK_EN, "ar": _MOCK_WEEK_AR}
+    base = mock_map.get(locale, _MOCK_WEEK_FA)
+    # Deep copy to avoid mutating the module-level constant
+    import copy
+    base_copy = copy.deepcopy(base)
+    return validate_and_sanitize(base_copy, ctx, locale=locale)
 
 
 class MockAIProvider(AIProvider):

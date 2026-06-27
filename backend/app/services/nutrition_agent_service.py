@@ -232,11 +232,8 @@ class NutritionAgentService:
                 locale,
                 len(parsed.get("days") or []),
             )
-            from app.services.mock_ai_provider import (
-                _MOCK_WEEK_FA, _MOCK_WEEK_EN, _MOCK_WEEK_AR,
-            )
-            mock_map = {"fa": _MOCK_WEEK_FA, "en": _MOCK_WEEK_EN, "ar": _MOCK_WEEK_AR}
-            parsed = mock_map.get(locale, _MOCK_WEEK_FA)
+            from app.services.mock_ai_provider import generate_safe_week_mock
+            parsed = generate_safe_week_mock(ctx, locale)
             result = AIProviderResult(
                 content=json.dumps(parsed, ensure_ascii=False),
                 provider="mock_fallback",

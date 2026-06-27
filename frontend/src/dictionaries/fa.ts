@@ -634,6 +634,30 @@ export interface Dictionary {
     alternatives: string
     prepNotes: string
     portionGuidance: string
+    dietType: string
+    difficulty: string
+    dailyCalories: string
+    protein: string
+    carbs: string
+    fat: string
+    fiber: string
+    dayTypeTraining: string
+    dayTypeRest: string
+    dayTypeLight: string
+    trainingGuidance: string
+    sleepWakeGuidance: string
+    hydrationPlan: string
+    cheatMealGuidance: string
+    medicalWarnings: string
+    mealTimeWindow: string
+    mealCalories: string
+    morningSnack: string
+    afternoonSnack: string
+    eveningSnack: string
+    preWorkout: string
+    postWorkout: string
+    drinkGuidance: string
+    foodItems: string
   }
   progress: {
     title: string
@@ -1360,6 +1384,30 @@ const fa: Dictionary = {
     alternatives: 'جایگزین‌ها',
     prepNotes: 'نکات آماده‌سازی',
     portionGuidance: 'راهنمای حجم',
+    dietType: 'نوع رژیم',
+    difficulty: 'سطح دشواری',
+    dailyCalories: 'کالری روزانه',
+    protein: 'پروتئین',
+    carbs: 'کربوهیدرات',
+    fat: 'چربی',
+    fiber: 'فیبر',
+    dayTypeTraining: 'روز تمرین',
+    dayTypeRest: 'روز استراحت',
+    dayTypeLight: 'فعالیت سبک',
+    trainingGuidance: 'راهنمای تمرین',
+    sleepWakeGuidance: 'راهنمای خواب و بیداری',
+    hydrationPlan: 'برنامه آب‌رسانی',
+    cheatMealGuidance: 'راهنمای وعده آزاد',
+    medicalWarnings: 'هشدارهای پزشکی',
+    mealTimeWindow: 'پنجره زمانی',
+    mealCalories: 'کالری وعده',
+    morningSnack: 'میان‌وعده صبح',
+    afternoonSnack: 'میان‌وعده بعدازظهر',
+    eveningSnack: 'میان‌وعده شبانه',
+    preWorkout: 'قبل از تمرین',
+    postWorkout: 'بعد از تمرین',
+    drinkGuidance: 'راهنمای نوشیدنی',
+    foodItems: 'مواد غذایی',
   },
   progress: {
     title: 'پیشرفت',

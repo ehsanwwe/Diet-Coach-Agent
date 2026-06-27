@@ -18,6 +18,11 @@ const MEAL_ICONS: Record<string, AppIconName> = {
   lunch: 'lunch',
   dinner: 'dinner',
   snack: 'snack',
+  morning_snack: 'snack',
+  afternoon_snack: 'snack',
+  optional_evening_snack: 'snack',
+  pre_workout: 'activity',
+  post_workout: 'activity',
   other: 'meal',
 }
 
@@ -78,6 +83,30 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
           {day.summary && (
             <p className="text-xs text-ink-2 leading-relaxed pt-3">{day.summary}</p>
           )}
+
+          {/* Day metadata row */}
+          {(day.daily_calories ?? day.day_type ?? day.difficulty_level) && (
+            <div className="flex flex-wrap gap-2 pt-1">
+              {day.day_type && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-brand-muted text-brand font-medium">
+                  {day.day_type === 'training_day' ? d.dayTypeTraining
+                    : day.day_type === 'rest_day' ? d.dayTypeRest
+                    : d.dayTypeLight}
+                </span>
+              )}
+              {day.daily_calories != null && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-elevated border border-line text-ink-2">
+                  {day.daily_calories} {locale === 'en' ? 'kcal' : 'کیلوکالری'}
+                </span>
+              )}
+              {day.difficulty_level && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-elevated border border-line text-ink-3">
+                  {d.difficulty}: {day.difficulty_level}
+                </span>
+              )}
+            </div>
+          )}
+
           {day.hydration_goal && (
             <p className="text-xs text-ink-3 flex items-center gap-1.5">
               <AppIcon name="water" size={14} />
@@ -86,13 +115,26 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
           )}
           <div className="space-y-3">
             {day.meals.map((meal) => {
-              const icon = MEAL_ICONS[meal.meal_type] ?? 'meal'
-              const mealLabel = d[meal.meal_type as keyof typeof d] ?? meal.meal_type
+              const slotKey = meal.meal_slot ?? meal.meal_type
+              const icon = MEAL_ICONS[slotKey] ?? 'meal'
+              const mealLabel = d[slotKey as keyof typeof d] ?? meal.meal_type
               return (
                 <div key={meal.id} className="flex gap-3 items-start">
                   <AppIcon name={icon} className="text-brand shrink-0 mt-0.5" size={18} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-brand mb-0.5">{String(mealLabel)}</p>
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <p className="text-xs font-semibold text-brand">{String(mealLabel)}</p>
+                      {meal.time_window_start && meal.time_window_end && (
+                        <span className="text-xs text-ink-3">
+                          {meal.time_window_start}–{meal.time_window_end}
+                        </span>
+                      )}
+                      {meal.calories_estimate != null && (
+                        <span className="text-xs text-ink-3">
+                          {meal.calories_estimate} {locale === 'en' ? 'kcal' : 'ککال'}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm font-medium text-ink">{meal.title}</p>
                     {meal.description && (
                       <p className="text-xs text-ink-2 mt-0.5 leading-relaxed">{meal.description}</p>
@@ -101,6 +143,12 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
                       <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
                         <AppIcon name="portion" size={13} />
                         <span>{d.portionGuidance}: {meal.portion_guidance}</span>
+                      </p>
+                    )}
+                    {meal.drink_guidance && (
+                      <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
+                        <AppIcon name="water" size={13} />
+                        <span>{meal.drink_guidance}</span>
                       </p>
                     )}
                     {meal.alternatives && meal.alternatives.length > 0 && (
@@ -122,6 +170,43 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
               ))}
             </div>
           )}
+
+          {/* Guidance section */}
+          {(day.training_guidance ?? day.medical_warnings?.length ?? day.sleep_wake_guidance ?? day.cheat_meal_guidance ?? day.hydration_plan) && (
+            <div className="space-y-2 border-t border-line pt-3">
+              {day.medical_warnings && day.medical_warnings.length > 0 && (
+                <div className="rounded-xl bg-warm-muted border border-warm/20 p-3">
+                  <p className="text-xs font-semibold text-warm mb-1">{d.medicalWarnings}</p>
+                  {day.medical_warnings.map((w, i) => (
+                    <p key={i} className="text-xs text-ink-2">• {w}</p>
+                  ))}
+                </div>
+              )}
+              {day.training_guidance && (
+                <p className="text-xs text-ink-2 flex items-start gap-1.5">
+                  <AppIcon name="activity" size={13} className="mt-0.5 shrink-0" />
+                  <span><span className="font-semibold">{d.trainingGuidance}:</span> {day.training_guidance}</span>
+                </p>
+              )}
+              {day.sleep_wake_guidance && (
+                <p className="text-xs text-ink-2">
+                  <span className="font-semibold">{d.sleepWakeGuidance}:</span> {day.sleep_wake_guidance}
+                </p>
+              )}
+              {day.cheat_meal_guidance && (
+                <p className="text-xs text-ink-2">
+                  <span className="font-semibold">{d.cheatMealGuidance}:</span> {day.cheat_meal_guidance}
+                </p>
+              )}
+              {day.hydration_plan && day.hydration_plan !== day.hydration_goal && (
+                <p className="text-xs text-ink-2 flex items-start gap-1.5">
+                  <AppIcon name="water" size={13} className="mt-0.5 shrink-0" />
+                  <span><span className="font-semibold">{d.hydrationPlan}:</span> {day.hydration_plan}</span>
+                </p>
+              )}
+            </div>
+          )}
+
           {day.notes && (
             <p className="text-xs text-ink-3 italic">{d.notes}: {day.notes}</p>
           )}

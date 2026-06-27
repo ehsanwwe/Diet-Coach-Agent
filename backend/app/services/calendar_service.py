@@ -23,6 +23,7 @@ from app.schemas.calendar import (
 )
 from app.services import nutrition_memory_service
 from app.services.nutrition_agent_service import NutritionAgentService
+from app.services.weekly_plan_personalization_validator import validate_and_sanitize
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,18 @@ def _day_to_schema(db: Session, day) -> PlanDaySchema:
             portion_guidance=m.portion_guidance,
             alternatives=calendar_repository.decode_json_list(m.alternatives),
             preparation_notes=m.preparation_notes,
+            meal_slot=getattr(m, "meal_slot", None),
+            meal_order=getattr(m, "meal_order", None),
+            time_window_start=getattr(m, "time_window_start", None),
+            time_window_end=getattr(m, "time_window_end", None),
+            calories_estimate=getattr(m, "calories_estimate", None),
+            protein_g=getattr(m, "protein_g", None),
+            carbs_g=getattr(m, "carbs_g", None),
+            fat_g=getattr(m, "fat_g", None),
+            food_items=calendar_repository.decode_json_list(getattr(m, "food_items", None)) if getattr(m, "food_items", None) else [],
+            workout_relation=getattr(m, "workout_relation", None),
+            rest_day_note=getattr(m, "rest_day_note", None),
+            drink_guidance=getattr(m, "drink_guidance", None),
         )
         for m in meals_db
     ]
@@ -67,6 +80,28 @@ def _day_to_schema(db: Session, day) -> PlanDaySchema:
         notes=day.notes,
         warnings=calendar_repository.decode_json_list(day.warnings),
         meals=meals,
+        diet_type=getattr(day, "diet_type", None),
+        diet_goal=getattr(day, "diet_goal", None),
+        difficulty_level=getattr(day, "difficulty_level", None),
+        daily_calories=getattr(day, "daily_calories", None),
+        daily_macros=calendar_repository.decode_json_dict(getattr(day, "daily_macros", None)),
+        day_type=getattr(day, "day_type", None),
+        training_guidance=getattr(day, "training_guidance", None),
+        sleep_wake_guidance=getattr(day, "sleep_wake_guidance", None),
+        wake_time=getattr(day, "wake_time", None),
+        sleep_time=getattr(day, "sleep_time", None),
+        dinner_to_sleep_gap=getattr(day, "dinner_to_sleep_gap", None),
+        hydration_plan=getattr(day, "hydration_plan", None),
+        drinks_plan=getattr(day, "drinks_plan", None),
+        cheat_meal_guidance=getattr(day, "cheat_meal_guidance", None),
+        allowed_foods=calendar_repository.decode_json_list(getattr(day, "allowed_foods", None)),
+        limited_foods=calendar_repository.decode_json_list(getattr(day, "limited_foods", None)),
+        forbidden_foods=calendar_repository.decode_json_list(getattr(day, "forbidden_foods", None)),
+        medical_warnings=calendar_repository.decode_json_list(getattr(day, "medical_warnings", None)),
+        restaurant_party_travel_guidance=getattr(day, "restaurant_party_travel_guidance", None),
+        supplements_vitamins_guidance=getattr(day, "supplements_vitamins_guidance", None),
+        progress_tracking_guidance=getattr(day, "progress_tracking_guidance", None),
+        adjustment_rules=getattr(day, "adjustment_rules", None),
     )
 
 
@@ -190,6 +225,7 @@ def generate_week(
     ctx = nutrition_memory_service.build(db, user)
     agent = NutritionAgentService()
     plan_data, result = agent.generate_week_plan(ctx, locale)
+    plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     days_raw: list[dict] = plan_data.get("days") or []
     # Clamp to exactly 7
@@ -228,6 +264,28 @@ def generate_week(
             hydration_goal=day_raw.get("hydration_goal"),
             notes=day_raw.get("notes"),
             warnings=raw_warnings,
+            diet_type=day_raw.get("diet_type"),
+            diet_goal=day_raw.get("diet_goal"),
+            difficulty_level=day_raw.get("difficulty_level"),
+            daily_calories=day_raw.get("daily_calories"),
+            daily_macros=day_raw.get("daily_macros"),
+            day_type=day_raw.get("day_type"),
+            training_guidance=day_raw.get("training_guidance"),
+            sleep_wake_guidance=day_raw.get("sleep_wake_guidance"),
+            wake_time=day_raw.get("wake_time"),
+            sleep_time=day_raw.get("sleep_time"),
+            dinner_to_sleep_gap=day_raw.get("dinner_to_sleep_gap"),
+            hydration_plan=day_raw.get("hydration_plan"),
+            drinks_plan=day_raw.get("drinks_plan"),
+            cheat_meal_guidance=day_raw.get("cheat_meal_guidance"),
+            allowed_foods=day_raw.get("allowed_foods") or [],
+            limited_foods=day_raw.get("limited_foods") or [],
+            forbidden_foods=day_raw.get("forbidden_foods") or [],
+            medical_warnings=day_raw.get("medical_warnings") or [],
+            restaurant_party_travel_guidance=day_raw.get("restaurant_party_travel_guidance"),
+            supplements_vitamins_guidance=day_raw.get("supplements_vitamins_guidance"),
+            progress_tracking_guidance=day_raw.get("progress_tracking_guidance"),
+            adjustment_rules=day_raw.get("adjustment_rules"),
         )
 
         meals_raw: list[dict] = day_raw.get("meals") or []
@@ -236,12 +294,24 @@ def generate_week(
                 db,
                 plan_day_id=day.id,
                 locale=locale,
-                meal_type=meal_raw.get("meal_type", "snack"),
+                meal_type=meal_raw.get("meal_type") or meal_raw.get("meal_slot") or "snack",
                 title=meal_raw.get("title", "—"),
                 description=meal_raw.get("description"),
                 portion_guidance=meal_raw.get("portion_guidance"),
                 alternatives=meal_raw.get("alternatives") or [],
                 preparation_notes=meal_raw.get("preparation_notes"),
+                meal_slot=meal_raw.get("meal_slot") or meal_raw.get("meal_type"),
+                meal_order=meal_raw.get("meal_order"),
+                time_window_start=meal_raw.get("time_window_start"),
+                time_window_end=meal_raw.get("time_window_end"),
+                calories_estimate=meal_raw.get("calories_estimate"),
+                protein_g=meal_raw.get("protein_g"),
+                carbs_g=meal_raw.get("carbs_g"),
+                fat_g=meal_raw.get("fat_g"),
+                food_items=meal_raw.get("food_items") or [],
+                workout_relation=meal_raw.get("workout_relation"),
+                rest_day_note=meal_raw.get("rest_day_note"),
+                drink_guidance=meal_raw.get("drink_guidance"),
             )
 
         generated.append(_day_to_schema(db, day))
@@ -275,6 +345,7 @@ def regenerate_day(
     ctx = nutrition_memory_service.build(db, user)
     agent = NutritionAgentService()
     plan_data, _ = agent.generate_week_plan(ctx, locale, extra_context=reason)
+    plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     days_raw: list[dict] = plan_data.get("days") or []
     day_raw = days_raw[0] if days_raw else {}
@@ -298,18 +369,52 @@ def regenerate_day(
         hydration_goal=day_raw.get("hydration_goal"),
         notes=day_raw.get("notes"),
         warnings=raw_warnings,
+        diet_type=day_raw.get("diet_type"),
+        diet_goal=day_raw.get("diet_goal"),
+        difficulty_level=day_raw.get("difficulty_level"),
+        daily_calories=day_raw.get("daily_calories"),
+        daily_macros=day_raw.get("daily_macros"),
+        day_type=day_raw.get("day_type"),
+        training_guidance=day_raw.get("training_guidance"),
+        sleep_wake_guidance=day_raw.get("sleep_wake_guidance"),
+        wake_time=day_raw.get("wake_time"),
+        sleep_time=day_raw.get("sleep_time"),
+        dinner_to_sleep_gap=day_raw.get("dinner_to_sleep_gap"),
+        hydration_plan=day_raw.get("hydration_plan"),
+        drinks_plan=day_raw.get("drinks_plan"),
+        cheat_meal_guidance=day_raw.get("cheat_meal_guidance"),
+        allowed_foods=day_raw.get("allowed_foods") or [],
+        limited_foods=day_raw.get("limited_foods") or [],
+        forbidden_foods=day_raw.get("forbidden_foods") or [],
+        medical_warnings=day_raw.get("medical_warnings") or [],
+        restaurant_party_travel_guidance=day_raw.get("restaurant_party_travel_guidance"),
+        supplements_vitamins_guidance=day_raw.get("supplements_vitamins_guidance"),
+        progress_tracking_guidance=day_raw.get("progress_tracking_guidance"),
+        adjustment_rules=day_raw.get("adjustment_rules"),
     )
     for meal_raw in (day_raw.get("meals") or []):
         calendar_repository.create_plan_day_meal(
             db,
             plan_day_id=day.id,
             locale=locale,
-            meal_type=meal_raw.get("meal_type", "snack"),
+            meal_type=meal_raw.get("meal_type") or meal_raw.get("meal_slot") or "snack",
             title=meal_raw.get("title", "—"),
             description=meal_raw.get("description"),
             portion_guidance=meal_raw.get("portion_guidance"),
             alternatives=meal_raw.get("alternatives") or [],
             preparation_notes=meal_raw.get("preparation_notes"),
+            meal_slot=meal_raw.get("meal_slot") or meal_raw.get("meal_type"),
+            meal_order=meal_raw.get("meal_order"),
+            time_window_start=meal_raw.get("time_window_start"),
+            time_window_end=meal_raw.get("time_window_end"),
+            calories_estimate=meal_raw.get("calories_estimate"),
+            protein_g=meal_raw.get("protein_g"),
+            carbs_g=meal_raw.get("carbs_g"),
+            fat_g=meal_raw.get("fat_g"),
+            food_items=meal_raw.get("food_items") or [],
+            workout_relation=meal_raw.get("workout_relation"),
+            rest_day_note=meal_raw.get("rest_day_note"),
+            drink_guidance=meal_raw.get("drink_guidance"),
         )
 
     db.commit()

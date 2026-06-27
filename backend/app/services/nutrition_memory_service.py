@@ -49,6 +49,10 @@ class NutritionMemoryContext:
     food_budget: str | None = None
     eating_out_frequency: str | None = None
     travel_frequency: str | None = None
+    exercise_days_per_week: int | None = None
+    # Anthropometrics (extended)
+    wrist_cm: float | None = None
+    thigh_cm: float | None = None
     # Food preferences
     vegetarian: bool = False
     vegan: bool = False
@@ -56,6 +60,12 @@ class NutritionMemoryContext:
     likes_iranian_food: bool = True
     disliked_foods: list[str] = field(default_factory=list)
     favorite_foods: list[str] = field(default_factory=list)
+    breakfast_habit: str | None = None
+    rice_frequency: str | None = None
+    bread_frequency: str | None = None
+    sweets_frequency: str | None = None
+    tea_frequency: str | None = None
+    restaurant_frequency: str | None = None
     # Behavior
     emotional_eating: bool = False
     night_eating: bool = False
@@ -234,6 +244,8 @@ class NutritionMemoryContext:
                     "weight_kg": self.weight_kg,
                     "target_weight_kg": self.target_weight_kg,
                     "waist_circumference": self.waist_circumference,
+                    "wrist_cm": self.wrist_cm,
+                    "thigh_cm": self.thigh_cm,
                     "goal": self.goal_type,
                 }.items()
                 if v is not None
@@ -250,6 +262,7 @@ class NutritionMemoryContext:
                 k: v
                 for k, v in {
                     "activity_level": self.activity_level,
+                    "exercise_days_per_week": self.exercise_days_per_week,
                     "sleep_hours": self.sleep_hours,
                     "stress_level": self.stress_level,
                     "work_schedule": self.work_schedule,
@@ -259,12 +272,22 @@ class NutritionMemoryContext:
                 if v is not None
             },
             "preferences_and_food_culture": {
-                "vegetarian": self.vegetarian,
-                "vegan": self.vegan,
-                "halal": self.halal,
-                "likes_iranian_food": self.likes_iranian_food,
-                "favorite_foods": self.favorite_foods,
-                "disliked_foods": self.disliked_foods,
+                k: v
+                for k, v in {
+                    "vegetarian": self.vegetarian,
+                    "vegan": self.vegan,
+                    "halal": self.halal,
+                    "likes_iranian_food": self.likes_iranian_food,
+                    "favorite_foods": self.favorite_foods or None,
+                    "disliked_foods": self.disliked_foods or None,
+                    "breakfast_habit": self.breakfast_habit,
+                    "rice_frequency": self.rice_frequency,
+                    "bread_frequency": self.bread_frequency,
+                    "sweets_frequency": self.sweets_frequency,
+                    "tea_frequency": self.tea_frequency,
+                    "restaurant_frequency": self.restaurant_frequency,
+                }.items()
+                if v is not None
             },
             "behavior_patterns": {
                 k: v
@@ -278,6 +301,7 @@ class NutritionMemoryContext:
                     "skipped_meal_pattern": self.skipped_meal_pattern,
                     "stress_eating_pattern": self.stress_eating_pattern,
                     "sleep_craving_pattern": self.sleep_craving_pattern,
+                    "binge_history": self.binge_history if self.binge_history else None,
                     "motivation_level": self.motivation_level,
                 }.items()
                 if v is not None
@@ -655,6 +679,8 @@ def build(db: Session, user: User) -> NutritionMemoryContext:
         ctx.weight_kg = profile.weight_kg
         ctx.target_weight_kg = profile.target_weight_kg
         ctx.waist_circumference = profile.waist_cm
+        ctx.wrist_cm = profile.wrist_cm
+        ctx.thigh_cm = profile.thigh_cm
         ctx.gender = profile.gender
         if profile.birth_date:
             ctx.age = _calc_age(profile.birth_date)
@@ -700,6 +726,7 @@ def build(db: Session, user: User) -> NutritionMemoryContext:
         ctx.food_budget = ls.food_budget
         ctx.eating_out_frequency = ls.eating_out_frequency
         ctx.travel_frequency = ls.travel_frequency
+        ctx.exercise_days_per_week = ls.exercise_days_per_week
         ctx.budget_access_summary, ctx.cooking_access_summary = summarize_budget_and_access(ls)
 
     # Food preferences
@@ -709,6 +736,12 @@ def build(db: Session, user: User) -> NutritionMemoryContext:
         ctx.vegan = fp.vegan
         ctx.halal = fp.halal
         ctx.likes_iranian_food = fp.likes_iranian_food
+        ctx.breakfast_habit = fp.breakfast_habit
+        ctx.rice_frequency = fp.rice_frequency
+        ctx.bread_frequency = fp.bread_frequency
+        ctx.sweets_frequency = fp.sweets_frequency
+        ctx.tea_frequency = fp.tea_frequency
+        ctx.restaurant_frequency = fp.restaurant_frequency
         if fp.disliked_foods:
             try:
                 ctx.disliked_foods = json.loads(fp.disliked_foods)

@@ -47,6 +47,7 @@ def engine():
     # Import all models to ensure their metadata is registered with Base
     import app.models.audit  # noqa: F401
     import app.models.auth  # noqa: F401
+    import app.models.calendar  # noqa: F401
     import app.models.chat  # noqa: F401
     import app.models.lifestyle  # noqa: F401
     import app.models.nutrition  # noqa: F401

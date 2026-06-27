@@ -419,38 +419,105 @@ def for_generate_week_plan(
     system = _base_system(task_tag, ctx, locale=effective_locale)
 
     user_ctx = _memory_json(ctx)
+
+    # Build allergen constraint section
+    allergen_lines: list[str] = []
+    _ALLERGEN_VARIANTS_PROMPT: dict[str, list[str]] = {
+        "egg": ["egg", "eggs", "omelet", "omelette", "تخم مرغ", "تخم‌مرغ", "نیمرو", "املت", "آملت", "عجة", "بيض", "بيضة"],
+        "gluten": ["wheat", "gluten", "گندم"],
+        "peanut": ["peanut", "بادام زمینی"],
+        "lactose": ["milk", "dairy", "شیر", "لبنیات"],
+        "fish": ["fish", "salmon", "ماهی", "سالمون"],
+        "shellfish": ["shrimp", "crab", "میگو", "خرچنگ"],
+        "soy": ["soy", "tofu", "سویا"],
+    }
+    if ctx.allergies:
+        allergen_lines.append("HARD CONSTRAINTS — CRITICAL — DO NOT VIOLATE:")
+        for allergen in ctx.allergies:
+            a_lower = allergen.lower()
+            matched_variants: list[str] = []
+            for key, variants in _ALLERGEN_VARIANTS_PROMPT.items():
+                if a_lower in key or any(a_lower in v.lower() for v in variants):
+                    matched_variants = variants
+                    break
+            if matched_variants:
+                allergen_lines.append(f"- User has '{allergen}' allergy. NEVER include: {', '.join(matched_variants)}")
+            else:
+                allergen_lines.append(f"- User has '{allergen}' allergy. NEVER include any form of '{allergen}' in any meal.")
+    if ctx.disliked_foods:
+        disliked_str = ", ".join(ctx.disliked_foods[:10])
+        allergen_lines.append(f"DISLIKED FOODS — DO NOT include: {disliked_str}")
+
+    allergen_section = "\n".join(allergen_lines) if allergen_lines else ""
+
+    # Determine exercise days
+    exercise_days = ctx.exercise_days_per_week or 0
+    training_note = (
+        f"User exercises {exercise_days} day(s) per week. Mark those as day_type=training_day and include pre_workout and post_workout meal slots."
+        if exercise_days > 0
+        else "User does not exercise regularly. Use day_type=rest_day for all days."
+    )
+
     user = (
         f"User profile:\n{user_ctx}\n\n"
-        f"Generate exactly 7 days of meal plan in locale={effective_locale}.\n"
-        "Each day must have exactly 4 meals: breakfast, lunch, dinner, snack.\n"
-        "Use household portions and realistic alternatives. Keep the week flexible and safe.\n"
-        "Return JSON only, matching this exact structure:\n"
-        "{\n"
-        f'  "locale": "{effective_locale}",\n'
-        '  "days": [\n'
-        '    {\n'
-        '      "day_index": 1,\n'
-        '      "title": "...",\n'
-        '      "summary": "...",\n'
-        '      "assessment_summary": "...",\n'
-        '      "intervention_summary": "...",\n'
-        '      "monitoring_notes": "...",\n'
-        '      "hydration_goal": "...",\n'
-        '      "notes": "...",\n'
-        '      "warnings": [],\n'
-        '      "meals": [\n'
-        '        {\n'
-        '          "meal_type": "breakfast",\n'
-        '          "title": "...",\n'
-        '          "description": "...",\n'
-        '          "portion_guidance": "...",\n'
-        '          "alternatives": ["..."],\n'
-        '          "preparation_notes": null\n'
-        '        }\n'
-        '      ]\n'
-        '    }\n'
-        '  ]\n'
-        "}"
+        + (f"{allergen_section}\n\n" if allergen_section else "")
+        + f"Generate exactly 7 days of meal plan in locale={effective_locale}.\n"
+        + f"{training_note}\n"
+        + "Use household portions. Include time windows for each meal. Provide calories and macros.\n"
+        + "Meal order (use only relevant slots):\n"
+        + "1. breakfast (07:00-09:00)\n"
+        + "2. morning_snack (10:30-11:00)\n"
+        + "3. lunch (12:30-14:00)\n"
+        + "4. pre_workout (ONLY on training days, 30-60 min before workout)\n"
+        + "5. post_workout (ONLY on training days, within 30 min after workout)\n"
+        + "6. afternoon_snack (15:30-16:30)\n"
+        + "7. dinner (19:00-20:30)\n"
+        + "8. optional_evening_snack (ONLY if clinically appropriate)\n\n"
+        + "Return JSON only:\n"
+        + "{\n"
+        + f'  "locale": "{effective_locale}",\n'
+        + '  "days": [\n'
+        + '    {\n'
+        + '      "day_index": 1,\n'
+        + '      "title": "...",\n'
+        + '      "summary": "...",\n'
+        + '      "day_type": "training_day|rest_day|light_activity_day",\n'
+        + '      "diet_type": "...",\n'
+        + '      "difficulty_level": "beginner|intermediate|advanced",\n'
+        + '      "daily_calories": 1800,\n'
+        + '      "daily_macros": {"protein_g": 90, "carbs_g": 220, "fat_g": 60, "fiber_g": 25},\n'
+        + '      "hydration_goal": "...",\n'
+        + '      "hydration_plan": "...",\n'
+        + '      "training_guidance": "...",\n'
+        + '      "sleep_wake_guidance": "...",\n'
+        + '      "cheat_meal_guidance": "...",\n'
+        + '      "medical_warnings": [],\n'
+        + '      "notes": "...",\n'
+        + '      "warnings": [],\n'
+        + '      "meals": [\n'
+        + '        {\n'
+        + '          "meal_slot": "breakfast",\n'
+        + '          "meal_type": "breakfast",\n'
+        + '          "meal_order": 1,\n'
+        + '          "title": "...",\n'
+        + '          "description": "...",\n'
+        + '          "time_window_start": "07:00",\n'
+        + '          "time_window_end": "09:00",\n'
+        + '          "calories_estimate": 400,\n'
+        + '          "protein_g": 20,\n'
+        + '          "carbs_g": 50,\n'
+        + '          "fat_g": 12,\n'
+        + '          "portion_guidance": "...",\n'
+        + '          "food_items": [{"name": "...", "amount": "2", "unit": "برش", "calories_estimate": 160}],\n'
+        + '          "alternatives": ["..."],\n'
+        + '          "workout_relation": "none",\n'
+        + '          "drink_guidance": "...",\n'
+        + '          "preparation_notes": null\n'
+        + '        }\n'
+        + '      ]\n'
+        + '    }\n'
+        + '  ]\n'
+        + "}"
     )
     if extra_context:
         user = f"Special instruction for this request: {extra_context}\n\n" + user

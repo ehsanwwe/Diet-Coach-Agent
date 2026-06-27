@@ -251,6 +251,23 @@ export interface AdaptPlanResponse {
 
 // ─── Calendar types ───────────────────────────────────────────────────────────
 
+export interface FoodItem {
+  name: string
+  amount: string | null
+  unit: string | null
+  calories_estimate: number | null
+  protein_g?: number | null
+  carbs_g?: number | null
+  fat_g?: number | null
+}
+
+export interface DailyMacros {
+  protein_g: number | null
+  carbs_g: number | null
+  fat_g: number | null
+  fiber_g: number | null
+}
+
 export interface CalendarMeal {
   id: string
   meal_type: string
@@ -259,6 +276,18 @@ export interface CalendarMeal {
   portion_guidance: string | null
   alternatives: string[]
   preparation_notes: string | null
+  meal_slot: string | null
+  meal_order: number | null
+  time_window_start: string | null
+  time_window_end: string | null
+  calories_estimate: number | null
+  protein_g: number | null
+  carbs_g: number | null
+  fat_g: number | null
+  food_items: FoodItem[]
+  workout_relation: string | null
+  rest_day_note: string | null
+  drink_guidance: string | null
 }
 
 export interface PlanDay {
@@ -271,6 +300,28 @@ export interface PlanDay {
   notes: string | null
   warnings: string[]
   meals: CalendarMeal[]
+  diet_type: string | null
+  diet_goal: string | null
+  difficulty_level: string | null
+  daily_calories: number | null
+  daily_macros: DailyMacros | null
+  day_type: string | null
+  training_guidance: string | null
+  sleep_wake_guidance: string | null
+  wake_time: string | null
+  sleep_time: string | null
+  dinner_to_sleep_gap: string | null
+  hydration_plan: string | null
+  drinks_plan: string | null
+  cheat_meal_guidance: string | null
+  allowed_foods: string[]
+  limited_foods: string[]
+  forbidden_foods: string[]
+  medical_warnings: string[]
+  restaurant_party_travel_guidance: string | null
+  supplements_vitamins_guidance: string | null
+  progress_tracking_guidance: string | null
+  adjustment_rules: string | null
 }
 
 export interface CoverageInfo {

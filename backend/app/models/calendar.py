@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -114,6 +115,30 @@ class NutritionPlanDay(Base):
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
+    # Enriched day-level fields (all nullable — old rows remain valid)
+    diet_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    diet_goal: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    difficulty_level: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    daily_calories: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    daily_macros: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON
+    day_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    training_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sleep_wake_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    wake_time: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    sleep_time: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    dinner_to_sleep_gap: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    hydration_plan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    drinks_plan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cheat_meal_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    allowed_foods: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+    limited_foods: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+    forbidden_foods: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+    medical_warnings: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+    restaurant_party_travel_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    supplements_vitamins_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    progress_tracking_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    adjustment_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     calendar: Mapped["NutritionPlanCalendar"] = relationship(
         "NutritionPlanCalendar", back_populates="days", lazy="raise"
     )
@@ -161,6 +186,20 @@ class NutritionPlanDayMeal(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
+
+    # Enriched meal-level fields (all nullable — old rows remain valid)
+    meal_slot: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    meal_order: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    time_window_start: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    time_window_end: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    calories_estimate: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    protein_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    carbs_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fat_g: Mapped[float | None] = mapped_column(Float, nullable=True)
+    food_items: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON list
+    workout_relation: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    rest_day_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    drink_guidance: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
     plan_day: Mapped["NutritionPlanDay"] = relationship(
         "NutritionPlanDay", back_populates="meals", lazy="raise"

@@ -17,6 +17,19 @@ class CalendarMealSchema(BaseModel):
     portion_guidance: str | None = None
     alternatives: list[str] = Field(default_factory=list)
     preparation_notes: str | None = None
+    # Enriched meal fields
+    meal_slot: str | None = None
+    meal_order: int | None = None
+    time_window_start: str | None = None
+    time_window_end: str | None = None
+    calories_estimate: int | None = None
+    protein_g: float | None = None
+    carbs_g: float | None = None
+    fat_g: float | None = None
+    food_items: list[dict] = Field(default_factory=list)
+    workout_relation: str | None = None
+    rest_day_note: str | None = None
+    drink_guidance: str | None = None
 
 
 class PlanDaySchema(BaseModel):
@@ -29,6 +42,29 @@ class PlanDaySchema(BaseModel):
     notes: str | None = None
     warnings: list[str] = Field(default_factory=list)
     meals: list[CalendarMealSchema] = Field(default_factory=list)
+    # Enriched day fields
+    diet_type: str | None = None
+    diet_goal: str | None = None
+    difficulty_level: str | None = None
+    daily_calories: int | None = None
+    daily_macros: dict | None = None
+    day_type: str | None = None
+    training_guidance: str | None = None
+    sleep_wake_guidance: str | None = None
+    wake_time: str | None = None
+    sleep_time: str | None = None
+    dinner_to_sleep_gap: str | None = None
+    hydration_plan: str | None = None
+    drinks_plan: str | None = None
+    cheat_meal_guidance: str | None = None
+    allowed_foods: list[str] = Field(default_factory=list)
+    limited_foods: list[str] = Field(default_factory=list)
+    forbidden_foods: list[str] = Field(default_factory=list)
+    medical_warnings: list[str] = Field(default_factory=list)
+    restaurant_party_travel_guidance: str | None = None
+    supplements_vitamins_guidance: str | None = None
+    progress_tracking_guidance: str | None = None
+    adjustment_rules: str | None = None
 
 
 class CoverageSchema(BaseModel):

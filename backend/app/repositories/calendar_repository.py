@@ -154,6 +154,29 @@ def create_plan_day(
     hydration_goal: str | None,
     notes: str | None,
     warnings: list[str] | None,
+    # Enriched fields
+    diet_type: str | None = None,
+    diet_goal: str | None = None,
+    difficulty_level: str | None = None,
+    daily_calories: int | None = None,
+    daily_macros: dict | None = None,
+    day_type: str | None = None,
+    training_guidance: str | None = None,
+    sleep_wake_guidance: str | None = None,
+    wake_time: str | None = None,
+    sleep_time: str | None = None,
+    dinner_to_sleep_gap: str | None = None,
+    hydration_plan: str | None = None,
+    drinks_plan: str | None = None,
+    cheat_meal_guidance: str | None = None,
+    allowed_foods: list[str] | None = None,
+    limited_foods: list[str] | None = None,
+    forbidden_foods: list[str] | None = None,
+    medical_warnings: list[str] | None = None,
+    restaurant_party_travel_guidance: str | None = None,
+    supplements_vitamins_guidance: str | None = None,
+    progress_tracking_guidance: str | None = None,
+    adjustment_rules: str | None = None,
 ) -> NutritionPlanDay:
     day = NutritionPlanDay(
         calendar_id=calendar_id,
@@ -166,6 +189,28 @@ def create_plan_day(
         hydration_goal=hydration_goal,
         notes=notes,
         warnings=json.dumps(warnings or [], ensure_ascii=False),
+        diet_type=diet_type,
+        diet_goal=diet_goal,
+        difficulty_level=difficulty_level,
+        daily_calories=daily_calories,
+        daily_macros=json.dumps(daily_macros, ensure_ascii=False) if daily_macros else None,
+        day_type=day_type,
+        training_guidance=training_guidance,
+        sleep_wake_guidance=sleep_wake_guidance,
+        wake_time=wake_time,
+        sleep_time=sleep_time,
+        dinner_to_sleep_gap=dinner_to_sleep_gap,
+        hydration_plan=hydration_plan,
+        drinks_plan=drinks_plan,
+        cheat_meal_guidance=cheat_meal_guidance,
+        allowed_foods=json.dumps(allowed_foods or [], ensure_ascii=False),
+        limited_foods=json.dumps(limited_foods or [], ensure_ascii=False),
+        forbidden_foods=json.dumps(forbidden_foods or [], ensure_ascii=False),
+        medical_warnings=json.dumps(medical_warnings or [], ensure_ascii=False),
+        restaurant_party_travel_guidance=restaurant_party_travel_guidance,
+        supplements_vitamins_guidance=supplements_vitamins_guidance,
+        progress_tracking_guidance=progress_tracking_guidance,
+        adjustment_rules=adjustment_rules,
     )
     db.add(day)
     db.flush()
@@ -207,7 +252,7 @@ def get_day_meals(db: Session, plan_day_id: str) -> list[NutritionPlanDayMeal]:
     result = db.execute(
         select(NutritionPlanDayMeal)
         .where(NutritionPlanDayMeal.plan_day_id == plan_day_id)
-        .order_by(NutritionPlanDayMeal.id)
+        .order_by(NutritionPlanDayMeal.meal_order.asc().nulls_last(), NutritionPlanDayMeal.id)
     )
     return list(result.scalars().all())
 
@@ -223,6 +268,19 @@ def create_plan_day_meal(
     portion_guidance: str | None,
     alternatives: list[str] | None,
     preparation_notes: str | None,
+    # Enriched fields
+    meal_slot: str | None = None,
+    meal_order: int | None = None,
+    time_window_start: str | None = None,
+    time_window_end: str | None = None,
+    calories_estimate: int | None = None,
+    protein_g: float | None = None,
+    carbs_g: float | None = None,
+    fat_g: float | None = None,
+    food_items: list[dict] | None = None,
+    workout_relation: str | None = None,
+    rest_day_note: str | None = None,
+    drink_guidance: str | None = None,
 ) -> NutritionPlanDayMeal:
     meal = NutritionPlanDayMeal(
         plan_day_id=plan_day_id,
@@ -233,6 +291,18 @@ def create_plan_day_meal(
         portion_guidance=portion_guidance,
         alternatives=json.dumps(alternatives or [], ensure_ascii=False),
         preparation_notes=preparation_notes,
+        meal_slot=meal_slot or meal_type,
+        meal_order=meal_order,
+        time_window_start=time_window_start,
+        time_window_end=time_window_end,
+        calories_estimate=calories_estimate,
+        protein_g=protein_g,
+        carbs_g=carbs_g,
+        fat_g=fat_g,
+        food_items=json.dumps(food_items or [], ensure_ascii=False),
+        workout_relation=workout_relation,
+        rest_day_note=rest_day_note,
+        drink_guidance=drink_guidance,
     )
     db.add(meal)
     db.flush()
@@ -273,3 +343,13 @@ def decode_json_list(raw: str | None) -> list[str]:
         return val if isinstance(val, list) else []
     except (json.JSONDecodeError, TypeError):
         return []
+
+
+def decode_json_dict(raw: str | None) -> dict | None:
+    if not raw:
+        return None
+    try:
+        val = json.loads(raw)
+        return val if isinstance(val, dict) else None
+    except (json.JSONDecodeError, TypeError):
+        return None
