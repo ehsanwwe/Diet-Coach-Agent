@@ -1377,6 +1377,109 @@ def _final_recursive_repair(
     return result
 
 
+_VAGUE_PORTION_WORDS: frozenset[str] = frozenset({
+    "کنترل‌شده", "کنترل شده", "مقدار مناسب", "مقداری",
+    "به مقدار", "به اندازه کافی", "متعادل", "کمی",
+})
+
+_POLO_DISHES_REPAIR: list[tuple[str, str]] = [
+    ("لوبیاپلو", "۸ قاشق غذاخوری لوبیاپلو"),
+    ("عدس‌پلو", "۸ قاشق غذاخوری عدس‌پلو"),
+    ("عدس پلو", "۸ قاشق غذاخوری عدس‌پلو"),
+    ("سبزی‌پلو", "۷ قاشق غذاخوری سبزی‌پلو"),
+    ("سبزی پلو", "۷ قاشق غذاخوری سبزی‌پلو"),
+    ("باقالی پلو", "۸ قاشق غذاخوری باقالی‌پلو"),
+    ("ماش پلو", "۸ قاشق غذاخوری ماش‌پلو"),
+    ("شوید پلو", "۷ قاشق غذاخوری شوید‌پلو"),
+    ("استانبولی", "۸ قاشق غذاخوری استانبولی"),
+    ("ماکارونی", "۸ قاشق غذاخوری ماکارونی"),
+]
+
+_STEW_NAME_MAP: dict[str, str] = {
+    "قرمه‌سبزی": "خورش قرمه‌سبزی",
+    "قرمه سبزی": "خورش قرمه‌سبزی",
+    "قیمه": "خورش قیمه",
+    "فسنجان": "خورش فسنجان",
+    "کرفس": "خورش کرفس",
+    "خوراک مرغ": "خوراک مرغ",
+}
+
+
+def _portion_guidance_is_vague(guidance: str | None) -> bool:
+    """Return True when portion_guidance is missing or contains vague phrases."""
+    if not guidance or not guidance.strip():
+        return True
+    for word in _VAGUE_PORTION_WORDS:
+        if word in guidance:
+            return True
+    # "برش نان" without "کف دست" is still vague
+    if "برش نان" in guidance and "کف دست" not in guidance:
+        return True
+    return False
+
+
+def _repair_portion_guidance(meal: dict, active_allergens: set[str]) -> str:
+    """Infer practical household-unit portion guidance from meal title/description."""
+    title = (meal.get("title") or "").lower()
+    desc = (meal.get("description") or "").lower()
+    combined = f"{title} {desc}"
+
+    # 1. Mixed polo / one-pot dishes (must check before plain rice)
+    for dish, guidance in _POLO_DISHES_REPAIR:
+        if dish.lower() in combined:
+            return guidance
+
+    # 2. Rice + stew
+    has_rice = "برنج" in combined
+    has_stew = "خورش" in combined or any(k.lower() in combined for k in _STEW_NAME_MAP)
+    if has_rice and has_stew:
+        stew_label = "خورش"
+        for key, label in _STEW_NAME_MAP.items():
+            if key.lower() in combined:
+                stew_label = label
+                break
+        return f"۵ قاشق غذاخوری برنج + ۴ قاشق غذاخوری {stew_label}"
+
+    # 3. Plain rice
+    if has_rice:
+        return "۸ قاشق غذاخوری برنج"
+
+    # 4. Bread — skip if gluten allergy
+    if "نان" in combined and "gluten" not in active_allergens:
+        return "۲ کف دست نان"
+
+    # 5. Protein
+    if "مرغ" in combined:
+        return "۱ کف دست مرغ پخته، حدود ۱۲۰ گرم"
+    if "گوشت" in combined:
+        return "۱ کف دست گوشت کم‌چرب، حدود ۱۰۰ گرم"
+    if "ماهی" in combined:
+        return "۱ کف دست ماهی پخته، حدود ۱۲۰ گرم"
+
+    # 6. Dairy — skip if lactose allergy
+    if "ماست" in combined and "lactose" not in active_allergens:
+        return "۱ کاسه کوچک ماست، حدود ۱۵۰ گرم"
+    if "پنیر" in combined and "lactose" not in active_allergens:
+        return "پنیر به اندازه ۱ قوطی کبریت"
+
+    # 7. Salad / vegetables
+    if "سالاد" in combined:
+        return "۱ کاسه متوسط سالاد"
+    if "سبزیجات" in combined or "سبزی" in combined:
+        return "۱ تا ۲ کاسه سبزیجات"
+
+    # 8. Soup / legume
+    if "سوپ" in combined or "عدسی" in combined or "آش" in combined:
+        return "۱ کاسه متوسط"
+
+    # 9. Fruit
+    if any(f in combined for f in ("میوه", "سیب", "موز", "پرتقال", "گلابی")):
+        return "۱ عدد متوسط"
+
+    # Generic measurable fallback
+    return "یک وعده متوسط با اندازه‌گیری خانگی: ۱ کاسه متوسط یا طبق مقدار ذکرشده در آیتم‌های غذایی"
+
+
 def collect_user_visible_text(plan: dict) -> str:
     """Collect all user-visible text from a validated plan (used in tests and safety assertions)."""
     _DAY_STR = (
@@ -1459,6 +1562,12 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
                 meal = _safe_replacement(meal, locale, forbidden_terms)
             else:
                 meal = _clean_alternatives(meal, forbidden_terms)
+
+            # Repair vague portion guidance (locale=fa only; en/ar get raw AI output)
+            if locale == "fa" and _portion_guidance_is_vague(meal.get("portion_guidance")):
+                repaired = _repair_portion_guidance(meal, active_allergens)
+                meal = {**meal, "portion_guidance": repaired}
+                logger.info("Repaired vague portion_guidance for meal '%s'", meal.get("title", ""))
 
             sanitized_meals.append(meal)
 

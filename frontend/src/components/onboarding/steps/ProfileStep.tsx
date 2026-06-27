@@ -129,10 +129,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
             {...register('age', {
               required: dict.ageRange,
               valueAsNumber: true,
-              min: { value: 10, message: dict.ageRange },
+              min: { value: 8, message: dict.ageRange },
               max: { value: 120, message: dict.ageRange },
             })}
             type="number"
+            min={8}
+            max={120}
             placeholder={dict.agePlaceholder}
             className={inputCls(!!errors.age)}
           />
@@ -144,10 +146,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
             {...register('height_cm', {
               required: dict.heightRequired,
               valueAsNumber: true,
-              min: { value: 100, message: dict.heightRange },
-              max: { value: 250, message: dict.heightRange },
+              min: { value: 80, message: dict.heightRange },
+              max: { value: 230, message: dict.heightRange },
             })}
             type="number"
+            min={80}
+            max={230}
             placeholder={dict.heightPlaceholder}
             className={inputCls(!!errors.height_cm)}
           />
@@ -228,10 +232,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
                 <input
                   {...register('wrist_circumference_cm', {
                     valueAsNumber: true,
-                    min: { value: 10, message: dict.wristRange },
-                    max: { value: 30, message: dict.wristRange },
+                    min: { value: 8, message: dict.wristRange },
+                    max: { value: 35, message: dict.wristRange },
                   })}
                   type="number"
+                  min={8}
+                  max={35}
                   step="0.1"
                   placeholder={dict.wristPlaceholder}
                   className={inputCls(!!errors.wrist_circumference_cm)}

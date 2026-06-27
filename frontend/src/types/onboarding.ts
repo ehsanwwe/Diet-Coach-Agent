@@ -27,15 +27,20 @@ export const ALL_GOALS: GoalType[] = [
   'weight_loss',
   'weight_gain',
   'muscle_gain',
-  'healthy_eating',
+  'general_health_companion',
   'diabetes_support',
   'fatty_liver_support',
   'pcos_support',
   'digestive_support',
   'sports_nutrition',
   'pregnancy_breastfeeding_caution',
-  'general_health_companion',
 ]
+
+// Legacy value — no longer shown in UI; maps to general_health_companion for display
+export const LEGACY_GOAL_MAP: Partial<Record<string, GoalType>> = {
+  healthy_eating: 'general_health_companion',
+  lifestyle: 'general_health_companion',
+}
 
 export interface OnboardingStatusResponse {
   user_id: string

@@ -65,12 +65,12 @@ class ProfileRequest(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
     gender: Literal["male", "female", "other", "prefer_not_to_say"]
     birth_date: date | None = None
-    age: int | None = Field(default=None, ge=10, le=120)
-    height_cm: float = Field(..., ge=100.0, le=250.0)
+    age: int | None = Field(default=None, ge=8, le=120)
+    height_cm: float = Field(..., ge=80.0, le=230.0)
     current_weight_kg: float = Field(..., ge=20.0, le=300.0)
     target_weight_kg: float | None = Field(default=None, ge=20.0, le=300.0)
     waist_circumference_cm: float | None = Field(default=None, ge=40.0, le=200.0)
-    wrist_circumference_cm: float | None = Field(default=None, ge=10.0, le=30.0)
+    wrist_circumference_cm: float | None = Field(default=None, ge=8.0, le=35.0)
     thigh_circumference_cm: float | None = Field(default=None, ge=30.0, le=100.0)
 
     @model_validator(mode="after")

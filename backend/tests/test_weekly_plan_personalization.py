@@ -585,3 +585,133 @@ def test_collect_user_visible_text_covers_all_fields():
         "fi-unique-name",
     ):
         assert marker in text, f"collect_user_visible_text missed field containing '{marker}'"
+
+
+# ── Portion guidance repair ───────────────────────────────────────────────────
+
+from app.services.weekly_plan_personalization_validator import (
+    _portion_guidance_is_vague,
+    _repair_portion_guidance,
+)
+
+
+def test_vague_controlled_is_detected():
+    assert _portion_guidance_is_vague("برنج کنترل‌شده") is True
+
+
+def test_vague_bread_slice_without_palm_is_detected():
+    assert _portion_guidance_is_vague("دو برش نان") is True
+
+
+def test_vague_appropriate_amount_is_detected():
+    assert _portion_guidance_is_vague("مقدار مناسب برنج") is True
+
+
+def test_empty_guidance_is_vague():
+    assert _portion_guidance_is_vague(None) is True
+    assert _portion_guidance_is_vague("") is True
+
+
+def test_palm_bread_not_vague():
+    assert _portion_guidance_is_vague("۲ کف دست نان") is False
+
+
+def test_spoon_rice_not_vague():
+    assert _portion_guidance_is_vague("۸ قاشق غذاخوری برنج") is False
+
+
+def _repair_meal(title: str, description: str = "", allergies: set | None = None) -> str:
+    meal = {"title": title, "description": description, "meal_slot": "lunch"}
+    return _repair_portion_guidance(meal, allergies or set())
+
+
+def test_bread_slice_repaired_to_palm():
+    result = _repair_meal("نان و پنیر", "نان سبوس‌دار با پنیر")
+    assert "کف دست" in result
+
+
+def test_rice_vague_repaired_to_spoon():
+    result = _repair_meal("برنج ساده", "برنج با کره")
+    assert "قاشق" in result
+
+
+def test_ghormeh_sabzi_repaired_to_split():
+    result = _repair_meal("برنج با خورش قرمه‌سبزی", "برنج ایرانی با خورش قرمه‌سبزی")
+    assert "قاشق غذاخوری برنج" in result
+    assert "قرمه" in result
+
+
+def test_loobia_polo_repaired_to_single_spoon():
+    result = _repair_meal("لوبیاپلو با گوجه", "لوبیاپلو سنتی")
+    assert "قاشق غذاخوری" in result
+    assert "لوبیاپلو" in result
+
+
+def test_bread_repair_skipped_for_gluten_allergy():
+    result = _repair_meal("نان و پنیر", "نان سبوس‌دار", allergies={"gluten"})
+    assert "نان" not in result or "کف دست نان" not in result
+
+
+def test_yogurt_repair_skipped_for_lactose_allergy():
+    result = _repair_meal("ماست و خیار", "ماست کم‌چرب", allergies={"lactose"})
+    assert "ماست" not in result
+
+
+def test_validate_sanitize_repairs_vague_portion_fa():
+    ctx = _ctx(allergies=[])
+    plan = {
+        "locale": "fa",
+        "days": [
+            {
+                "day_index": i + 1,
+                "title": f"روز {i+1}",
+                "summary": "",
+                "warnings": [],
+                "meals": [
+                    {
+                        "meal_slot": "lunch",
+                        "meal_type": "lunch",
+                        "title": "برنج با خورش قرمه‌سبزی",
+                        "description": "برنج ایرانی با خورش قرمه‌سبزی",
+                        "portion_guidance": "برنج کنترل‌شده",
+                        "alternatives": [],
+                    }
+                ],
+            }
+            for i in range(7)
+        ],
+    }
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    pg = result["days"][0]["meals"][0].get("portion_guidance", "")
+    assert "کنترل‌شده" not in pg
+    assert "قاشق" in pg
+
+
+def test_validate_sanitize_does_not_repair_non_fa():
+    ctx = _ctx(allergies=[])
+    plan = {
+        "locale": "en",
+        "days": [
+            {
+                "day_index": i + 1,
+                "title": f"Day {i+1}",
+                "summary": "",
+                "warnings": [],
+                "meals": [
+                    {
+                        "meal_slot": "lunch",
+                        "meal_type": "lunch",
+                        "title": "Chicken with rice",
+                        "description": "Controlled portions",
+                        "portion_guidance": "controlled amount",
+                        "alternatives": [],
+                    }
+                ],
+            }
+            for i in range(7)
+        ],
+    }
+    result = validate_and_sanitize(plan, ctx, locale="en")
+    pg = result["days"][0]["meals"][0].get("portion_guidance", "")
+    # en locale: validator does not modify portion_guidance
+    assert pg == "controlled amount"
