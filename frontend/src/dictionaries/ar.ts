@@ -640,6 +640,12 @@ const ar: Dictionary = {
     postWorkout: 'بعد التمرين',
     drinkGuidance: 'إرشادات المشروبات',
     foodItems: 'المواد الغذائية',
+    budgetTier: 'مستوى الميزانية',
+    budgetGuidance: 'إرشادات الميزانية',
+    shoppingNotes: 'ملاحظات التسوق',
+    budgetEconomic: 'اقتصادي',
+    budgetStandard: 'عادي',
+    budgetPremium: 'متميز',
   },
   progress: {
     title: 'التقدم',

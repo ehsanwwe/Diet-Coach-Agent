@@ -102,6 +102,9 @@ def _day_to_schema(db: Session, day) -> PlanDaySchema:
         supplements_vitamins_guidance=getattr(day, "supplements_vitamins_guidance", None),
         progress_tracking_guidance=getattr(day, "progress_tracking_guidance", None),
         adjustment_rules=getattr(day, "adjustment_rules", None),
+        budget_tier=getattr(day, "budget_tier", None),
+        budget_guidance=getattr(day, "budget_guidance", None),
+        shopping_notes=getattr(day, "shopping_notes", None),
     )
 
 
@@ -286,6 +289,9 @@ def generate_week(
             supplements_vitamins_guidance=day_raw.get("supplements_vitamins_guidance"),
             progress_tracking_guidance=day_raw.get("progress_tracking_guidance"),
             adjustment_rules=day_raw.get("adjustment_rules"),
+            budget_tier=day_raw.get("budget_tier"),
+            budget_guidance=day_raw.get("budget_guidance"),
+            shopping_notes=day_raw.get("shopping_notes"),
         )
 
         meals_raw: list[dict] = day_raw.get("meals") or []
@@ -391,6 +397,9 @@ def regenerate_day(
         supplements_vitamins_guidance=day_raw.get("supplements_vitamins_guidance"),
         progress_tracking_guidance=day_raw.get("progress_tracking_guidance"),
         adjustment_rules=day_raw.get("adjustment_rules"),
+        budget_tier=day_raw.get("budget_tier"),
+        budget_guidance=day_raw.get("budget_guidance"),
+        shopping_notes=day_raw.get("shopping_notes"),
     )
     for meal_raw in (day_raw.get("meals") or []):
         calendar_repository.create_plan_day_meal(

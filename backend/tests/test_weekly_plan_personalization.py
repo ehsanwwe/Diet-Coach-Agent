@@ -145,3 +145,126 @@ def test_forbidden_terms_built_correctly():
     assert "نیمرو" in terms
     assert "omelet" in terms
     assert "عجة" in terms
+
+
+# ── Budget tier tests ─────────────────────────────────────────────────────────
+
+from app.services.nutrition_memory_service import normalize_budget_tier
+from app.services.weekly_plan_personalization_validator import _EXPENSIVE_TERMS
+
+
+def test_normalize_budget_tier_persian():
+    assert normalize_budget_tier("اقتصادی") == "economic"
+    assert normalize_budget_tier("معمولی") == "standard"
+    assert normalize_budget_tier("گران") == "premium"
+
+
+def test_normalize_budget_tier_english():
+    assert normalize_budget_tier("low_budget") == "economic"
+    assert normalize_budget_tier("standard") == "standard"
+    assert normalize_budget_tier("expensive") == "premium"
+    assert normalize_budget_tier(None) == "unknown"
+    assert normalize_budget_tier("unknown_value") == "unknown"
+
+
+def _expensive_plan(locale: str = "fa") -> dict:
+    return {
+        "locale": locale,
+        "days": [
+            {
+                "day_index": i + 1,
+                "title": f"Day {i + 1}",
+                "summary": "",
+                "warnings": [],
+                "meals": [
+                    {
+                        "meal_type": "lunch",
+                        "meal_slot": "lunch",
+                        "title": "Lunch: Salmon with Quinoa",
+                        "description": "Grilled salmon fillet with quinoa and avocado",
+                        "alternatives": ["steak salad"],
+                    }
+                ],
+            }
+            for i in range(7)
+        ],
+    }
+
+
+def test_economic_budget_removes_expensive_foods():
+    ctx = _ctx(food_budget="اقتصادی")
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    text = _all_meal_text(result)
+    for term in ("salmon", "quinoa", "avocado", "steak"):
+        assert term not in text.lower(), f"Expensive term '{term}' still in economic plan"
+
+
+def test_economic_budget_replacement_is_allergy_safe():
+    ctx = _ctx(food_budget="اقتصادی", allergies=["egg"])
+    plan = _expensive_plan(locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    text = _all_meal_text(result)
+    for egg_term in ("تخم‌مرغ", "تخم مرغ", "نیمرو", "omelet", "egg"):
+        assert egg_term not in text, f"Allergen '{egg_term}' appeared after economic budget replacement"
+
+
+def test_economic_budget_sets_budget_tier_on_days():
+    ctx = _ctx(food_budget="اقتصادی")
+    plan = _plan_with_meal("صبحانه سالم", locale="fa")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    for day in result["days"]:
+        assert day.get("budget_tier") == "economic"
+        assert day.get("budget_guidance")
+        assert day.get("shopping_notes")
+
+
+def test_standard_budget_does_not_over_restrict():
+    ctx = _ctx(food_budget="معمولی")
+    plan = {
+        "locale": "fa",
+        "days": [
+            {
+                "day_index": i + 1,
+                "title": f"Day {i + 1}",
+                "summary": "",
+                "warnings": [],
+                "meals": [
+                    {
+                        "meal_type": "lunch",
+                        "meal_slot": "lunch",
+                        "title": "Lunch: Chicken with rice",
+                        "description": "Steamed chicken with rice and salad",
+                        "alternatives": [],
+                    }
+                ],
+            }
+            for i in range(7)
+        ],
+    }
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    for day in result["days"]:
+        assert day.get("budget_tier") == "standard"
+    text = _all_meal_text(result)
+    assert "chicken" in text
+
+
+def test_premium_budget_keeps_expensive_foods():
+    ctx = _ctx(food_budget="گران")
+    plan = _expensive_plan(locale="en")
+    result = validate_and_sanitize(plan, ctx, locale="en")
+    text = _all_meal_text(result)
+    assert "salmon" in text or "quinoa" in text, "Premium budget should keep expensive foods"
+    for day in result["days"]:
+        assert day.get("budget_tier") == "premium"
+
+
+def test_budget_tier_field_present_all_days():
+    ctx = _ctx(food_budget="معمولی")
+    plan = _plan_with_meal("Breakfast: Oatmeal", locale="en")
+    result = validate_and_sanitize(plan, ctx, locale="en")
+    assert len(result["days"]) == 7
+    for day in result["days"]:
+        assert "budget_tier" in day
+        assert "budget_guidance" in day
+        assert "shopping_notes" in day

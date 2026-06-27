@@ -177,6 +177,9 @@ def create_plan_day(
     supplements_vitamins_guidance: str | None = None,
     progress_tracking_guidance: str | None = None,
     adjustment_rules: str | None = None,
+    budget_tier: str | None = None,
+    budget_guidance: str | None = None,
+    shopping_notes: str | None = None,
 ) -> NutritionPlanDay:
     day = NutritionPlanDay(
         calendar_id=calendar_id,
@@ -211,6 +214,9 @@ def create_plan_day(
         supplements_vitamins_guidance=supplements_vitamins_guidance,
         progress_tracking_guidance=progress_tracking_guidance,
         adjustment_rules=adjustment_rules,
+        budget_tier=budget_tier,
+        budget_guidance=budget_guidance,
+        shopping_notes=shopping_notes,
     )
     db.add(day)
     db.flush()

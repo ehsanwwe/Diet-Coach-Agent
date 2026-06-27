@@ -138,6 +138,10 @@ class NutritionPlanDay(Base):
     supplements_vitamins_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
     progress_tracking_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
     adjustment_rules: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Budget tier fields (all nullable — old rows remain valid)
+    budget_tier: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    budget_guidance: Mapped[str | None] = mapped_column(Text, nullable=True)
+    shopping_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     calendar: Mapped["NutritionPlanCalendar"] = relationship(
         "NutritionPlanCalendar", back_populates="days", lazy="raise"

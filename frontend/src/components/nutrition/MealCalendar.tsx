@@ -207,6 +207,29 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
             </div>
           )}
 
+          {/* Budget section */}
+          {(day.budget_tier ?? day.budget_guidance ?? day.shopping_notes) && (
+            <div className="space-y-1 border-t border-line pt-3">
+              {day.budget_tier && (
+                <span className={[
+                  'inline-block text-xs font-medium px-2 py-0.5 rounded-full',
+                  day.budget_tier === 'economic' ? 'bg-green-100 text-green-700' :
+                  day.budget_tier === 'premium' ? 'bg-purple-100 text-purple-700' :
+                  'bg-gray-100 text-gray-600',
+                ].join(' ')}>
+                  {day.budget_tier === 'economic' ? d.budgetEconomic
+                    : day.budget_tier === 'premium' ? d.budgetPremium
+                    : d.budgetStandard}
+                </span>
+              )}
+              {day.budget_guidance && (
+                <p className="text-xs text-ink-2 leading-relaxed">{day.budget_guidance}</p>
+              )}
+              {day.shopping_notes && (
+                <p className="text-xs text-ink-3 leading-relaxed">{day.shopping_notes}</p>
+              )}
+            </div>
+          )}
           {day.notes && (
             <p className="text-xs text-ink-3 italic">{d.notes}: {day.notes}</p>
           )}

@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import logging
 
-from app.services.nutrition_memory_service import NutritionMemoryContext
+from app.services.nutrition_memory_service import NutritionMemoryContext, normalize_budget_tier
 
 logger = logging.getLogger(__name__)
 
@@ -292,13 +292,119 @@ def _meal_order_key(meal: dict) -> int:
         return len(MEAL_ORDER)
 
 
+_EXPENSIVE_TERMS: set[str] = {
+    # English / internal
+    "salmon", "quinoa", "avocado", "blueberry", "blueberries", "steak", "shrimp",
+    "lobster", "protein powder", "protein shake", "caviar", "imported nuts",
+    "cashew nut", "cashews", "brazil nut", "macadamia", "açaí", "acai",
+    "truffle", "specialty supplement", "premium supplement",
+    # Persian
+    "سالمون", "کینوا", "آووکادو", "بلوبری", "استیک", "میگو", "خاویار",
+    "پودر پروتئین", "شیک پروتئین", "مکمل گران", "مغز وارداتی",
+    "بادام برزیلی", "ماکادمیا",
+    # Arabic
+    "سلمون", "كينوا", "أفوكادو", "توت أزرق", "ستيك", "جمبري", "كافيار",
+    "بروتين بودرة",
+}
+
+_BUDGET_GUIDANCE: dict[str, dict[str, str]] = {
+    "economic": {
+        "fa": "این برنامه برای بودجه اقتصادی طراحی شده است. غذاهای ارزان‌قیمت و پرانرژی مثل حبوبات، مرغ، ماست، نان سبوس‌دار و سبزیجات فصلی پایه این برنامه هستند.",
+        "en": "This plan is designed for an economic budget. Affordable, nutritious staples — legumes, chicken, yogurt, whole-grain bread, and seasonal vegetables — form the foundation.",
+        "ar": "هذه الخطة مصممة لميزانية اقتصادية. تُشكّل الأطعمة المغذية والميسورة — البقوليات والدجاج والزبادي والخبز الكامل والخضار الموسمية — أساس الخطة.",
+    },
+    "standard": {
+        "fa": "این برنامه برای بودجه معمولی طراحی شده است. تنوع غذایی مناسب با استفاده از مواد قابل دسترس و اقتصادی.",
+        "en": "This plan is designed for a standard budget. Balanced variety using accessible, reasonably priced ingredients.",
+        "ar": "هذه الخطة مصممة لميزانية عادية. تنوع متوازن باستخدام مكونات ميسورة ومعقولة السعر.",
+    },
+    "premium": {
+        "fa": "این برنامه برای بودجه متنوع طراحی شده است. امکان استفاده از پروتئین‌های متنوع، ماهی بیشتر و محصولات لبنی خاص وجود دارد.",
+        "en": "This plan is designed for a premium budget. Greater variety with lean meats, more fish, specialty dairy, and varied proteins is supported.",
+        "ar": "هذه الخطة مصممة لميزانية متميزة. يُدعم التنوع الأكبر مع اللحوم الخالية من الدهون والأسماك ومنتجات الألبان المتنوعة.",
+    },
+    "unknown": {
+        "fa": "برنامه با فرض بودجه معمولی طراحی شده است.",
+        "en": "Plan designed assuming a standard budget.",
+        "ar": "تم تصميم الخطة بافتراض ميزانية عادية.",
+    },
+}
+
+_SHOPPING_NOTES: dict[str, dict[str, str]] = {
+    "economic": {
+        "fa": "خرید پیشنهادی: حبوبات خشک (عدس، لوبیا، نخود)، مرغ، ماست ساده، نان سبوس‌دار، سبزیجات فصلی، برنج، تخم‌مرغ (اگر آلرژی ندارید). از خرید عمده حبوبات و سبزیجات فصلی صرفه‌جویی کنید.",
+        "en": "Shopping tip: Dry legumes (lentils, beans, chickpeas), chicken, plain yogurt, whole-grain bread, seasonal vegetables, rice, eggs (if no allergy). Buy legumes and seasonal produce in bulk to save cost.",
+        "ar": "نصيحة للتسوق: البقوليات الجافة (العدس والفاصوليا والحمص) والدجاج والزبادي العادي والخبز الكامل والخضار الموسمية والأرز والبيض (إن لم يكن لديك حساسية). اشتر البقوليات والخضار الموسمية بالجملة لتوفير التكاليف.",
+    },
+    "standard": {
+        "fa": "خرید پیشنهادی: مرغ، ماهی محلی، لبنیات، حبوبات، سبزیجات و میوه فصلی، غلات کامل.",
+        "en": "Shopping tip: Chicken, local fish, dairy, legumes, seasonal vegetables and fruits, whole grains.",
+        "ar": "نصيحة للتسوق: الدجاج والأسماك المحلية ومنتجات الألبان والبقوليات والخضار والفواكه الموسمية والحبوب الكاملة.",
+    },
+    "premium": {
+        "fa": "خرید پیشنهادی: پروتئین‌های متنوع (ماهی، مرغ، گوشت کم‌چرب)، لبنیات خاص، مغزهای مجاز، میوه‌های متنوع، سبزیجات تازه.",
+        "en": "Shopping tip: Varied proteins (fish, chicken, lean meat), specialty dairy, allowed nuts, diverse fruits, fresh vegetables.",
+        "ar": "نصيحة للتسوق: بروتينات متنوعة (أسماك ودجاج ولحوم خالية من الدهون) ومنتجات ألبان متخصصة ومكسرات مسموح بها وفواكه متنوعة وخضار طازجة.",
+    },
+    "unknown": {
+        "fa": "خرید پیشنهادی: مواد غذایی اصلی متناسب با اهداف برنامه.",
+        "en": "Shopping tip: Core ingredients appropriate for the plan's goals.",
+        "ar": "نصيحة للتسوق: المكونات الأساسية المناسبة لأهداف الخطة.",
+    },
+}
+
+
+def _meal_contains_expensive(meal: dict) -> bool:
+    for field in ("title", "description", "portion_guidance", "preparation_notes"):
+        text = (meal.get(field) or "").lower()
+        if any(term in text for term in _EXPENSIVE_TERMS):
+            return True
+    for item in (meal.get("food_items") or []):
+        if isinstance(item, dict):
+            name = (item.get("name") or "").lower()
+            if any(term in name for term in _EXPENSIVE_TERMS):
+                return True
+    return False
+
+
+def _enforce_budget_tier(
+    days: list[dict],
+    budget_tier: str,
+    locale: str,
+    forbidden_terms: set[str],
+) -> list[dict]:
+    """For economic budget: replace obviously expensive meals with affordable ones."""
+    if budget_tier != "economic":
+        return days
+    result = []
+    for day in days:
+        meals = list(day.get("meals") or [])
+        updated_meals = []
+        for meal in meals:
+            if _meal_contains_expensive(meal):
+                logger.info(
+                    "Budget enforcement (economic): replacing expensive meal '%s'",
+                    meal.get("title", ""),
+                )
+                replacement = _safe_replacement(meal, locale, forbidden_terms)
+                updated_meals.append(replacement)
+            else:
+                updated_meals.append(meal)
+        result.append({**day, "meals": updated_meals})
+    return result
+
+
 def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: str = "fa") -> dict:
     """Validate and sanitize a generated week plan dict. Returns cleaned plan."""
     forbidden_terms = _build_forbidden_terms(ctx)
     days = list(plan_data.get("days") or [])
 
-    # Ensure exactly 7 days
+    # Ensure at most 7 days
     days = days[:7]
+
+    budget_tier = normalize_budget_tier(ctx.food_budget)
+    budget_guidance = _BUDGET_GUIDANCE.get(budget_tier, _BUDGET_GUIDANCE["unknown"]).get(locale, "")
+    shopping_notes = _SHOPPING_NOTES.get(budget_tier, _SHOPPING_NOTES["unknown"]).get(locale, "")
 
     sanitized_days = []
     for day in days:
@@ -339,6 +445,16 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
             if cw not in day_warnings:
                 day_warnings.append(cw)
 
-        sanitized_days.append({**day, "meals": sanitized_meals, "warnings": day_warnings})
+        sanitized_days.append({
+            **day,
+            "meals": sanitized_meals,
+            "warnings": day_warnings,
+            "budget_tier": budget_tier,
+            "budget_guidance": day.get("budget_guidance") or budget_guidance,
+            "shopping_notes": day.get("shopping_notes") or shopping_notes,
+        })
+
+    # Apply budget enforcement (economic: replace expensive meals) after allergy pass
+    sanitized_days = _enforce_budget_tier(sanitized_days, budget_tier, locale, forbidden_terms)
 
     return {**plan_data, "days": sanitized_days}

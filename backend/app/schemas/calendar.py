@@ -65,6 +65,9 @@ class PlanDaySchema(BaseModel):
     supplements_vitamins_guidance: str | None = None
     progress_tracking_guidance: str | None = None
     adjustment_rules: str | None = None
+    budget_tier: str | None = None
+    budget_guidance: str | None = None
+    shopping_notes: str | None = None
 
 
 class CoverageSchema(BaseModel):

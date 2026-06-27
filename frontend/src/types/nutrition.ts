@@ -322,6 +322,9 @@ export interface PlanDay {
   supplements_vitamins_guidance: string | null
   progress_tracking_guidance: string | null
   adjustment_rules: string | null
+  budget_tier: string | null
+  budget_guidance: string | null
+  shopping_notes: string | null
 }
 
 export interface CoverageInfo {

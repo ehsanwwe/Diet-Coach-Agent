@@ -47,6 +47,7 @@ class NutritionMemoryContext:
     work_schedule: str | None = None
     cooking_ability: int | None = None
     food_budget: str | None = None
+    budget_tier: str = "unknown"  # normalized: economic | standard | premium | unknown
     eating_out_frequency: str | None = None
     travel_frequency: str | None = None
     exercise_days_per_week: int | None = None
@@ -266,6 +267,8 @@ class NutritionMemoryContext:
                     "sleep_hours": self.sleep_hours,
                     "stress_level": self.stress_level,
                     "work_schedule": self.work_schedule,
+                    "food_budget": self.food_budget,
+                    "budget_tier": self.budget_tier,
                     "budget_access_summary": self.budget_access_summary,
                     "cooking_access_summary": self.cooking_access_summary,
                 }.items()
@@ -336,6 +339,29 @@ class NutritionMemoryContext:
             },
             "missing_or_unknown_data": missing,
         }
+
+
+def normalize_budget_tier(food_budget: str | None) -> str:
+    """Map any budget string to: economic | standard | premium | unknown."""
+    if not food_budget:
+        return "unknown"
+    s = food_budget.strip().lower()
+    if s in {
+        "اقتصادی", "کم‌هزینه", "کم هزینه", "ارزان", "کم‌بودجه", "کم بودجه",
+        "low", "low_budget", "budget", "economic", "cheap", "affordable",
+    }:
+        return "economic"
+    if s in {
+        "معمولی", "متوسط", "نرمال", "میانه",
+        "medium", "standard", "normal", "moderate", "mid",
+    }:
+        return "standard"
+    if s in {
+        "گران", "پرهزینه", "پر هزینه", "لوکس",
+        "premium", "expensive", "high_budget", "high", "luxury",
+    }:
+        return "premium"
+    return "unknown"
 
 
 def _calc_age(birth_date: date) -> int:
@@ -724,6 +750,7 @@ def build(db: Session, user: User) -> NutritionMemoryContext:
         ctx.work_schedule = ls.work_schedule
         ctx.cooking_ability = ls.cooking_ability
         ctx.food_budget = ls.food_budget
+        ctx.budget_tier = normalize_budget_tier(ls.food_budget)
         ctx.eating_out_frequency = ls.eating_out_frequency
         ctx.travel_frequency = ls.travel_frequency
         ctx.exercise_days_per_week = ls.exercise_days_per_week

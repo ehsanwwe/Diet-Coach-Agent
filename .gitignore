@@ -95,6 +95,13 @@ Thumbs.db
 
 # Alembic SQLite artifact
 backend/app.db
+# SQLite WAL/SHM sidecar files (NEVER commit)
+*.db-wal
+*.db-shm
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3-wal
+*.sqlite3-shm
 
 # Loose archive file
 backend.zip

@@ -640,6 +640,12 @@ const en: Dictionary = {
     postWorkout: 'Post-workout',
     drinkGuidance: 'Drink guidance',
     foodItems: 'Food items',
+    budgetTier: 'Budget tier',
+    budgetGuidance: 'Budget guidance',
+    shoppingNotes: 'Shopping notes',
+    budgetEconomic: 'Economic',
+    budgetStandard: 'Standard',
+    budgetPremium: 'Premium',
   },
   progress: {
     title: 'Progress',

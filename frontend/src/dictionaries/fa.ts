@@ -658,6 +658,12 @@ export interface Dictionary {
     postWorkout: string
     drinkGuidance: string
     foodItems: string
+    budgetTier: string
+    budgetGuidance: string
+    shoppingNotes: string
+    budgetEconomic: string
+    budgetStandard: string
+    budgetPremium: string
   }
   progress: {
     title: string
@@ -1408,6 +1414,12 @@ const fa: Dictionary = {
     postWorkout: 'بعد از تمرین',
     drinkGuidance: 'راهنمای نوشیدنی',
     foodItems: 'مواد غذایی',
+    budgetTier: 'سطح بودجه',
+    budgetGuidance: 'راهنمای بودجه',
+    shoppingNotes: 'نکات خرید',
+    budgetEconomic: 'اقتصادی',
+    budgetStandard: 'معمولی',
+    budgetPremium: 'پیشرفته',
   },
   progress: {
     title: 'پیشرفت',

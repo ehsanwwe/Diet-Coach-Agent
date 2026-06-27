@@ -450,6 +450,42 @@ def for_generate_week_plan(
 
     allergen_section = "\n".join(allergen_lines) if allergen_lines else ""
 
+    # Budget tier constraints
+    budget_tier = ctx.budget_tier if ctx.budget_tier != "unknown" else "standard"
+    if budget_tier == "economic":
+        budget_section = (
+            "BUDGET CONSTRAINT — CRITICAL:\n"
+            "User has an ECONOMIC (low-cost) budget. HARD RULES:\n"
+            "- Use only affordable staples: legumes (lentils, beans, chickpeas), eggs (if not allergic), "
+            "chicken in controlled portions, local fish (if affordable), plain yogurt/cheese (if allowed), "
+            "seasonal vegetables and fruits, rice/bread/potatoes in controlled amounts.\n"
+            "- NEVER include in any meal: salmon, quinoa, avocado, blueberry/berries as staple, "
+            "imported nuts, protein powder, steak, shrimp, lobster, caviar, exotic superfoods, "
+            "premium supplements, costly restaurant meals.\n"
+            "- Alternatives must also be economic and affordable.\n"
+            "- Cheat meal must be low-cost and realistic.\n"
+            "- Restaurant guidance must suggest lower-cost healthy options only.\n"
+            "- Design for batch cooking: reuse affordable ingredients across the week.\n"
+            "- Include budget_tier='economic', budget_guidance (explaining the economic approach), "
+            "and shopping_notes (affordable shopping list) in each day.\n"
+        )
+    elif budget_tier == "premium":
+        budget_section = (
+            "BUDGET CONSTRAINT:\n"
+            "User has a PREMIUM budget. Wider food variety is acceptable:\n"
+            "- Allow more fish varieties, lean meats, specialty grains, premium dairy, varied nuts/seeds (if allowed).\n"
+            "- Keep the plan medically safe and goal-aligned — do not add expensive foods unless nutritionally useful.\n"
+            "- Include budget_tier='premium', budget_guidance, and shopping_notes in each day.\n"
+        )
+    else:
+        budget_section = (
+            "BUDGET CONSTRAINT:\n"
+            "User has a STANDARD budget. Use balanced common foods:\n"
+            "- Allow moderate variety: chicken, fish occasionally, dairy (if allowed), legumes, eggs (if allowed), seasonal produce.\n"
+            "- Avoid making every meal premium. Alternatives should stay normal-cost.\n"
+            "- Include budget_tier='standard', budget_guidance, and shopping_notes in each day.\n"
+        )
+
     # Determine exercise days
     exercise_days = ctx.exercise_days_per_week or 0
     training_note = (
@@ -461,6 +497,7 @@ def for_generate_week_plan(
     user = (
         f"User profile:\n{user_ctx}\n\n"
         + (f"{allergen_section}\n\n" if allergen_section else "")
+        + f"{budget_section}\n"
         + f"Generate exactly 7 days of meal plan in locale={effective_locale}.\n"
         + f"{training_note}\n"
         + "Use household portions. Include time windows for each meal. Provide calories and macros.\n"
@@ -491,6 +528,9 @@ def for_generate_week_plan(
         + '      "training_guidance": "...",\n'
         + '      "sleep_wake_guidance": "...",\n'
         + '      "cheat_meal_guidance": "...",\n'
+        + '      "budget_tier": "economic|standard|premium",\n'
+        + '      "budget_guidance": "...",\n'
+        + '      "shopping_notes": "...",\n'
         + '      "medical_warnings": [],\n'
         + '      "notes": "...",\n'
         + '      "warnings": [],\n'
