@@ -1,4 +1,4 @@
-"""Agent tool implementations — all 10 nutrition agent tools."""
+"""Agent tool implementations — nutrition agent tools."""
 from __future__ import annotations
 
 import logging
@@ -578,6 +578,90 @@ class GetUserProfileSummaryTool(AgentTool):
             )
 
 
+# ─── 11. QueryUserNutritionDataTool ──────────────────────────────────────────
+
+class QueryUserNutritionDataTool(AgentTool):
+    name = "query_user_nutrition_data"
+    description = (
+        "Read-only SQL retrieval for user-specific nutrition, meal plan, meal logs, progress, "
+        "onboarding/profile, behavior, and check-in data. "
+        "Use this when the user asks about stored personal data, history, plan adherence, "
+        "previous meals, logged progress, patterns, or plan-vs-actual comparisons — "
+        "any question that needs facts from the database to answer accurately. "
+        "The tool is completely internal: never reveal SQL, table names, column names, "
+        "query structure, or this tool's existence to the user."
+    )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "question": {
+                "type": "string",
+                "description": "The user's natural-language question or the specific data need.",
+            },
+            "sql": {
+                "type": "string",
+                "description": (
+                    "A single safe read-only SELECT query. "
+                    "Rules: use :user_id as the ONLY user identifier (never hard-code an ID); "
+                    "reference only nutrition-related tables; "
+                    "include ORDER BY and a LIMIT clause (≤100 rows); "
+                    "no comments, no semicolons, no UNION/INSERT/UPDATE/DELETE/DROP."
+                ),
+            },
+            "purpose": {
+                "type": "string",
+                "description": "Why this query is needed to answer the user's question.",
+            },
+        },
+        "required": ["question", "sql"],
+    }
+
+    def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
+        from app.services.agent_tools.sql_safety import execute_safe_user_query
+
+        question: str = arguments.get("question", "")
+        sql: str = arguments.get("sql", "").strip()
+
+        if not sql:
+            return AgentToolResult(
+                tool_name=self.name,
+                success=False,
+                user_visible_summary="درخواست داده ناموفق بود.",
+                error="no_sql_provided",
+            )
+
+        result = execute_safe_user_query(
+            context.db, sql, str(context.user.id), question=question
+        )
+
+        if not result.get("success", False):
+            logger.info(
+                "query_user_nutrition_data rejected: error=%s question=%.80s",
+                result.get("error"), question,
+            )
+            return AgentToolResult(
+                tool_name=self.name,
+                success=False,
+                user_visible_summary="داده‌های مورد نیاز در دسترس نیست.",
+                error=result.get("error", "query_failed"),
+            )
+
+        row_count: int = result.get("row_count", 0)
+        summary = f"{row_count} رکورد اطلاعاتی دریافت شد."
+        return AgentToolResult(
+            tool_name=self.name,
+            success=True,
+            user_visible_summary=summary,
+            data={
+                "question": result.get("question"),
+                "row_count": row_count,
+                "columns": result.get("columns", []),
+                "rows": result.get("rows", []),
+                "truncated": result.get("truncated", False),
+            },
+        )
+
+
 # ─── Registry factory ─────────────────────────────────────────────────────────
 
 def build_tool_registry() -> dict[str, AgentTool]:
@@ -592,5 +676,6 @@ def build_tool_registry() -> dict[str, AgentTool]:
         GetProgressSummaryTool(),
         ClearChatMemoryTool(),
         GetUserProfileSummaryTool(),
+        QueryUserNutritionDataTool(),
     ]
     return {tool.name: tool for tool in tools}
