@@ -348,3 +348,120 @@ class TestOrchestratorPolicy:
                 assert isinstance(action_text, str)
         # tool_calls_executed is a separate counter field
         assert isinstance(data.get("tool_calls_executed"), (int, type(None)))
+
+
+# ---------------------------------------------------------------------------
+# Tests: non-canned responses for eating events and plan-change requests
+# ---------------------------------------------------------------------------
+
+_CANNED_SNIPPET = "بر اساس وضعیتت میتونم کمک کنم"
+
+
+class TestNoCannedResponse:
+    """
+    Verify that the two problem messages no longer return the generic canned
+    'بر اساس وضعیتت...' response. Tests use the default MockAIProvider (no tools)
+    so they exercise the mock-mode routing path.
+    """
+
+    def _send(self, client, message: str) -> dict:
+        resp = client.post("/api/v1/chat/message", json={"message": message})
+        assert resp.status_code == 201, resp.text
+        return resp.json()["data"]
+
+    def test_ate_sweets_does_not_return_canned_response(self, client):
+        """
+        'من امروز دوتا شیرینی خوردم چی کار کنم؟' must route to slip_recovery
+        workflow in mock mode, not to the generic NutritionAgentService canned reply.
+        """
+        data = self._send(client, "من امروز دوتا شیرینی خوردم چی کار کنم؟")
+        content = data["content"]
+        assert _CANNED_SNIPPET not in content, (
+            f"Got canned response for eating event: {content!r}"
+        )
+        assert len(content) > 20
+
+    def test_plan_change_request_does_not_return_canned_response(self, client):
+        """
+        'این برنامه ای که بهم دادی رو میتونی برام تغییرش بدی؟' must hit the
+        plan-change path in _text_fallback and return a helpful clarifying reply.
+        """
+        data = self._send(client, "این برنامه ای که بهم دادی رو میتونی برام تغییرش بدی؟")
+        content = data["content"]
+        assert _CANNED_SNIPPET not in content, (
+            f"Got canned response for plan-change request: {content!r}"
+        )
+        assert len(content) > 20
+
+    def test_plan_change_reply_contains_helpful_options(self, client):
+        """
+        The plan-change mock reply should mention specific options the user can choose.
+        """
+        data = self._send(client, "میتونی تغییرش بدی برنامه رو؟")
+        content = data["content"]
+        assert _CANNED_SNIPPET not in content
+        # The _PLAN_CHANGE_MOCK_REPLY lists options like وعده, ورزشی, بودجه
+        assert any(word in content for word in ("وعده", "ورزشی", "بودجه", "تغییر")), (
+            f"Reply does not contain helpful plan-change options: {content!r}"
+        )
+
+    def test_llm_mode_bypasses_behavior_intent_for_eating_event(
+        self, client, monkeypatch
+    ):
+        """
+        When provider supports tools, eating-event messages must NOT be routed through
+        the behavior_intent workflow. They must reach the LLM tool orchestrator instead.
+        The ScriptedToolProvider verifies the orchestrator received the message.
+        """
+        provider = ScriptedToolProvider(
+            rounds=[
+                [{"name": "analyze_meal", "arguments": {
+                    "meal_text": "دوتا شیرینی",
+                    "should_log": True,
+                }}],
+                None,
+            ],
+            final_text="نگران نباش، بقیه روز رو کنترل کن. ناهار پروتئین بیشتری بخور.",
+        )
+        monkeypatch.setattr(
+            "app.services.agent_orchestrator.get_ai_provider",
+            lambda: provider,
+        )
+        data = client.post(
+            "/api/v1/chat/message",
+            json={"message": "من امروز دوتا شیرینی خوردم چی کار کنم؟"},
+        )
+        assert data.status_code == 201
+        result = data.json()["data"]
+        # LLM orchestrator must have been invoked (tool was called by scripted provider)
+        assert "analyze_meal" in provider.tool_names_called, (
+            "LLM orchestrator was not reached — behavior_intent routing intercepted the message"
+        )
+        assert _CANNED_SNIPPET not in result["content"]
+
+    def test_llm_mode_handles_plan_change_via_orchestrator(
+        self, client, monkeypatch
+    ):
+        """
+        When provider supports tools, plan-change requests must go to the LLM orchestrator
+        (not the text_fallback mock reply). The LLM can call tools or answer directly.
+        """
+        provider = ScriptedToolProvider(
+            rounds=[None],  # LLM answers without calling tools
+            final_text=(
+                "بله، می‌تونم کمکت کنم. چه بخشی از برنامه رو می‌خوای عوض کنی؟"
+            ),
+        )
+        monkeypatch.setattr(
+            "app.services.agent_orchestrator.get_ai_provider",
+            lambda: provider,
+        )
+        data = client.post(
+            "/api/v1/chat/message",
+            json={"message": "این برنامه ای که بهم دادی رو میتونی برام تغییرش بدی؟"},
+        )
+        assert data.status_code == 201
+        result = data.json()["data"]
+        assert _CANNED_SNIPPET not in result["content"]
+        # Scripted text was used — confirms orchestrator (not text_fallback) ran
+        assert "می‌تونم کمکت کنم" in result["content"]

@@ -744,6 +744,12 @@ const ar: Dictionary = {
     weeklyHumanReview: 'يوصى بالمراجعة مع مختص',
     weeklyConfidence: 'مستوى ثقة التقرير',
   },
+  generating: {
+    title: 'جارٍ إعداد خطة وجباتك',
+    description: 'انتظر لحظة — يتم الآن بناء خطتك لمدة ٧ أيام بناءً على المعلومات التي قدمتها.',
+    retry: 'حاول مرة أخرى',
+    error: 'فشل إنشاء الخطة. يرجى المحاولة مرة أخرى.',
+  },
 }
 
 export default ar

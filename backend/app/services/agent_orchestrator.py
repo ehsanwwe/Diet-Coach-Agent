@@ -141,6 +141,26 @@ _CRAVING_KEYWORDS = (
 _SLIP_KEYWORDS = (
     "overate", "ate too much", "broke my diet", "ruined my diet", "slip",
     "پرخوری", "زیاد خوردم", "رژیمم خراب", "همه چیز خراب", "لغزش", "خراب شد",
+    # natural eating-event phrases that imply off-plan eating
+    "شیرینی خوردم", "کیک خوردم", "چیپس خوردم", "بیسکویت خوردم", "زیادی خوردم",
+)
+
+_PLAN_CHANGE_KEYWORDS = (
+    "change my plan", "modify my plan", "update my plan",
+    "تغییرش بدی", "تغییرش بده", "تغییر بده", "برنامه رو تغییر",
+    "برنامه‌ام رو عوض", "عوضش بده", "عوضش کن", "می‌تونی تغییرش",
+    "میتونی تغییرش", "میشه تغییرش", "می‌شه تغییرش",
+)
+
+_PLAN_CHANGE_MOCK_REPLY = (
+    "بله، می‌تونم کمکت کنم برنامه رو تنظیم کنیم 🌿\n\n"
+    "چه بخشی رو می‌خوای تغییر بدی؟\n"
+    "• یک وعده خاص (صبحانه، ناهار، شام، میان‌وعده)\n"
+    "• سبک‌تر یا سنگین‌تر کردن کل برنامه\n"
+    "• جایگزینی مواد غذایی (مثلاً حذف لبنیات یا گوشت)\n"
+    "• تنظیم بر اساس برنامه ورزشی\n"
+    "• تغییر بر اساس بودجه یا دسترسی به مواد\n\n"
+    "بگو چه تغییری داری در نظر و من کمکت می‌کنم."
 )
 _CONTEXT_KEYWORDS = (
     "restaurant", "party", "travel", "travelling", "traveling", "fast food",
@@ -347,6 +367,16 @@ def _build_conversation_state(history: list[dict]) -> str:
 
 
 def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageResponse:
+    # In mock/no-tool mode, detect plan-change intent and give a contextual reply
+    # instead of the generic canned response from the mock chat task.
+    if _contains_keyword(message, _PLAN_CHANGE_KEYWORDS):
+        reply_text = _PLAN_CHANGE_MOCK_REPLY
+        am = chat_repository.create_message(db, session.id, "assistant", reply_text)
+        db.commit()
+        return ChatMessageResponse(
+            message_id=am.id, role="assistant", content=reply_text,
+            provider="local", is_mock=True, created_at=am.created_at,
+        )
     from app.services.nutrition_agent_service import NutritionAgentService
     agent = NutritionAgentService()
     try:
@@ -381,10 +411,6 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
             provider="local", is_mock=True, created_at=am.created_at,
         )
 
-    behavior_intent = _detect_behavior_intent(message)
-    if behavior_intent is not None:
-        return _run_behavior_workflow(db, session, user, message, behavior_intent)
-
     locale = _get_locale(db, user)
     ctx = nutrition_memory_service.build(db, user)
     ctx_json = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
@@ -394,6 +420,11 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
 
     provider = get_ai_provider()
     if not provider.supports_tools:
+        # Mock/no-tool mode: use behavior intent routing for structured responses,
+        # then fall back to text_fallback. The LLM orchestrator is unavailable here.
+        behavior_intent = _detect_behavior_intent(message)
+        if behavior_intent is not None:
+            return _run_behavior_workflow(db, session, user, message, behavior_intent)
         return _text_fallback(db, session, user_msg, ctx, message, history)
 
     exec_ctx = AgentExecutionContext(

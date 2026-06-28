@@ -241,7 +241,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
       clearDraft()
       if (!hasNavigatedRef.current) {
         hasNavigatedRef.current = true
-        router.replace(`/${locale}/dashboard`)
+        router.replace(`/${locale}/nutrition/generating`)
       }
     })
   }

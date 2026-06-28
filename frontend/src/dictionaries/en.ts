@@ -744,6 +744,12 @@ const en: Dictionary = {
     weeklyHumanReview: 'Specialist review is recommended',
     weeklyConfidence: 'Report confidence',
   },
+  generating: {
+    title: 'Preparing Your Meal Plan',
+    description: 'Please wait a moment — your 7-day plan is being built based on the information you provided.',
+    retry: 'Try Again',
+    error: 'Plan generation failed. Please try again.',
+  },
 }
 
 export default en

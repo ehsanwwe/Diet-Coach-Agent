@@ -665,6 +665,12 @@ export interface Dictionary {
     budgetStandard: string
     budgetPremium: string
   }
+  generating: {
+    title: string
+    description: string
+    retry: string
+    error: string
+  }
   progress: {
     title: string
     subtitle: string
@@ -1420,6 +1426,12 @@ const fa: Dictionary = {
     budgetEconomic: 'اقتصادی',
     budgetStandard: 'معمولی',
     budgetPremium: 'پیشرفته',
+  },
+  generating: {
+    title: 'در حال آماده‌سازی برنامه غذایی شما',
+    description: 'چند لحظه صبر کنید؛ برنامه ۷ روزه شما بر اساس اطلاعاتی که وارد کردید ساخته می‌شود.',
+    retry: 'تلاش دوباره',
+    error: 'ساخت برنامه با مشکل روبه‌رو شد. دوباره تلاش کنید.',
   },
   progress: {
     title: 'پیشرفت',
