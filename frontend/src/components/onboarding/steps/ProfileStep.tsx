@@ -35,6 +35,80 @@ const GENDERS: Array<{ value: ProfileFormData['gender']; labelKey: keyof Diction
   { value: 'prefer_not_to_say', labelKey: 'genderPreferNotToSay' },
 ]
 
+// ─── Numeric input sanitization ───────────────────────────────────────────────
+//
+// type="number" permits e / E / + / - and scientific notation in many browsers.
+// We use type="text" + inputMode instead, and enforce constraints via three layers:
+//  1. onKeyDown  — blocks individual invalid keystrokes before the DOM is updated
+//  2. onChange   — strips any residual bad characters and clamps to max
+//  3. onPaste    — sanitizes clipboard content before it reaches RHF state
+
+interface NumericConfig {
+  allowDecimal: boolean
+  max?: number
+}
+
+function makeNumericHandlers({ allowDecimal, max }: NumericConfig) {
+  /** Remove invalid chars and collapse duplicate dots; clamp to max when complete. */
+  function sanitize(raw: string): string {
+    let s = raw.replace(allowDecimal ? /[^\d.]/g : /[^\d]/g, '')
+    if (allowDecimal) {
+      const di = s.indexOf('.')
+      if (di !== -1) {
+        // Keep only the first decimal separator
+        s = s.slice(0, di + 1) + s.slice(di + 1).replace(/\./g, '')
+      }
+    }
+    // Clamp to max — but not while the user is still typing after a dot ("70.")
+    if (max !== undefined && s && s !== '.' && !s.endsWith('.')) {
+      const n = parseFloat(s)
+      if (!isNaN(n) && n > max) s = String(max)
+    }
+    return s
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    const { key, ctrlKey, metaKey } = e
+    // Always allow browser shortcuts: Ctrl/Cmd+A/C/V/X/Z etc.
+    if (ctrlKey || metaKey) return
+    // Always allow navigation and editing keys
+    if (['Backspace', 'Delete', 'Tab', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return
+    // Allow digits
+    if (/^\d$/.test(key)) return
+    // Allow the first decimal separator for decimal fields
+    if (allowDecimal && key === '.' && !e.currentTarget.value.includes('.')) return
+    // Block everything else: e, E, +, -, letters, symbols
+    e.preventDefault()
+  }
+
+  function makeOnChange(rhfOnChange: React.ChangeEventHandler<HTMLInputElement>) {
+    return (e: React.ChangeEvent<HTMLInputElement>) => {
+      const cleaned = sanitize(e.target.value)
+      // Mutate the input element so RHF reads the sanitized value
+      if (e.target.value !== cleaned) e.target.value = cleaned
+      rhfOnChange(e)
+    }
+  }
+
+  function makeOnPaste(rhfOnChange: React.ChangeEventHandler<HTMLInputElement>) {
+    return (e: React.ClipboardEvent<HTMLInputElement>) => {
+      e.preventDefault()
+      const pasted = e.clipboardData.getData('text/plain')
+      const el = e.currentTarget
+      const s0 = el.selectionStart ?? 0
+      const s1 = el.selectionEnd ?? 0
+      // Build what the combined value would be, then sanitize it
+      el.value = sanitize(el.value.slice(0, s0) + pasted + el.value.slice(s1))
+      // RHF reads el.value via the registered ref — pass el as target
+      rhfOnChange({ target: el } as unknown as React.ChangeEvent<HTMLInputElement>)
+    }
+  }
+
+  return { onKeyDown, makeOnChange, makeOnPaste }
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function ProfileStep({ dict, defaultValues, isSubmitting, apiError, onSubmit }: Props) {
   const [moreOpen, setMoreOpen] = useState(false)
 
@@ -57,8 +131,20 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
     },
   })
 
-  // Destructure onChange for fields that need negative-value sanitization so we
-  // can clear the input before RHF stores the value.
+  // Destructure RHF's onChange for every numeric field so we can wrap it.
+  // valueAsNumber: true works for type="text" — RHF calls parseFloat(ref.value).
+  const { onChange: onChangeAge, ...regAge } = register('age', {
+    required: dict.ageRange,
+    valueAsNumber: true,
+    min: { value: 8, message: dict.ageRange },
+    max: { value: 120, message: dict.ageRange },
+  })
+  const { onChange: onChangeHeight, ...regHeight } = register('height_cm', {
+    required: dict.heightRequired,
+    valueAsNumber: true,
+    min: { value: 80, message: dict.heightRange },
+    max: { value: 230, message: dict.heightRange },
+  })
   const { onChange: onChangeCW, ...regCurrentWeight } = register('current_weight_kg', {
     required: dict.weightRequired,
     valueAsNumber: true,
@@ -81,13 +167,13 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
     max: { value: 100, message: dict.thighRange },
   })
 
-  function clearIfNegative(
-    e: React.ChangeEvent<HTMLInputElement>,
-    rhfOnChange: React.ChangeEventHandler<HTMLInputElement>,
-  ) {
-    if (e.target.value !== '' && parseFloat(e.target.value) < 0) e.target.value = ''
-    return rhfOnChange(e)
-  }
+  // Per-field handler sets (integer vs decimal, with respective max)
+  const ageH    = makeNumericHandlers({ allowDecimal: false, max: 120 })
+  const heightH = makeNumericHandlers({ allowDecimal: true,  max: 230 })
+  const cwH     = makeNumericHandlers({ allowDecimal: true,  max: 300 })
+  const twH     = makeNumericHandlers({ allowDecimal: true,  max: 300 })
+  const waistH  = makeNumericHandlers({ allowDecimal: true,  max: 200 })
+  const thighH  = makeNumericHandlers({ allowDecimal: true,  max: 100 })
 
   const selectedGender = watch('gender')
 
@@ -155,66 +241,60 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
           {errors.gender && <p className="text-xs text-error mt-1.5">{errors.gender.message}</p>}
         </div>
 
-        {/* Age */}
+        {/* Age — integer, max 120 */}
         <Field label={dict.age} error={errors.age?.message}>
           <input
-            {...register('age', {
-              required: dict.ageRange,
-              valueAsNumber: true,
-              min: { value: 8, message: dict.ageRange },
-              max: { value: 120, message: dict.ageRange },
-            })}
-            type="number"
-            min={8}
-            max={120}
+            {...regAge}
+            type="text"
+            inputMode="numeric"
+            onKeyDown={ageH.onKeyDown}
+            onChange={ageH.makeOnChange(onChangeAge)}
+            onPaste={ageH.makeOnPaste(onChangeAge)}
             placeholder={dict.agePlaceholder}
             className={inputCls(!!errors.age)}
           />
         </Field>
 
-        {/* Height */}
+        {/* Height — decimal, max 230 */}
         <Field label={dict.heightCm} error={errors.height_cm?.message}>
           <input
-            {...register('height_cm', {
-              required: dict.heightRequired,
-              valueAsNumber: true,
-              min: { value: 80, message: dict.heightRange },
-              max: { value: 230, message: dict.heightRange },
-            })}
-            type="number"
-            min={80}
-            max={230}
+            {...regHeight}
+            type="text"
+            inputMode="decimal"
+            onKeyDown={heightH.onKeyDown}
+            onChange={heightH.makeOnChange(onChangeHeight)}
+            onPaste={heightH.makeOnPaste(onChangeHeight)}
             placeholder={dict.heightPlaceholder}
             className={inputCls(!!errors.height_cm)}
           />
         </Field>
 
-        {/* Current weight */}
+        {/* Current weight — decimal, max 300 */}
         <Field label={dict.currentWeight} error={errors.current_weight_kg?.message}>
           <input
             {...regCurrentWeight}
-            type="number"
-            min={20}
-            max={300}
-            step="0.1"
-            onChange={(e) => clearIfNegative(e, onChangeCW)}
+            type="text"
+            inputMode="decimal"
+            onKeyDown={cwH.onKeyDown}
+            onChange={cwH.makeOnChange(onChangeCW)}
+            onPaste={cwH.makeOnPaste(onChangeCW)}
             placeholder={dict.weightPlaceholder}
             className={inputCls(!!errors.current_weight_kg)}
           />
         </Field>
 
-        {/* Target weight (optional) */}
+        {/* Target weight (optional) — decimal, max 300 */}
         <Field
           label={`${dict.targetWeight} ${dict.optional}`}
           error={errors.target_weight_kg?.message}
         >
           <input
             {...regTargetWeight}
-            type="number"
-            min={20}
-            max={300}
-            step="0.1"
-            onChange={(e) => clearIfNegative(e, onChangeTW)}
+            type="text"
+            inputMode="decimal"
+            onKeyDown={twH.onKeyDown}
+            onChange={twH.makeOnChange(onChangeTW)}
+            onPaste={twH.makeOnPaste(onChangeTW)}
             placeholder={dict.targetWeightPlaceholder}
             className={inputCls(!!errors.target_weight_kg)}
           />
@@ -227,32 +307,30 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
             onClick={() => setMoreOpen((o) => !o)}
             className="flex items-center gap-2 text-sm font-medium text-brand py-2"
           >
-            {moreOpen
-              ? <ChevronUp size={16} />
-              : <ChevronDown size={16} />}
+            {moreOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             {dict.profileMoreDetails}
           </button>
 
           {moreOpen && (
             <div className="space-y-5 pt-2">
-              {/* Waist (optional) */}
+              {/* Waist (optional) — decimal, max 200 */}
               <Field
                 label={`${dict.waist} ${dict.optional}`}
                 error={errors.waist_circumference_cm?.message}
               >
                 <input
                   {...regWaist}
-                  type="number"
-                  min={40}
-                  max={200}
-                  step="0.1"
-                  onChange={(e) => clearIfNegative(e, onChangeWaist)}
+                  type="text"
+                  inputMode="decimal"
+                  onKeyDown={waistH.onKeyDown}
+                  onChange={waistH.makeOnChange(onChangeWaist)}
+                  onPaste={waistH.makeOnPaste(onChangeWaist)}
                   placeholder={dict.waistPlaceholder}
                   className={inputCls(!!errors.waist_circumference_cm)}
                 />
               </Field>
 
-              {/* Wrist (optional) */}
+              {/* Wrist (optional) — unchanged, not in scope */}
               <Field
                 label={`${dict.wrist} ${dict.optional}`}
                 error={errors.wrist_circumference_cm?.message}
@@ -272,18 +350,18 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
                 />
               </Field>
 
-              {/* Thigh (optional) */}
+              {/* Thigh (optional) — decimal, max 100 */}
               <Field
                 label={`${dict.thigh} ${dict.optional}`}
                 error={errors.thigh_circumference_cm?.message}
               >
                 <input
                   {...regThigh}
-                  type="number"
-                  min={30}
-                  max={100}
-                  step="0.1"
-                  onChange={(e) => clearIfNegative(e, onChangeThigh)}
+                  type="text"
+                  inputMode="decimal"
+                  onKeyDown={thighH.onKeyDown}
+                  onChange={thighH.makeOnChange(onChangeThigh)}
+                  onPaste={thighH.makeOnPaste(onChangeThigh)}
                   placeholder={dict.thighPlaceholder}
                   className={inputCls(!!errors.thigh_circumference_cm)}
                 />
