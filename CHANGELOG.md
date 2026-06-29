@@ -374,3 +374,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 - GSD project initialization: config.json, PROJECT.md, research (STACK/FEATURES/ARCHITECTURE/PITFALLS/SUMMARY), REQUIREMENTS.md (126 requirements), ROADMAP.md (10 phases), STATE.md, CLAUDE.md
 - Technology stack decisions: FastAPI 0.136.x, SQLAlchemy 2.x (sync), Alembic, Next.js 16, Tailwind v4, Zustand, Framer Motion, PyJWT
 - 10-phase roadmap covering infra, i18n/RTL, auth, onboarding (backend + frontend), voice/audio, AI/nutrition backend, nutrition frontend/chat, progress/reports, polish
+
+## [] feat(chat): persist draft and assistant response state
+- Added status/client_message_id/error_message to chat_messages (migration 0009)
+- Pending assistant placeholder committed before AI runs; GET /history shows thinking state immediately
+- Idempotency: duplicate client_message_id returns existing response without creating extra rows
+- Frontend: draft stored in localStorage (keyed by user ID), cleared only on send success
+- Frontend: polling loop (2s) recovers pending state after navigation or refresh
+- 4 new backend tests; all 11 chat tests pass
