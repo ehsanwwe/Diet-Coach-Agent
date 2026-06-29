@@ -30,7 +30,7 @@ def send_message(
 ) -> SuccessResponse[ChatMessageResponse]:
     """Send a text message and receive an AI nutrition companion response."""
     try:
-        result = chat_service.send_message(db, current_user, body.message)
+        result = chat_service.send_message(db, current_user, body.message, body.client_message_id)
     except AppError as exc:
         raise_http_error(exc.message, status_code=exc.status_code, detail=exc.detail)
     except Exception as exc:

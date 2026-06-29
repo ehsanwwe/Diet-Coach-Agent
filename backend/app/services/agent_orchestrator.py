@@ -276,12 +276,29 @@ def _behavior_reply(intent: str, data: dict) -> str:
     return "\n".join(str(p) for p in parts if p) or "راهنمایی آماده شد."
 
 
+def _save_assistant_response(
+    db: Session,
+    session_id: str,
+    content: str,
+    pending_id: str | None,
+    status: str = "completed",
+) -> "ChatMessage":
+    """Update the pending placeholder if given, otherwise create a new assistant message."""
+    from app.models.chat import ChatMessage  # local import avoids circular
+    if pending_id:
+        return chat_repository.update_message_status(
+            db, pending_id, status=status, content=content
+        )
+    return chat_repository.create_message(db, session_id, "assistant", content, status=status)
+
+
 def _run_behavior_workflow(
     db: Session,
     session,
     user: User,
     message: str,
     intent: str,
+    pending_id: str | None = None,
 ) -> ChatMessageResponse:
     from app.services import nutrition_service
 
@@ -309,7 +326,7 @@ def _run_behavior_workflow(
 
     payload = result.model_dump(mode="json")
     reply_text = _behavior_reply(intent, payload)
-    assistant_msg = chat_repository.create_message(db, session.id, "assistant", reply_text)
+    assistant_msg = _save_assistant_response(db, session.id, reply_text, pending_id)
     db.commit()
     return ChatMessageResponse(
         message_id=assistant_msg.id,
@@ -422,12 +439,12 @@ def _build_conversation_state(history: list[dict]) -> str:
     )
 
 
-def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageResponse:
+def _text_fallback(db, session, user_msg, ctx, message, history, pending_id=None) -> ChatMessageResponse:
     # In mock/no-tool mode, detect plan-change intent and give a contextual reply
     # instead of the generic canned response from the mock chat task.
     if _contains_keyword(message, _PLAN_CHANGE_KEYWORDS):
         reply_text = _PLAN_CHANGE_MOCK_REPLY
-        am = chat_repository.create_message(db, session.id, "assistant", reply_text)
+        am = _save_assistant_response(db, session.id, reply_text, pending_id)
         db.commit()
         return ChatMessageResponse(
             message_id=am.id, role="assistant", content=reply_text,
@@ -444,7 +461,7 @@ def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageR
         logger.warning("Text fallback failed: %s", exc)
         reply_text = "در حال حاضر پاسخ به پیام شما ممکن نیست. بعداً تلاش کنید."
         prov, is_mock = "mock_fallback", True
-    assistant_msg = chat_repository.create_message(db, session.id, "assistant", reply_text)
+    assistant_msg = _save_assistant_response(db, session.id, reply_text, pending_id)
     db.commit()
     return ChatMessageResponse(
         message_id=assistant_msg.id, role="assistant", content=reply_text,
@@ -452,15 +469,46 @@ def _text_fallback(db, session, user_msg, ctx, message, history) -> ChatMessageR
     )
 
 
-def process_user_message(db: Session, user: User, message: str) -> ChatMessageResponse:
+def process_user_message(
+    db: Session,
+    user: User,
+    message: str,
+    client_message_id: str | None = None,
+) -> ChatMessageResponse:
     session = chat_repository.get_or_create_companion_session(db, user.id)
-    user_msg = chat_repository.create_message(db, session.id, "user", message)
-    # Commit user message + session before running tools so a tool-level DB rollback
-    # cannot erase the user's message from chat history.
+
+    # Idempotency: if client already sent this message, return the existing response.
+    if client_message_id:
+        existing = chat_repository.get_message_by_client_id(db, session.id, client_message_id)
+        if existing:
+            last_assistant = chat_repository.get_last_assistant_message(db, session.id)
+            if last_assistant:
+                return ChatMessageResponse(
+                    message_id=last_assistant.id,
+                    role="assistant",
+                    content=last_assistant.content,
+                    provider="idempotent",
+                    is_mock=False,
+                    created_at=last_assistant.created_at,
+                )
+
+    # Save user message immediately.
+    user_msg = chat_repository.create_message(
+        db, session.id, "user", message,
+        status="completed",
+        client_message_id=client_message_id,
+    )
+    # Create pending assistant placeholder so GET /history immediately shows a
+    # thinking state even if the user navigates away while AI is generating.
+    pending_msg = chat_repository.create_message(
+        db, session.id, "assistant", "",
+        status="pending",
+    )
     db.commit()
+    pending_id = pending_msg.id
 
     if _is_greeting(message):
-        am = chat_repository.create_message(db, session.id, "assistant", _GREETING_REPLY)
+        am = _save_assistant_response(db, session.id, _GREETING_REPLY, pending_id)
         db.commit()
         return ChatMessageResponse(
             message_id=am.id, role="assistant", content=_GREETING_REPLY,
@@ -471,8 +519,16 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
     ctx = nutrition_memory_service.build(db, user)
     ctx_json = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
 
-    recent = chat_repository.get_recent_messages(db, session.id, limit=11)
-    history = [{"role": m.role, "content": m.content} for m in recent if m.id != user_msg.id]
+    # Exclude the current user message and the pending placeholder from context history.
+    recent = chat_repository.get_recent_messages(db, session.id, limit=12)
+    history = [
+        {"role": m.role, "content": m.content}
+        for m in recent
+        if m.id != user_msg.id
+        and m.id != pending_id
+        and m.status not in ("pending",)
+        and m.content
+    ]
 
     provider = get_ai_provider()
     if not provider.supports_tools:
@@ -480,8 +536,8 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
         # then fall back to text_fallback. The LLM orchestrator is unavailable here.
         behavior_intent = _detect_behavior_intent(message)
         if behavior_intent is not None:
-            return _run_behavior_workflow(db, session, user, message, behavior_intent)
-        return _text_fallback(db, session, user_msg, ctx, message, history)
+            return _run_behavior_workflow(db, session, user, message, behavior_intent, pending_id)
+        return _text_fallback(db, session, user_msg, ctx, message, history, pending_id)
 
     exec_ctx = AgentExecutionContext(
         db=db, user=user, locale=locale, nutrition_memory=ctx, chat_session_id=session.id,
@@ -585,9 +641,9 @@ def process_user_message(db: Session, user: User, message: str) -> ChatMessageRe
 
     except (AIProviderError, Exception) as exc:
         logger.warning("Agent orchestrator error, falling back: %s", exc)
-        return _text_fallback(db, session, user_msg, ctx, message, history)
+        return _text_fallback(db, session, user_msg, ctx, message, history, pending_id)
 
-    am = chat_repository.create_message(db, session.id, "assistant", reply_text)
+    am = _save_assistant_response(db, session.id, reply_text, pending_id)
     db.commit()
     return ChatMessageResponse(
         message_id=am.id, role="assistant", content=reply_text,

@@ -14,6 +14,8 @@ export interface ChatHistoryItem {
   role: string
   content: string
   created_at: string
+  status?: string
+  error_message?: string | null
 }
 
 export interface ChatHistoryResponse {

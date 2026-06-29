@@ -6,14 +6,16 @@ interface Props {
   youLabel: string
   coachLabel: string
   actions?: string[]
+  failedLabel: string
 }
 
 function trimChip(text: string): string {
   return text.length > 32 ? text.slice(0, 30) + '…' : text
 }
 
-export default function ChatBubble({ message, coachLabel, actions }: Props) {
+export default function ChatBubble({ message, coachLabel, actions, failedLabel }: Props) {
   const isUser = message.role === 'user'
+  const isFailed = message.status === 'failed'
 
   return (
     <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
@@ -32,13 +34,15 @@ export default function ChatBubble({ message, coachLabel, actions }: Props) {
       >
         {isUser ? (
           message.content
+        ) : isFailed ? (
+          <span className="text-xs text-error">{failedLabel}</span>
         ) : (
           <MarkdownMessage content={message.content} />
         )}
       </div>
 
-      {/* Action chips — assistant only */}
-      {!isUser && actions && actions.length > 0 && (
+      {/* Action chips — assistant only, not for failed messages */}
+      {!isUser && !isFailed && actions && actions.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5 px-0.5">
           {actions.map((a, i) => (
             <span

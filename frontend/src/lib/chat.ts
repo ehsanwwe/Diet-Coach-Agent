@@ -21,11 +21,12 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 export async function sendChatMessage(
   message: string,
+  clientMessageId?: string,
 ): Promise<ChatMessageResponse> {
   const res = await fetch(`${BASE_URL}${BASE}/message`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify({ message, client_message_id: clientMessageId }),
   })
   const wrapped = await handleResponse<ApiSuccess<ChatMessageResponse>>(res)
   return wrapped.data

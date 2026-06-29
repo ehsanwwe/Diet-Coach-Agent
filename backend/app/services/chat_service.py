@@ -43,9 +43,14 @@ def _is_simple_greeting(message: str) -> bool:
     return bool(_GREETING_RE.match(message.strip()))
 
 
-def send_message(db: Session, user: User, message: str) -> ChatMessageResponse:
+def send_message(
+    db: Session,
+    user: User,
+    message: str,
+    client_message_id: str | None = None,
+) -> ChatMessageResponse:
     from app.services.agent_orchestrator import process_user_message
-    return process_user_message(db, user, message)
+    return process_user_message(db, user, message, client_message_id=client_message_id)
 
 
 def clear_session(db: Session, user: User) -> None:
@@ -65,6 +70,8 @@ def get_history(db: Session, user: User) -> ChatHistoryResponse:
             role=m.role,
             content=m.content,
             created_at=m.created_at,
+            status=m.status,
+            error_message=m.error_message,
         )
         for m in messages
     ]

@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
+    client_message_id: str | None = Field(None, max_length=64)
 
 
 class ChatMessageResponse(BaseModel):
@@ -30,6 +31,8 @@ class ChatHistoryItem(BaseModel):
     role: str
     content: str
     created_at: datetime
+    status: str = "completed"
+    error_message: str | None = None
 
 
 class ChatHistoryResponse(BaseModel):

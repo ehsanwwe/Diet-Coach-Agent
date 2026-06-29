@@ -6,6 +6,7 @@ import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
 import type { ChatHistoryItem } from '@/types/chat'
 import { getChatHistory, sendChatMessage, clearChatMemory } from '@/lib/chat'
+import { getStoredUser } from '@/lib/storage'
 import ChatBubble from './ChatBubble'
 import ChatComposer from './ChatComposer'
 import AppIcon from '@/components/ui/AppIcon'
@@ -15,29 +16,125 @@ interface Props {
   locale: Locale
 }
 
+const DRAFT_KEY_PREFIX = 'chat_draft_'
+const POLL_INTERVAL_MS = 2000
+
+function makeClientId(): string {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+}
+
 export default function CompanionChat({ dict, locale }: Props) {
   const router = useRouter()
   const routerRef = useRef(router)
   routerRef.current = router
   const pathname = usePathname()
+
   const [messages, setMessages] = useState<ChatHistoryItem[]>([])
   const [messageExtras, setMessageExtras] = useState<Record<string, { actions?: string[] }>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
   const [typing, setTyping] = useState(false)
+  const [pendingRecovery, setPendingRecovery] = useState(false)
   const [started, setStarted] = useState(false)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
+  const [draftText, setDraftText] = useState('')
+
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const mountedRef = useRef(true)
+  const userIdRef = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
+  // ── Draft helpers ──────────────────────────────────────────────────────────
+
+  function getDraftKey(): string | null {
+    return userIdRef.current ? `${DRAFT_KEY_PREFIX}${userIdRef.current}` : null
+  }
+
+  function saveDraftToStorage(text: string) {
+    if (typeof window === 'undefined') return
+    const key = getDraftKey()
+    if (!key) return
+    text ? localStorage.setItem(key, text) : localStorage.removeItem(key)
+  }
+
+  function clearDraftFromStorage() {
+    if (typeof window === 'undefined') return
+    const key = getDraftKey()
+    if (key) localStorage.removeItem(key)
+  }
+
+  function handleDraftChange(text: string) {
+    setDraftText(text)
+    saveDraftToStorage(text)
+  }
+
+  // ── Polling helpers ────────────────────────────────────────────────────────
+
+  function stopPolling() {
+    if (pollingRef.current !== null) {
+      clearInterval(pollingRef.current)
+      pollingRef.current = null
+    }
+  }
+
+  function startPolling() {
+    stopPolling()
+    pollingRef.current = setInterval(async () => {
+      if (!mountedRef.current) {
+        stopPolling()
+        return
+      }
+      try {
+        const data = await getChatHistory()
+        if (!mountedRef.current) {
+          stopPolling()
+          return
+        }
+        const hasPending = data.messages.some(
+          (m) => m.role === 'assistant' && m.status === 'pending'
+        )
+        setMessages(data.messages.filter((m) => m.status !== 'pending'))
+        if (!hasPending) {
+          stopPolling()
+          setPendingRecovery(false)
+        }
+      } catch {
+        // Ignore transient polling errors — next tick retries automatically
+      }
+    }, POLL_INTERVAL_MS)
+  }
+
+  // ── Mount / unmount ────────────────────────────────────────────────────────
+
   useEffect(() => {
+    mountedRef.current = true
+
+    // Resolve user identity and restore draft (client-only)
+    const user = getStoredUser<{ id: string }>()
+    userIdRef.current = user?.id ?? null
+    if (user?.id && typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`${DRAFT_KEY_PREFIX}${user.id}`) ?? ''
+      if (saved) setDraftText(saved)
+    }
+
     getChatHistory()
       .then((data) => {
-        setMessages(data.messages)
-        if (data.messages.length > 0) setStarted(true)
+        if (!mountedRef.current) return
+        const hasPending = data.messages.some(
+          (m) => m.role === 'assistant' && m.status === 'pending'
+        )
+        const visible = data.messages.filter((m) => m.status !== 'pending')
+        setMessages(visible)
+        if (visible.length > 0) setStarted(true)
+        if (hasPending) {
+          setPendingRecovery(true)
+          startPolling()
+        }
       })
       .catch((err) => {
+        if (!mountedRef.current) return
         if (err instanceof Error && err.message === 'UNAUTHORIZED') {
           const loginPath = `/${locale}/login`
           if (pathname !== loginPath) routerRef.current.replace(loginPath)
@@ -45,37 +142,66 @@ export default function CompanionChat({ dict, locale }: Props) {
         }
         setLoadError(dict.companionChat.loadError)
       })
-      .finally(() => setLoading(false))
+      .finally(() => {
+        if (mountedRef.current) setLoading(false)
+      })
+
+    return () => {
+      mountedRef.current = false
+      stopPolling()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, typing])
+  }, [messages, typing, pendingRecovery])
+
+  // ── Send ───────────────────────────────────────────────────────────────────
 
   async function handleSend(message: string) {
     setSendError(null)
+    setDraftText('')            // Clear input UI immediately
+    // localStorage draft persists until the server confirms success
+
+    const clientMessageId = makeClientId()
     const optimistic: ChatHistoryItem = {
-      message_id: `tmp-${Date.now()}`,
+      message_id: `tmp-${clientMessageId}`,
       role: 'user',
       content: message,
       created_at: new Date().toISOString(),
+      status: 'completed',
     }
     setMessages((prev) => [...prev, optimistic])
     setTyping(true)
+    setStarted(true)
+
     try {
-      const resp = await sendChatMessage(message)
+      const resp = await sendChatMessage(message, clientMessageId)
+      if (!mountedRef.current) return
+
+      clearDraftFromStorage()   // Draft confirmed sent — safe to remove
+
       const assistant: ChatHistoryItem = {
         message_id: resp.message_id,
         role: resp.role,
         content: resp.content,
         created_at: resp.created_at,
+        status: 'completed',
       }
-      setMessages((prev) => [...prev, assistant])
+      setMessages((prev) => [
+        ...prev.filter((m) => m.message_id !== optimistic.message_id),
+        { ...optimistic },
+        assistant,
+      ])
       if (resp.actions_summary?.length) {
-        setMessageExtras(prev => ({ ...prev, [resp.message_id]: { actions: resp.actions_summary! } }))
+        setMessageExtras((prev) => ({
+          ...prev,
+          [resp.message_id]: { actions: resp.actions_summary! },
+        }))
       }
     } catch (err) {
+      if (!mountedRef.current) return
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
         const loginPath = `/${locale}/login`
         if (pathname !== loginPath) routerRef.current.replace(loginPath)
@@ -84,9 +210,11 @@ export default function CompanionChat({ dict, locale }: Props) {
       setSendError(dict.companionChat.sendError)
       setMessages((prev) => prev.filter((m) => m.message_id !== optimistic.message_id))
     } finally {
-      setTyping(false)
+      if (mountedRef.current) setTyping(false)
     }
   }
+
+  // ── Clear ──────────────────────────────────────────────────────────────────
 
   async function handleClear() {
     setClearing(true)
@@ -95,12 +223,18 @@ export default function CompanionChat({ dict, locale }: Props) {
       setMessages([])
       setStarted(false)
       setShowClearConfirm(false)
+      stopPolling()
+      setPendingRecovery(false)
     } catch {
       setShowClearConfirm(false)
     } finally {
       setClearing(false)
     }
   }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const showThinking = typing || pendingRecovery
 
   if (loading) {
     return (
@@ -197,9 +331,10 @@ export default function CompanionChat({ dict, locale }: Props) {
             youLabel={dict.companionChat.you}
             coachLabel={dict.companionChat.coach}
             actions={messageExtras[msg.message_id]?.actions}
+            failedLabel={dict.companionChat.assistantFailed}
           />
         ))}
-        {typing && (
+        {showThinking && (
           <div className="flex items-start gap-2">
             <div className="px-4 py-3 rounded-2xl rounded-es-sm bg-elevated shadow-sm">
               <span className="text-xs text-ink-3">{dict.companionChat.typingIndicator}</span>
@@ -212,7 +347,12 @@ export default function CompanionChat({ dict, locale }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      <ChatComposer dict={dict} onSend={handleSend} />
+      <ChatComposer
+        dict={dict}
+        onSend={handleSend}
+        value={draftText}
+        onChange={handleDraftChange}
+      />
     </div>
   )
 }

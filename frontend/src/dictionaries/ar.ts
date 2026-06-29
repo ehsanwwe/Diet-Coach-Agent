@@ -574,6 +574,7 @@ const ar: Dictionary = {
     clearMemoryConfirm: 'نعم، امسح',
     clearMemoryCancel: 'إلغاء',
     memoryCleared: 'تم مسح ذاكرة المحادثة',
+    assistantFailed: 'تعذّر استلام الرد. يرجى المحاولة مرة أخرى.',
   },
   safety: {
     clinicalTitle: 'تنبيه: يُنصح باستشارة طبية',

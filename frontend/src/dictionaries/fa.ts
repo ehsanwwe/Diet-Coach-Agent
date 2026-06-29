@@ -595,6 +595,7 @@ export interface Dictionary {
     clearMemoryConfirm: string
     clearMemoryCancel: string
     memoryCleared: string
+    assistantFailed: string
   }
   safety: {
     clinicalTitle: string
@@ -1354,6 +1355,7 @@ const fa: Dictionary = {
     clearMemoryConfirm: 'بله، پاک کن',
     clearMemoryCancel: 'لغو',
     memoryCleared: 'حافظه گفتگو پاک شد',
+    assistantFailed: 'پاسخ دریافت نشد. لطفاً دوباره تلاش کنید.',
   },
   safety: {
     clinicalTitle: 'توجه: مشاوره پزشکی توصیه می‌شود',

@@ -75,6 +75,7 @@ class ChatMessage(Base):
     """
     Individual message in a ChatSession.
     role: "user", "assistant", or "system"
+    status: "pending" (AI generating) | "completed" | "failed"
     """
 
     __tablename__ = "chat_messages"
@@ -90,6 +91,9 @@ class ChatMessage(Base):
     )
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="completed")
+    client_message_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

@@ -574,6 +574,7 @@ const en: Dictionary = {
     clearMemoryConfirm: 'Yes, clear',
     clearMemoryCancel: 'Cancel',
     memoryCleared: 'Chat memory cleared',
+    assistantFailed: 'Response could not be delivered. Please try again.',
   },
   safety: {
     clinicalTitle: 'Note: Medical Consultation Recommended',

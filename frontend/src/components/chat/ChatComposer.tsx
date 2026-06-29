@@ -7,18 +7,32 @@ interface Props {
   dict: Pick<Dictionary, 'companionChat'>
   onSend: (message: string) => Promise<void>
   disabled?: boolean
+  /** Controlled mode: current text value managed by parent */
+  value?: string
+  /** Controlled mode: called on every keystroke */
+  onChange?: (text: string) => void
 }
 
-export default function ChatComposer({ dict, onSend, disabled }: Props) {
-  const [text, setText] = useState('')
+export default function ChatComposer({ dict, onSend, disabled, value, onChange }: Props) {
+  const [internalText, setInternalText] = useState('')
   const [sending, setSending] = useState(false)
+
+  const isControlled = value !== undefined
+  const text = isControlled ? value : internalText
+
+  function handleChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
+    if (isControlled) {
+      onChange?.(e.target.value)
+    } else {
+      setInternalText(e.target.value)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const msg = text.trim()
     if (!msg || sending) return
     setSending(true)
-    setText('')
     try {
       await onSend(msg)
     } finally {
@@ -37,7 +51,7 @@ export default function ChatComposer({ dict, onSend, disabled }: Props) {
     <form onSubmit={handleSubmit} className="flex items-end gap-3 p-4 bg-elevated border-t border-line">
       <textarea
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={handleChange}
         onKeyDown={handleKeyDown}
         placeholder={dict.companionChat.inputPlaceholder}
         rows={1}
