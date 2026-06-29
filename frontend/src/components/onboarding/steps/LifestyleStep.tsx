@@ -122,8 +122,8 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
             onChange={(v) => setValue('exercise_days_per_week', v)}
             min={0}
             max={7}
-            lowLabel="7 ${dict.lifeExerciseUnit}"
-            highLabel={`0`}
+            lowLabel={`7 ${dict.lifeExerciseUnit}`}
+            highLabel="0"
           />
         </div>
 
