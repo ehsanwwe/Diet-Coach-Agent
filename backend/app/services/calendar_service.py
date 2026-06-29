@@ -97,6 +97,55 @@ def _dedupe_medical_warnings(warnings: list[str], canonical: str) -> list[str]:
     return result
 
 
+def _llm_repair_dislike_violations(
+    plan_data: dict,
+    disliked_foods: list[str],
+    provider,
+    locale: str,
+) -> dict:
+    """Ask the LLM to repair any disliked-food violations in the plan.
+
+    Returns the repaired plan dict, or the original if repair fails.
+    The validator is NOT re-run here; caller is responsible for that.
+    """
+    import json as _json
+    from app.services.weekly_plan_personalization_validator import validate_and_sanitize
+    from app.services.nutrition_memory_service import NutritionMemoryContext
+
+    disliked_str = ", ".join(disliked_foods[:15])
+    system_msg = (
+        "You are a meal-plan repair assistant. "
+        f"The user dislikes or cannot eat these foods: {disliked_str}. "
+        "Replace ONLY the meal fields that contain these foods with safe, culturally similar "
+        "Persian/Iranian alternatives. Keep the rest of the plan unchanged. "
+        "Return valid JSON with exactly the same structure — no extra text."
+    )
+    user_msg = _json.dumps(plan_data, ensure_ascii=False)
+    try:
+        from app.services.ai_provider import get_ai_provider
+        _provider = provider if provider is not None else get_ai_provider()
+        result = _provider.generate_response(
+            messages=[
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_msg},
+            ]
+        )
+        raw = getattr(result, "content", None) or ""
+        raw = raw.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        repaired = _json.loads(raw)
+        if isinstance(repaired, dict) and "days" in repaired:
+            return repaired
+        logger.warning("LLM repair returned unexpected structure; using original plan")
+        return plan_data
+    except Exception as exc:
+        logger.warning("LLM dislike repair failed (%s); using original plan", exc)
+        return plan_data
+
+
 def resolve_locale(db: Session, user: User, request_locale: str | None) -> str:
     user_lang = calendar_repository.get_user_language(db, user.id)
     return calendar_repository.resolve_locale(request_locale, user_lang)
@@ -289,6 +338,14 @@ def generate_week(
     plan_data, result = agent.generate_week_plan(ctx, locale)
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
+    if ctx.disliked_foods:
+        from app.services.preference_extractor import find_dislike_violations
+        violations = find_dislike_violations(plan_data, ctx.disliked_foods)
+        if violations:
+            logger.warning("Dislike violations in generated week plan: %s", violations)
+            plan_data = _llm_repair_dislike_violations(plan_data, ctx.disliked_foods, None, locale)
+            plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
+
     days_raw: list[dict] = plan_data.get("days") or []
     # Clamp to exactly 7
     days_raw = days_raw[:7]
@@ -413,6 +470,14 @@ def regenerate_day(
     agent = NutritionAgentService()
     plan_data, _ = agent.generate_week_plan(ctx, locale, extra_context=reason)
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
+
+    if ctx.disliked_foods:
+        from app.services.preference_extractor import find_dislike_violations
+        violations = find_dislike_violations(plan_data, ctx.disliked_foods)
+        if violations:
+            logger.warning("Dislike violations in regenerated day: %s", violations)
+            plan_data = _llm_repair_dislike_violations(plan_data, ctx.disliked_foods, None, locale)
+            plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     days_raw: list[dict] = plan_data.get("days") or []
     day_raw = days_raw[0] if days_raw else {}

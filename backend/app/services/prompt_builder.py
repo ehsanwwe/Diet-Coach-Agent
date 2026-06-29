@@ -125,6 +125,16 @@ def _memory_json(ctx: NutritionMemoryContext) -> str:
     return json.dumps(ctx.to_prompt_memory(), ensure_ascii=False, indent=2)
 
 
+def _dislike_constraint(ctx: NutritionMemoryContext) -> str:
+    if not ctx.disliked_foods:
+        return ""
+    disliked_str = ", ".join(ctx.disliked_foods[:10])
+    return (
+        f"\nDISLIKED FOODS — HARD CONSTRAINT: Never suggest or mention these foods: {disliked_str}. "
+        "Replace any disliked food with a culturally similar alternative the user has not disliked."
+    )
+
+
 def _memory_instruction() -> str:
     return (
         "Memory/context use:\n"
@@ -169,7 +179,8 @@ def for_generate_plan(ctx: NutritionMemoryContext) -> PromptData:
     user_ctx = _memory_json(ctx)
     user = (
         f"User profile:\n{user_ctx}\n\n"
-        "Generate a practical initial nutrition plan only if the profile is sufficiently complete.\n"
+        + _dislike_constraint(ctx)
+        + "\nGenerate a practical initial nutrition plan only if the profile is sufficiently complete.\n"
         "Do not create a complete strict diet based only on height, weight, and goal.\n"
         "The plan must include realistic meals/snacks WITH EXPLICIT QUANTITIES in both description and notes (e.g. '۲ کف دست نان + ۳۰ گرم پنیر', '۷ قاشق برنج + ۴ قاشق خورش'), alternatives, a quick busy-day option, outside-home/restaurant flexibility where possible, a simple scientific reason.\n"
         "NEVER produce a meal with only a food name — every meal must state measurable household amounts.\n"
@@ -266,7 +277,8 @@ def for_what_to_eat_now(
     )
     user = (
         f"User profile: {user_ctx}\n\n"
-        f"Available foods: {foods_str}\n"
+        + _dislike_constraint(ctx)
+        + f"\nAvailable foods: {foods_str}\n"
         f"Hunger level label: {hunger_level}. Interpret hunger on a 1-10 scale when possible.\n"
         f"Time constraint: {time_str}{extra}{structured}\n\n"
         "Use current place/context (home, work, restaurant, travel), available foods, last meal time, current goal, hunger 1-10, time constraints, cooking ability/access, and medical constraints.\n"
@@ -399,7 +411,8 @@ def for_chat_message(
 
     user = (
         f"User profile context: {user_ctx_json}\n\n"
-        f"User message: {user_message}\n\n"
+        + _dislike_constraint(ctx)
+        + f"\nUser message: {user_message}\n\n"
         "Give a concise, natural nutrition-companion response. Return JSON exactly as:\n"
         '{"reply": "...", "assessment_summary": "...", "monitoring_notes": "..."}'
     )
@@ -448,7 +461,14 @@ def for_generate_week_plan(
                 allergen_lines.append(f"- User has '{allergen}' allergy. NEVER include any form of '{allergen}' in any meal.")
     if ctx.disliked_foods:
         disliked_str = ", ".join(ctx.disliked_foods[:10])
-        allergen_lines.append(f"DISLIKED FOODS — DO NOT include: {disliked_str}")
+        allergen_lines.append(
+            f"DISLIKED FOODS — HARD PERSONALIZATION CONSTRAINT (same priority as allergy):\n"
+            f"NEVER include these foods ANYWHERE in the JSON: {disliked_str}\n"
+            "This applies to every field: title, description, food_items, alternatives, "
+            "shopping_notes, cheat_meal_guidance, restaurant_guidance, and notes.\n"
+            "If a common Iranian dish is disliked, replace it with a culturally similar accepted dish.\n"
+            "Before returning JSON, mentally scan every string field and remove any disliked food."
+        )
 
     allergen_section = "\n".join(allergen_lines) if allergen_lines else ""
 
@@ -631,7 +651,8 @@ def for_adapt_plan(
     ctx_str = json.dumps(recent_context, ensure_ascii=False) if recent_context else "{}"
     user = (
         f"User profile: {user_ctx}\n\n"
-        f"{plan_info}\n"
+        + _dislike_constraint(ctx)
+        + f"\n{plan_info}\n"
         f"Reason for adjustment: {reason}\n"
         f"Recent context: {ctx_str}\n\n"
         "Diet is a living plan. Adjust the active plan/day based on new data when safe and useful.\n"

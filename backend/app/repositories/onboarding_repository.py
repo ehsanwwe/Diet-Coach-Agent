@@ -376,6 +376,92 @@ def get_latest_risk_assessment(
     return result.scalar_one_or_none()
 
 
+# ─── Food preference merge helpers ───────────────────────────────────────────
+
+def merge_food_dislikes(db: Session, user_id: str, new_dislikes: list[str]) -> None:
+    """Merge new_dislikes into FoodPreference.disliked_foods without duplicates.
+    Uses normalized comparison so variants (half-space, Arabic chars) are deduplicated.
+    Dislikes win: also purges any matching food from favorite_foods."""
+    from app.services.preference_extractor import normalize_for_compare
+
+    if not new_dislikes:
+        return
+
+    fp = get_food_preference(db, user_id)
+    if fp is None:
+        fp = FoodPreference(user_id=user_id)
+        db.add(fp)
+
+    existing_dislikes: list[str] = []
+    if fp.disliked_foods:
+        try:
+            existing_dislikes = json.loads(fp.disliked_foods)
+        except (json.JSONDecodeError, TypeError):
+            existing_dislikes = []
+
+    existing_norms = {normalize_for_compare(d) for d in existing_dislikes}
+    for food in new_dislikes:
+        key = normalize_for_compare(food)
+        if key and key not in existing_norms:
+            existing_dislikes.append(food)
+            existing_norms.add(key)
+
+    fp.disliked_foods = json.dumps(existing_dislikes, ensure_ascii=False)
+
+    # Remove any newly disliked food from favorites (dislikes win)
+    existing_likes: list[str] = []
+    if fp.favorite_foods:
+        try:
+            existing_likes = json.loads(fp.favorite_foods)
+        except (json.JSONDecodeError, TypeError):
+            existing_likes = []
+    if existing_likes:
+        dislike_norms = {normalize_for_compare(d) for d in existing_dislikes}
+        cleaned = [f for f in existing_likes if normalize_for_compare(f) not in dislike_norms]
+        if len(cleaned) != len(existing_likes):
+            fp.favorite_foods = json.dumps(cleaned, ensure_ascii=False)
+
+    db.flush()
+
+
+def merge_food_likes(db: Session, user_id: str, new_likes: list[str]) -> None:
+    """Merge new_likes into FoodPreference.favorite_foods. Skips foods already disliked."""
+    from app.services.preference_extractor import normalize_for_compare
+
+    if not new_likes:
+        return
+
+    fp = get_food_preference(db, user_id)
+    if fp is None:
+        fp = FoodPreference(user_id=user_id)
+        db.add(fp)
+
+    existing_dislikes: list[str] = []
+    if fp.disliked_foods:
+        try:
+            existing_dislikes = json.loads(fp.disliked_foods)
+        except (json.JSONDecodeError, TypeError):
+            existing_dislikes = []
+    dislike_norms = {normalize_for_compare(d) for d in existing_dislikes}
+
+    existing_likes: list[str] = []
+    if fp.favorite_foods:
+        try:
+            existing_likes = json.loads(fp.favorite_foods)
+        except (json.JSONDecodeError, TypeError):
+            existing_likes = []
+
+    existing_norms = {normalize_for_compare(f) for f in existing_likes}
+    for food in new_likes:
+        key = normalize_for_compare(food)
+        if key and key not in existing_norms and key not in dislike_norms:
+            existing_likes.append(food)
+            existing_norms.add(key)
+
+    fp.favorite_foods = json.dumps(existing_likes, ensure_ascii=False)
+    db.flush()
+
+
 # ─── User ─────────────────────────────────────────────────────────────────────
 
 def set_user_onboarded(db: Session, user: User) -> None:

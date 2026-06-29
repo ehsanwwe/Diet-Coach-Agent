@@ -18,6 +18,14 @@ interface Props {
 
 const DRAFT_KEY_PREFIX = 'chat_draft_'
 const POLL_INTERVAL_MS = 2000
+const SUBMITTED_DRAFT_MAX_AGE_MS = 90_000
+
+interface StoredDraft {
+  text: string
+  clientMessageId: string
+  status: 'draft' | 'submitted'
+  submittedAt?: string
+}
 
 function makeClientId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
@@ -48,6 +56,8 @@ export default function CompanionChat({ dict, locale }: Props) {
 
   // ── Draft helpers ──────────────────────────────────────────────────────────
 
+  const clientMessageIdRef = useRef<string>(makeClientId())
+
   function getDraftKey(): string | null {
     return userIdRef.current ? `${DRAFT_KEY_PREFIX}${userIdRef.current}` : null
   }
@@ -56,7 +66,29 @@ export default function CompanionChat({ dict, locale }: Props) {
     if (typeof window === 'undefined') return
     const key = getDraftKey()
     if (!key) return
-    text ? localStorage.setItem(key, text) : localStorage.removeItem(key)
+    if (!text) {
+      localStorage.removeItem(key)
+      return
+    }
+    const entry: StoredDraft = {
+      text,
+      clientMessageId: clientMessageIdRef.current,
+      status: 'draft',
+    }
+    localStorage.setItem(key, JSON.stringify(entry))
+  }
+
+  function markDraftSubmitted(text: string) {
+    if (typeof window === 'undefined') return
+    const key = getDraftKey()
+    if (!key) return
+    const entry: StoredDraft = {
+      text,
+      clientMessageId: clientMessageIdRef.current,
+      status: 'submitted',
+      submittedAt: new Date().toISOString(),
+    }
+    localStorage.setItem(key, JSON.stringify(entry))
   }
 
   function clearDraftFromStorage() {
@@ -115,8 +147,31 @@ export default function CompanionChat({ dict, locale }: Props) {
     const user = getStoredUser<{ id: string }>()
     userIdRef.current = user?.id ?? null
     if (user?.id && typeof window !== 'undefined') {
-      const saved = localStorage.getItem(`${DRAFT_KEY_PREFIX}${user.id}`) ?? ''
-      if (saved) setDraftText(saved)
+      const raw = localStorage.getItem(`${DRAFT_KEY_PREFIX}${user.id}`) ?? ''
+      if (raw) {
+        try {
+          const stored: StoredDraft = JSON.parse(raw)
+          if (stored.status === 'submitted') {
+            // Already sent — check if stale and clean up
+            const age = stored.submittedAt
+              ? Date.now() - new Date(stored.submittedAt).getTime()
+              : SUBMITTED_DRAFT_MAX_AGE_MS + 1
+            if (age > SUBMITTED_DRAFT_MAX_AGE_MS) {
+              localStorage.removeItem(`${DRAFT_KEY_PREFIX}${user.id}`)
+            }
+            // Do NOT populate composer with a submitted message
+          } else {
+            // status === 'draft' — restore text to composer
+            setDraftText(stored.text ?? '')
+            if (stored.clientMessageId) {
+              clientMessageIdRef.current = stored.clientMessageId
+            }
+          }
+        } catch {
+          // Legacy plain-string draft — restore as-is
+          setDraftText(raw)
+        }
+      }
     }
 
     getChatHistory()
@@ -162,9 +217,15 @@ export default function CompanionChat({ dict, locale }: Props) {
   async function handleSend(message: string) {
     setSendError(null)
     setDraftText('')            // Clear input UI immediately
-    // localStorage draft persists until the server confirms success
 
-    const clientMessageId = makeClientId()
+    // Capture the current client ID for this send, then rotate for the next message.
+    const clientMessageId = clientMessageIdRef.current
+    clientMessageIdRef.current = makeClientId()
+
+    // Mark as submitted in localStorage BEFORE the network call so that if the
+    // component unmounts mid-request (user navigates away) the message is never
+    // restored to the composer on return.
+    markDraftSubmitted(message)
     const optimistic: ChatHistoryItem = {
       message_id: `tmp-${clientMessageId}`,
       role: 'user',
@@ -178,9 +239,11 @@ export default function CompanionChat({ dict, locale }: Props) {
 
     try {
       const resp = await sendChatMessage(message, clientMessageId)
-      if (!mountedRef.current) return
+      // Clear draft from localStorage regardless of mount state — localStorage is
+      // a global store and does not need the component to be mounted.
+      clearDraftFromStorage()
 
-      clearDraftFromStorage()   // Draft confirmed sent — safe to remove
+      if (!mountedRef.current) return
 
       const assistant: ChatHistoryItem = {
         message_id: resp.message_id,
@@ -201,6 +264,8 @@ export default function CompanionChat({ dict, locale }: Props) {
         }))
       }
     } catch (err) {
+      // On error, restore the draft so the user can retry.
+      saveDraftToStorage(message)
       if (!mountedRef.current) return
       if (err instanceof Error && err.message === 'UNAUTHORIZED') {
         const loginPath = `/${locale}/login`

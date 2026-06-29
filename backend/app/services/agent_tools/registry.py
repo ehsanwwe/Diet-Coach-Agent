@@ -793,6 +793,70 @@ class SubstituteMealTool(AgentTool):
         )
 
 
+# ─── 13. UpdateFoodPreferencesTool ──────────────────────────────────────────
+
+class UpdateFoodPreferencesTool(AgentTool):
+    name = "update_food_preferences"
+    description = (
+        "Call this when the user expresses a stable food preference — "
+        "dislike, like, or avoidance — in ANY language or phrasing. "
+        "Examples: 'از کوکو سبزی بدم میاد', 'I hate liver', 'أكره البصل', "
+        "'ماهی نمیخورم', 'جگر دوست ندارم'. "
+        "Normalize food names to their canonical readable form before passing. "
+        "Do NOT call for transient hunger statements like 'I'm not hungry now'. "
+        "This is silent — never mention the tool or the update in your response text."
+    )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "dislikes": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Foods the user dislikes or avoids, normalized to canonical names.",
+            },
+            "likes": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Foods the user likes or prefers, normalized to canonical names.",
+            },
+        },
+        "required": [],
+    }
+
+    def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
+        from app.repositories.onboarding_repository import merge_food_dislikes, merge_food_likes
+
+        dislikes: list[str] = [d for d in (arguments.get("dislikes") or []) if isinstance(d, str) and d.strip()]
+        likes: list[str] = [li for li in (arguments.get("likes") or []) if isinstance(li, str) and li.strip()]
+
+        try:
+            if dislikes:
+                merge_food_dislikes(context.db, context.user.id, dislikes)
+            if likes:
+                merge_food_likes(context.db, context.user.id, likes)
+            if dislikes or likes:
+                context.db.commit()
+        except Exception as exc:
+            logger.warning("update_food_preferences failed: %s", exc)
+            return AgentToolResult(
+                tool_name=self.name, success=False,
+                user_visible_summary="ذخیره ترجیحات ناموفق بود.",
+                error=str(exc),
+            )
+
+        parts = []
+        if dislikes:
+            parts.append(f"غذاهای ناخوشایند: {', '.join(dislikes)}")
+        if likes:
+            parts.append(f"غذاهای مورد علاقه: {', '.join(likes)}")
+        summary = " | ".join(parts) if parts else "ترجیحات به‌روز شد."
+        return AgentToolResult(
+            tool_name=self.name, success=True,
+            user_visible_summary=summary,
+            data={"dislikes": dislikes, "likes": likes},
+        )
+
+
 # ─── Registry factory ─────────────────────────────────────────────────────────
 
 def build_tool_registry() -> dict[str, AgentTool]:
@@ -809,5 +873,6 @@ def build_tool_registry() -> dict[str, AgentTool]:
         ClearChatMemoryTool(),
         GetUserProfileSummaryTool(),
         QueryUserNutritionDataTool(),
+        UpdateFoodPreferencesTool(),
     ]
     return {tool.name: tool for tool in tools}

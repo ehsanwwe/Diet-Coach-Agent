@@ -159,6 +159,18 @@ MANDATORY TOOL RULES:
     • If a recent assistant turn already updated tomorrow's plan: do NOT update again.
     • If a food event was already analyzed recently: refer to it briefly, do NOT re-analyze.
 
+12. FOOD PREFERENCE DETECTION → update_food_preferences
+    When: user expresses a stable food dislike, like, or avoidance in ANY language or wording.
+    Trigger phrases (non-exhaustive): 'از X بدم میاد', 'X دوست ندارم', 'X نمیخورم',
+    'حالم از X بد میشه', 'با X مشکل دارم', 'X رو نمیتونم بخورم', 'X حالم رو بد میکنه',
+    'I don't like X', 'I hate X', 'I can't eat X', 'أكره X', 'لا أحب X'.
+    Rules:
+    - Normalize the food name to its standard readable form (e.g. 'کوکو سبزی', 'جگر', 'ماهی').
+    - Call update_food_preferences in the SAME turn as the user message.
+    - This is a SILENT background action — do NOT mention the tool or the update in your response.
+    - Allergies (life-threatening reactions) go through the medical flags flow, not here.
+    - Do NOT call for transient statements like 'I'm not hungry now' or 'I don't feel like eating'.
+
 FOLLOW-UP LIMIT (critical):
 - Per user issue/event, ask AT MOST 1 clarifying question before taking action.
 - 'گرسنه‌ام', 'هنوز گرسنه‌ام', 'سوزش گرسنگی', 'شکم‌درد از گرسنگی', 'ضعف' are NOT reasons to ask.
@@ -518,6 +530,23 @@ def process_user_message(
     locale = _get_locale(db, user)
     ctx = nutrition_memory_service.build(db, user)
     ctx_json = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
+
+    # Fast-path preference extraction: persist dislikes/likes before the AI tool loop
+    # so the LLM sees the updated context and plan generation uses the latest preferences.
+    try:
+        from app.services.preference_extractor import extract_food_preferences
+        from app.repositories.onboarding_repository import merge_food_dislikes, merge_food_likes
+        _pref_dislikes, _pref_likes = extract_food_preferences(message)
+        if _pref_dislikes or _pref_likes:
+            if _pref_dislikes:
+                merge_food_dislikes(db, user.id, _pref_dislikes)
+            if _pref_likes:
+                merge_food_likes(db, user.id, _pref_likes)
+            db.commit()
+            ctx = nutrition_memory_service.build(db, user)
+            ctx_json = json.dumps(ctx.to_compact_dict(), ensure_ascii=False)
+    except Exception as _pref_exc:
+        logger.warning("Fast-path preference extraction failed: %s", _pref_exc)
 
     # Exclude the current user message and the pending placeholder from context history.
     recent = chat_repository.get_recent_messages(db, session.id, limit=12)
