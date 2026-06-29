@@ -212,8 +212,8 @@ export default function BehaviorStep({ dict, defaultValues, isSubmitting, apiErr
             onChange={(v) => setForm((f) => ({ ...f, motivation_level: v }))}
             min={1}
             max={10}
-            lowLabel={dict.behavMotivationLow}
-            highLabel={dict.behavMotivationHigh}
+            lowLabel={dict.behavMotivationHigh}
+            highLabel={dict.behavMotivationLow}
           />
         </div>
 

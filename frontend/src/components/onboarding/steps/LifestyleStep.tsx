@@ -66,8 +66,8 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
             min={3}
             max={12}
             step={1}
-            lowLabel="3"
-            highLabel="12"
+            lowLabel="12"
+            highLabel="3"
           />
         </div>
 
@@ -82,8 +82,8 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
             onChange={(v) => setValue('stress_level', v)}
             min={1}
             max={10}
-            lowLabel={dict.lifeStressLow}
-            highLabel={dict.lifeStressHigh}
+            lowLabel={dict.lifeStressHigh}
+            highLabel={dict.lifeStressLow}
           />
         </div>
 
@@ -122,8 +122,8 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
             onChange={(v) => setValue('exercise_days_per_week', v)}
             min={0}
             max={7}
-            lowLabel="0"
-            highLabel={`7 ${dict.lifeExerciseUnit}`}
+            lowLabel="7 ${dict.lifeExerciseUnit}"
+            highLabel={`0`}
           />
         </div>
 
