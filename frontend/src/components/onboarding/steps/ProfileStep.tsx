@@ -57,6 +57,38 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
     },
   })
 
+  // Destructure onChange for fields that need negative-value sanitization so we
+  // can clear the input before RHF stores the value.
+  const { onChange: onChangeCW, ...regCurrentWeight } = register('current_weight_kg', {
+    required: dict.weightRequired,
+    valueAsNumber: true,
+    min: { value: 20, message: dict.weightRange },
+    max: { value: 300, message: dict.weightRange },
+  })
+  const { onChange: onChangeTW, ...regTargetWeight } = register('target_weight_kg', {
+    valueAsNumber: true,
+    min: { value: 20, message: dict.targetWeightRange },
+    max: { value: 300, message: dict.targetWeightRange },
+  })
+  const { onChange: onChangeWaist, ...regWaist } = register('waist_circumference_cm', {
+    valueAsNumber: true,
+    min: { value: 40, message: dict.waistRange },
+    max: { value: 200, message: dict.waistRange },
+  })
+  const { onChange: onChangeThigh, ...regThigh } = register('thigh_circumference_cm', {
+    valueAsNumber: true,
+    min: { value: 30, message: dict.thighRange },
+    max: { value: 100, message: dict.thighRange },
+  })
+
+  function clearIfNegative(
+    e: React.ChangeEvent<HTMLInputElement>,
+    rhfOnChange: React.ChangeEventHandler<HTMLInputElement>,
+  ) {
+    if (e.target.value !== '' && parseFloat(e.target.value) < 0) e.target.value = ''
+    return rhfOnChange(e)
+  }
+
   const selectedGender = watch('gender')
 
   function submit(data: ProfileFormData) {
@@ -160,14 +192,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
         {/* Current weight */}
         <Field label={dict.currentWeight} error={errors.current_weight_kg?.message}>
           <input
-            {...register('current_weight_kg', {
-              required: dict.weightRequired,
-              valueAsNumber: true,
-              min: { value: 20, message: dict.weightRange },
-              max: { value: 300, message: dict.weightRange },
-            })}
+            {...regCurrentWeight}
             type="number"
+            min={20}
+            max={300}
             step="0.1"
+            onChange={(e) => clearIfNegative(e, onChangeCW)}
             placeholder={dict.weightPlaceholder}
             className={inputCls(!!errors.current_weight_kg)}
           />
@@ -179,13 +209,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
           error={errors.target_weight_kg?.message}
         >
           <input
-            {...register('target_weight_kg', {
-              valueAsNumber: true,
-              min: { value: 20, message: dict.targetWeightRange },
-              max: { value: 300, message: dict.targetWeightRange },
-            })}
+            {...regTargetWeight}
             type="number"
+            min={20}
+            max={300}
             step="0.1"
+            onChange={(e) => clearIfNegative(e, onChangeTW)}
             placeholder={dict.targetWeightPlaceholder}
             className={inputCls(!!errors.target_weight_kg)}
           />
@@ -212,13 +241,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
                 error={errors.waist_circumference_cm?.message}
               >
                 <input
-                  {...register('waist_circumference_cm', {
-                    valueAsNumber: true,
-                    min: { value: 40, message: dict.waistRange },
-                    max: { value: 200, message: dict.waistRange },
-                  })}
+                  {...regWaist}
                   type="number"
+                  min={40}
+                  max={200}
                   step="0.1"
+                  onChange={(e) => clearIfNegative(e, onChangeWaist)}
                   placeholder={dict.waistPlaceholder}
                   className={inputCls(!!errors.waist_circumference_cm)}
                 />
@@ -250,13 +278,12 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
                 error={errors.thigh_circumference_cm?.message}
               >
                 <input
-                  {...register('thigh_circumference_cm', {
-                    valueAsNumber: true,
-                    min: { value: 30, message: dict.thighRange },
-                    max: { value: 100, message: dict.thighRange },
-                  })}
+                  {...regThigh}
                   type="number"
+                  min={30}
+                  max={100}
                   step="0.1"
+                  onChange={(e) => clearIfNegative(e, onChangeThigh)}
                   placeholder={dict.thighPlaceholder}
                   className={inputCls(!!errors.thigh_circumference_cm)}
                 />
