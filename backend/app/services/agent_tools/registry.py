@@ -662,6 +662,137 @@ class QueryUserNutritionDataTool(AgentTool):
         )
 
 
+# ─── 12. SubstituteMealTool ──────────────────────────────────────────────────
+
+class SubstituteMealTool(AgentTool):
+    name = "substitute_meal"
+    description = (
+        "Replace a specific meal in the user's stored plan for today or another date.\n"
+        "Use when user asks to swap, replace, or change a specific meal.\n"
+        "Examples: 'به جای قرمه‌سبزی ماکارانی می‌خوام', 'ناهار امروزم رو با مرغ عوض کن'.\n\n"
+        "Steps BEFORE calling:\n"
+        "1. Call get_calendar to see what meals exist in today's plan.\n"
+        "2. Identify: target_date (today unless user specifies), meal_slot (lunch/dinner/breakfast/snack).\n"
+        "3. Craft new_description WITH explicit quantities using Persian household units:\n"
+        "   - Pasta: '۱.۵ لیوان ماکارانی پخته + ۱ کف دست گوشت چرخ‌کرده + ۱ بشقاب سالاد'\n"
+        "   - Rice+stew: '۷ قاشق غذاخوری برنج + ۴ قاشق خورش [name]'\n"
+        "   - Chicken: '۱ کف دست سینه مرغ (حدود ۱۲۰ گرم) + سبزیجات'\n"
+        "4. new_description and new_portion_guidance MUST contain explicit quantities — "
+        "NEVER use vague phrases like 'مقدار مناسب', 'کمی', 'کنترل‌شده'."
+    )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "target_date": {
+                "type": "string",
+                "description": "Date in YYYY-MM-DD format or 'today'. Default: today.",
+            },
+            "meal_slot": {
+                "type": "string",
+                "enum": ["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "snack"],
+                "description": "Which meal slot to replace (ناهار=lunch, شام=dinner, صبحانه=breakfast, میان‌وعده=snack).",
+            },
+            "new_title": {
+                "type": "string",
+                "description": "New meal title including the food name.",
+            },
+            "new_description": {
+                "type": "string",
+                "description": (
+                    "Full meal description WITH explicit quantities for every component. "
+                    "Example: '۱.۵ لیوان ماکارانی پخته + ۱ کف دست گوشت چرخ‌کرده + ۱ بشقاب سالاد'"
+                ),
+            },
+            "new_portion_guidance": {
+                "type": "string",
+                "description": "Explicit portion guidance using Persian household units.",
+            },
+            "reason": {
+                "type": "string",
+                "description": "Why the meal is being substituted (for the user's log).",
+            },
+        },
+        "required": ["meal_slot", "new_title", "new_description", "new_portion_guidance"],
+    }
+
+    def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
+        from app.services import calendar_service
+
+        target_date_str: str = arguments.get("target_date", "today") or "today"
+        if target_date_str.lower() == "today":
+            target_date = date.today()
+        else:
+            try:
+                target_date = date.fromisoformat(target_date_str)
+            except (ValueError, AttributeError):
+                target_date = date.today()
+
+        meal_slot: str = arguments.get("meal_slot", "lunch")
+        new_title: str = arguments.get("new_title", "")
+        new_description: str = arguments.get("new_description", "")
+        new_portion_guidance: str = arguments.get("new_portion_guidance", "")
+        reason: str | None = arguments.get("reason")
+
+        try:
+            updated_day = calendar_service.substitute_day_meal(
+                context.db,
+                context.user,
+                context.locale,
+                target_date,
+                meal_slot,
+                new_title=new_title,
+                new_description=new_description,
+                new_portion_guidance=new_portion_guidance,
+                substitution_note=reason,
+            )
+        except Exception as exc:
+            logger.warning("substitute_meal failed: %s", exc)
+            return AgentToolResult(
+                tool_name=self.name, success=False,
+                user_visible_summary="جایگزینی وعده غذایی ناموفق بود.",
+                error=str(exc),
+            )
+
+        if updated_day is None:
+            return AgentToolResult(
+                tool_name=self.name, success=False,
+                user_visible_summary=f"برنامه‌ای برای تاریخ {target_date.isoformat()} یافت نشد.",
+                error="day_not_found_or_meal_slot_missing",
+            )
+
+        # Build a compact meal list for the LLM to read back to the user.
+        updated_meal = next(
+            (m for m in updated_day.meals if m.meal_slot == meal_slot or m.meal_type == meal_slot),
+            None,
+        )
+        meal_text = (updated_meal.description if updated_meal else new_description) or new_description
+        summary = f"وعده {meal_slot} در {target_date.isoformat()} به‌روزرسانی شد: {meal_text}"
+
+        return AgentToolResult(
+            tool_name=self.name, success=True,
+            user_visible_summary=summary,
+            data={
+                "plan_date": target_date.isoformat(),
+                "meal_slot": meal_slot,
+                "new_description": new_description,
+                "updated_day": {
+                    "plan_date": updated_day.plan_date,
+                    "title": updated_day.title,
+                    "meals": [
+                        {
+                            "meal_slot": m.meal_slot,
+                            "meal_type": m.meal_type,
+                            "title": m.title,
+                            "description": m.description,
+                            "portion_guidance": m.portion_guidance,
+                        }
+                        for m in updated_day.meals
+                    ],
+                },
+            },
+        )
+
+
 # ─── Registry factory ─────────────────────────────────────────────────────────
 
 def build_tool_registry() -> dict[str, AgentTool]:
@@ -671,6 +802,7 @@ def build_tool_registry() -> dict[str, AgentTool]:
         GenerateWeekPlanTool(),
         GetCalendarTool(),
         UpdateTomorrowPlanTool(),
+        SubstituteMealTool(),
         AdaptPlanTool(),
         LogCheckInTool(),
         GetProgressSummaryTool(),

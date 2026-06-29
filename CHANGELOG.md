@@ -5,6 +5,26 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
 ---
 
+## [1.0.1] - 2026-06-29
+
+### Fixed — Nutrition Agent Quality Fixes
+
+#### Fix 1: Duplicate medical warnings now deduplicated
+- `backend/app/services/calendar_service.py` — added `_is_consult_warning()` and `_dedupe_medical_warnings()` helpers; applied in both `generate_week()` and `regenerate_day()` to collapse semantically-equivalent "consult doctor" warnings into a single canonical sentence
+- `backend/app/services/prompt_builder.py` — added LLM instruction not to emit medical-consultation warnings (backend injects the canonical one automatically)
+
+#### Fix 2: Meal descriptions now include explicit quantities
+- `backend/app/services/mock_ai_provider.py` — updated all 7 days of FA mock data; every meal's `description` and `portion_guidance` now use measurable Persian household units (کف دست، قاشق غذاخوری، کاسه، گرم) — no vague "مقدار مناسب" phrases
+- `backend/app/services/prompt_builder.py` — strengthened `for_generate_week_plan()` portion rules to require explicit quantities in `description` field as well as `portion_guidance`; added same rule to `for_generate_plan()`
+
+#### Fix 3: Chat meal substitution now persists to actual stored plan
+- `backend/app/repositories/calendar_repository.py` — added `get_meal_by_slot()` (finds meal by slot or type) and `update_meal_fields()` (updates title/description/portion/alternatives in-place)
+- `backend/app/services/calendar_service.py` — added `substitute_day_meal()` to replace a single named meal in an existing plan day and return the updated day schema
+- `backend/app/services/agent_tools/registry.py` — added `SubstituteMealTool` (tool #12); registered in `build_tool_registry()`
+- `backend/app/services/agent_orchestrator.py` — added rule 3b to `_ORCHESTRATOR_SYSTEM`: meal substitution intent triggers `get_calendar` + `substitute_meal`; LLM must craft explicit quantities before calling the tool; after success must show updated meal; "برنامه جدید" request must call `get_calendar` not invent from memory
+
+---
+
 ## [1.0.0] - 2026-06-04
 
 ### Added — Phase 10: Settings, Polish & Remaining UI

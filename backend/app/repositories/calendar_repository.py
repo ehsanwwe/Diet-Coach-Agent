@@ -295,6 +295,53 @@ def get_day_meals(db: Session, plan_day_id: str) -> list[NutritionPlanDayMeal]:
     return sorted(meals, key=_orm_meal_sort_key)
 
 
+def get_meal_by_slot(
+    db: Session, plan_day_id: str, meal_slot: str
+) -> NutritionPlanDayMeal | None:
+    """Find the first meal for a plan day that matches meal_slot OR meal_type."""
+    result = db.execute(
+        select(NutritionPlanDayMeal).where(
+            NutritionPlanDayMeal.plan_day_id == plan_day_id,
+            NutritionPlanDayMeal.meal_slot == meal_slot,
+        )
+    )
+    meal = result.scalar_one_or_none()
+    if meal is not None:
+        return meal
+    # Fallback: match by meal_type for plans where meal_slot equals meal_type
+    result = db.execute(
+        select(NutritionPlanDayMeal).where(
+            NutritionPlanDayMeal.plan_day_id == plan_day_id,
+            NutritionPlanDayMeal.meal_type == meal_slot,
+        )
+    )
+    return result.scalars().first()
+
+
+def update_meal_fields(
+    db: Session,
+    meal: NutritionPlanDayMeal,
+    *,
+    title: str | None = None,
+    description: str | None = None,
+    portion_guidance: str | None = None,
+    alternatives: list[str] | None = None,
+    preparation_notes: str | None = None,
+) -> NutritionPlanDayMeal:
+    if title is not None:
+        meal.title = title
+    if description is not None:
+        meal.description = description
+    if portion_guidance is not None:
+        meal.portion_guidance = portion_guidance
+    if alternatives is not None:
+        meal.alternatives = json.dumps(alternatives, ensure_ascii=False)
+    if preparation_notes is not None:
+        meal.preparation_notes = preparation_notes
+    db.flush()
+    return meal
+
+
 def create_plan_day_meal(
     db: Session,
     *,

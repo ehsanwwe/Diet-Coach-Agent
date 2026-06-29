@@ -1,7 +1,7 @@
 # Next Steps — Diet Coach Agent
 
-**Updated:** 2026-06-04
-**Current status:** ALL 10 PHASES COMPLETE. App is feature-complete for v1.0.
+**Updated:** 2026-06-29
+**Current status:** v1.0.1 — All 10 phases complete + 3 nutrition agent quality fixes shipped.
 
 ## Immediate Next Action
 

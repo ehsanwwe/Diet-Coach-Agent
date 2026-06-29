@@ -25,6 +25,14 @@ from app.services import nutrition_memory_service
 from app.services.nutrition_agent_service import NutritionAgentService
 from app.services.weekly_plan_personalization_validator import validate_and_sanitize, MEAL_ORDER
 
+# Keywords that identify a "consult your doctor before starting this plan" warning.
+# Two or more of these in one warning string → treat as a medical-consultation warning.
+_CONSULT_KEYWORDS: frozenset[str] = frozenset({
+    "مشورت", "پزشک", "متخصص تغذیه", "مراجعه",
+    "consult", "doctor", "dietitian", "physician",
+    "استشر", "طبيب", "أخصائي",
+})
+
 logger = logging.getLogger(__name__)
 
 
@@ -60,6 +68,33 @@ _CLINICAL_WARNING_AR = (
     "بناءً على وضعك الطبي، استشر طبيباً أو أخصائي تغذية قبل اتباع هذه الخطة."
 )
 _CLINICAL_WARNINGS = {"fa": _CLINICAL_WARNING_FA, "en": _CLINICAL_WARNING_EN, "ar": _CLINICAL_WARNING_AR}
+
+
+def _is_consult_warning(warning: str) -> bool:
+    """Return True if this warning is semantically a 'consult doctor before starting' warning."""
+    lowered = warning.lower()
+    matched = sum(1 for kw in _CONSULT_KEYWORDS if kw in lowered)
+    return matched >= 2
+
+
+def _dedupe_medical_warnings(warnings: list[str], canonical: str) -> list[str]:
+    """Replace all semantically-duplicate medical-consultation warnings with a single canonical one.
+
+    The LLM sometimes generates its own 'consult doctor' warning that overlaps with the
+    backend-injected canonical warning. This collapses them into one canonical sentence and
+    deduplicates any remaining exact duplicates.
+    """
+    result: list[str] = []
+    canonical_added = False
+    for w in warnings:
+        if _is_consult_warning(w):
+            if not canonical_added:
+                result.append(canonical)
+                canonical_added = True
+        else:
+            if w not in result:
+                result.append(w)
+    return result
 
 
 def resolve_locale(db: Session, user: User, request_locale: str | None) -> str:
@@ -276,8 +311,10 @@ def generate_week(
             calendar_repository.delete_plan_day(db, existing)
 
         raw_warnings: list[str] = list(day_raw.get("warnings") or [])
-        if clinical_warning and clinical_warning not in raw_warnings:
-            raw_warnings.append(clinical_warning)
+        if clinical_warning:
+            raw_warnings = _dedupe_medical_warnings(raw_warnings, clinical_warning)
+            if clinical_warning not in raw_warnings:
+                raw_warnings.append(clinical_warning)
 
         day = calendar_repository.create_plan_day(
             db,
@@ -384,6 +421,7 @@ def regenerate_day(
     raw_warnings: list[str] = list(day_raw.get("warnings") or [])
     if ctx.clinical_review_required:
         cw = _CLINICAL_WARNINGS.get(locale, _CLINICAL_WARNING_FA)
+        raw_warnings = _dedupe_medical_warnings(raw_warnings, cw)
         if cw not in raw_warnings:
             raw_warnings.append(cw)
 
@@ -456,3 +494,45 @@ def regenerate_day(
         plan_date=plan_date.isoformat(),
         day=_day_to_schema(db, day),
     )
+
+
+def substitute_day_meal(
+    db: Session,
+    user: User,
+    locale: str,
+    plan_date: date,
+    meal_slot: str,
+    new_title: str,
+    new_description: str,
+    new_portion_guidance: str,
+    new_alternatives: list[str] | None = None,
+    substitution_note: str | None = None,
+) -> PlanDaySchema | None:
+    """Replace a single named meal slot in an existing plan day.
+
+    Returns the updated PlanDaySchema so the caller can show the user exactly
+    what changed, or None when no plan day exists for the requested date.
+    """
+    day = calendar_repository.get_day_by_date(db, user.id, plan_date, locale)
+    if day is None:
+        return None
+
+    meal = calendar_repository.get_meal_by_slot(db, day.id, meal_slot)
+    if meal is None:
+        logger.warning(
+            "substitute_day_meal: no meal found for slot=%s day=%s user=%s",
+            meal_slot, plan_date, user.id,
+        )
+        return None
+
+    calendar_repository.update_meal_fields(
+        db,
+        meal,
+        title=new_title,
+        description=new_description,
+        portion_guidance=new_portion_guidance,
+        alternatives=new_alternatives or [],
+        preparation_notes=substitution_note,
+    )
+    db.commit()
+    return _day_to_schema(db, day)

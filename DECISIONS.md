@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-06-29 — Nutrition Agent Quality Fixes
+
+### D-020: Warning deduplication at service layer, not prompt layer
+**Decision:** Use a keyword-matching function in `calendar_service.py` to collapse semantically-duplicate medical-consultation warnings rather than relying solely on LLM instruction to avoid them.
+**Rationale:** LLM compliance with "don't emit X" instructions is probabilistic; service-layer dedup is deterministic. Both layers now enforce the rule.
+
+### D-021: `substitute_meal` tool — LLM crafts content, tool persists only
+**Decision:** The `SubstituteMealTool` accepts fully-crafted meal content (title, description, portion_guidance) from the LLM orchestrator rather than delegating meal generation to a nested AI call inside the tool.
+**Rationale:** The orchestrator LLM already has user profile context and conversation history; giving it meal crafting responsibility produces better portion-aware substitutions without an extra AI round-trip.
+
+---
+
 ## 2026-06-03 — Project Initialization
 
 ### D-001: SQLite (not PostgreSQL) for v1
