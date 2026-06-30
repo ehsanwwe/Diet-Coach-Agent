@@ -597,6 +597,12 @@ export interface Dictionary {
     memoryCleared: string
     assistantFailed: string
   }
+  dietProtocol: {
+    replaceChip: string
+    continueChip: string
+    createChip: string
+    laterChip: string
+  }
   safety: {
     clinicalTitle: string
     clinicalMessage: string
@@ -1356,6 +1362,12 @@ const fa: Dictionary = {
     clearMemoryCancel: 'لغو',
     memoryCleared: 'حافظه گفتگو پاک شد',
     assistantFailed: 'پاسخ دریافت نشد. لطفاً دوباره تلاش کنید.',
+  },
+  dietProtocol: {
+    replaceChip: 'بله، برنامه رو با رژیم جدید جایگزین کن',
+    continueChip: 'نه، برنامه فعلی رو ادامه بده',
+    createChip: 'بله، برنامه جدید بساز',
+    laterChip: 'بعداً',
   },
   safety: {
     clinicalTitle: 'توجه: مشاوره پزشکی توصیه می‌شود',

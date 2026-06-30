@@ -324,6 +324,7 @@ def generate_week(
     locale: str,
     start_date: date | None,
     force: bool,
+    extra_context: str | None = None,
 ) -> GenerateWeekResponse:
     # Determine start date
     if start_date is None:
@@ -335,7 +336,7 @@ def generate_week(
 
     ctx = nutrition_memory_service.build(db, user)
     agent = NutritionAgentService()
-    plan_data, result = agent.generate_week_plan(ctx, locale)
+    plan_data, result = agent.generate_week_plan(ctx, locale, extra_context=extra_context)
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     if ctx.disliked_foods:

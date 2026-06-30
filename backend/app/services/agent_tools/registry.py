@@ -142,15 +142,142 @@ class WhatToEatNowTool(AgentTool):
 
 # ─── 3. GenerateWeekPlanTool ─────────────────────────────────────────────────
 
+def _build_protocol_extra_context(protocol: str | None) -> str | None:
+    """Return English-language nutrition science instructions for the given protocol key."""
+    if not protocol:
+        return None
+    instructions: dict[str, str] = {
+        "keto": (
+            "DIET PROTOCOL: Ketogenic. "
+            "Keep net carbs (total carbs minus fiber) under 50g per day across ALL meals. "
+            "Fat should be 65–75% of total calories; protein moderate (1.2–1.5g/kg body weight). "
+            "Keto is NOT just meat — include: eggs, full-fat dairy, avocado, nuts, seeds, "
+            "olive oil, low-carb vegetables (spinach, broccoli, cauliflower, zucchini, cucumber, bell pepper). "
+            "Persian-compatible keto dishes: kabab without rice (serve with salad/vegetables), "
+            "mirza ghasemi without bread, spinach omelette (kuku), tahdig-free ghormeh sabzi over cauliflower rice, "
+            "mast-o-khiar with nuts. "
+            "Do NOT include rice, bread, pasta, potatoes, or fruit (except small amounts of berries). "
+            "Track net carbs per meal: breakfast ≤15g, lunch ≤20g, dinner ≤15g."
+        ),
+        "intermittent_fasting": (
+            "DIET PROTOCOL: Intermittent Fasting — TIMING CHANGE ONLY. "
+            "Use a 16:8 eating window (eating from 12:00 to 20:00, fasting from 20:00 to 12:00 next day). "
+            "Food types do NOT change — this is purely a schedule adjustment. "
+            "Schedule all meals within the 8-hour window: break fast at 12:00 with a protein-rich meal, "
+            "main meal at 15:00–16:00, light meal or snack by 20:00. "
+            "During the fasting window: water, plain tea, and black coffee are allowed. "
+            "Emphasize protein at the first meal to prevent muscle loss. "
+            "Do NOT restrict any food category. Do NOT reduce calorie targets below maintenance."
+        ),
+        "low_carb": (
+            "DIET PROTOCOL: Low-Carb (not keto). "
+            "Target 80–130g net carbs per day — controlled portions, NOT elimination. "
+            "Reduce rice/bread portions by half; replace with more protein and vegetables. "
+            "Example: instead of a full plate of rice, serve 4–5 tablespoons rice + extra stew + salad. "
+            "Fruit is allowed (1–2 servings/day). Legumes allowed in moderate portions. "
+            "Emphasize fiber-rich vegetables, lean protein, and healthy fats at every meal."
+        ),
+        "high_protein": (
+            "DIET PROTOCOL: High Protein. "
+            "Target 1.8–2.2g protein per kg body weight per day. "
+            "Every meal must contain at least 25g protein. "
+            "Distribute protein intake evenly across all meals — do not concentrate in one meal. "
+            "Protein sources: chicken breast, eggs, low-fat dairy (labne, kashk, mast), legumes, fish, "
+            "red meat (lean cuts, 2–3×/week). "
+            "Carbohydrate and fat portions remain balanced — this is not a keto or low-fat protocol."
+        ),
+        "mediterranean": (
+            "DIET PROTOCOL: Mediterranean. "
+            "Primary fat source: olive oil (2–3 tablespoons/day). "
+            "Fish or seafood 2–3 times per week. "
+            "Legumes (lentils, chickpeas, beans) at least once daily. "
+            "Abundant vegetables and fruits. Whole grains preferred over refined. "
+            "Red meat limited to 1–2 times per week. "
+            "Persian adaptation: use olive oil instead of butter/ghee, "
+            "include adas polo, ash reshteh, mirza ghasemi, fresh herb platters (sabzi khordan), "
+            "yogurt with meals, and pomegranate/walnuts as snacks."
+        ),
+        "vegetarian": (
+            "DIET PROTOCOL: Vegetarian (not vegan). "
+            "No meat, poultry, or fish. Eggs and dairy are allowed and encouraged. "
+            "Ensure complementary proteins at each meal: combine legumes with grains or dairy. "
+            "Examples: lentil soup + whole grain bread, egg + cheese omelette, kashk-e-bademjan, "
+            "mirza ghasemi, spinach frittata, mast-o-khiar with nuts. "
+            "Iron sources: lentils, spinach, tofu, fortified foods — pair with vitamin C for absorption. "
+            "Minimum 3–4 servings of protein-rich foods (eggs, legumes, dairy) per day."
+        ),
+        "vegan": (
+            "DIET PROTOCOL: Vegan. "
+            "No animal products — no meat, poultry, fish, eggs, dairy, or honey. "
+            "B12 supplementation is medically necessary — add a note in medical_warnings for each day. "
+            "Protein sources: tofu, tempeh, legumes (lentils, chickpeas, beans), nuts, seeds, soy milk. "
+            "Complement proteins: rice+lentils, whole grain bread+hummus. "
+            "Calcium sources: fortified plant milk, tofu, broccoli, sesame (tahini). "
+            "Iron: lentils, spinach, pumpkin seeds — pair with vitamin C. "
+            "Persian vegan dishes: adas polo without butter, vegetable ash, "
+            "hummus with bread, walnut-stuffed dates, fresh herb salads."
+        ),
+        "calorie_deficit": (
+            "DIET PROTOCOL: Calorie Deficit for Weight Loss. "
+            "Set daily calorie target at 300–500 kcal below estimated maintenance. "
+            "NEVER go below 1200 kcal/day for women or 1500 kcal/day for men — hard floor. "
+            "Preserve protein intake (minimum 1.6g/kg) to prevent muscle loss. "
+            "Prioritize fiber-rich foods (vegetables, legumes) to maintain satiety. "
+            "Reduce refined carbohydrates and added fats first before cutting protein or fiber. "
+            "Each meal must be nutritionally complete — no skipping meals."
+        ),
+        "muscle_gain": (
+            "DIET PROTOCOL: Muscle Gain. "
+            "Set daily calorie target at 250–400 kcal above maintenance (lean bulk). "
+            "Protein: 1.8–2.2g per kg body weight, evenly distributed across all meals. "
+            "Post-workout meal: within 1–2 hours of training — 30–40g protein + 50–60g carbs. "
+            "Carbohydrates are essential — do NOT restrict them; use complex carbs (rice, whole grains, legumes). "
+            "Example post-workout: chicken breast + rice + vegetables, or eggs + whole grain bread + banana."
+        ),
+        "iranian_traditional": (
+            "DIET PROTOCOL: Iranian Traditional Diet. "
+            "Emphasize authentic Persian dishes using traditional cooking methods. "
+            "Rice and bread are ALLOWED — do NOT ban them; manage portions instead. "
+            "Core dishes: ghormeh sabzi, gheymeh, fesenjan, ash reshteh, khoresh karafs, "
+            "mirza ghasemi, mast-o-khiar, salad shirazi, abgoosht, dizi. "
+            "Use traditional Persian herbs generously: parsley, fenugreek, coriander, dill. "
+            "Include fresh herb platters (sabzi khordan) with every main meal. "
+            "Yogurt (mast) and fermented dairy are encouraged. "
+            "Balance: half the plate vegetables/stew, one quarter rice/bread, one quarter protein."
+        ),
+    }
+    return instructions.get(protocol)
+
+
+def _protocol_chips_replace_or_continue(locale: str) -> list[str]:
+    if locale == "en":
+        return ["Yes, replace with new protocol", "No, continue current plan"]
+    if locale == "ar":
+        return ["نعم، استبدل البروتوكول الجديد", "لا، استمر في الخطة الحالية"]
+    return ["بله، برنامه رو با رژیم جدید جایگزین کن", "نه، برنامه فعلی رو ادامه بده"]
+
+
+def _protocol_chips_confirm_create(locale: str, protocol_label: str) -> list[str]:
+    if locale == "en":
+        return [f"Yes, create {protocol_label} plan", "Maybe later"]
+    if locale == "ar":
+        return [f"نعم، أنشئ خطة {protocol_label}", "ربما لاحقاً"]
+    return [f"بله، رژیم {protocol_label} برام بساز", "بعداً"]
+
+
 class GenerateWeekPlanTool(AgentTool):
     name = "generate_week_plan"
     description = (
         "Generate a 7-day meal plan. Call ONLY when user EXPLICITLY asks for a new week plan or future days.\n"
-        "Explicit triggers: 'برنامه هفته بعد رو بساز', 'یه برنامه ۷ روزه بده', "
-        "'build a week plan', 'create a meal plan'\n"
+        "For generic (non-protocol) requests: 'برنامه هفته بعد رو بساز', 'یه برنامه ۷ روزه بده', "
+        "'build a week plan', 'create a meal plan'.\n"
+        "For diet protocol requests: ALWAYS call ask_diet_protocol_intent FIRST (rule 4b), "
+        "then call generate_week_plan with diet_protocol only after user confirms.\n"
         "Skips days that already have a plan (safe append). "
-        "force=true overwrites existing plan days — REQUIRES explicit user confirmation via the UI; "
-        "do NOT call with force=true from chat."
+        "force=true + replace_confirmed=true: overwrites existing plan after user confirmed replacement.\n"
+        "diet_protocol: protocol key from ask_diet_protocol_intent "
+        "(keto | intermittent_fasting | low_carb | high_protein | mediterranean | "
+        "vegetarian | vegan | calorie_deficit | muscle_gain | iranian_traditional)."
     )
     input_schema = {
         "type": "object",
@@ -159,8 +286,26 @@ class GenerateWeekPlanTool(AgentTool):
                 "type": "boolean",
                 "default": False,
                 "description": (
-                    "Overwrite existing plan days. REQUIRES user confirmation — "
-                    "never set true unless user explicitly confirmed replacement."
+                    "Overwrite existing plan days. When replace_confirmed=true this is applied "
+                    "automatically — do not set force=true from chat without user confirmation."
+                ),
+            },
+            "replace_confirmed": {
+                "type": "boolean",
+                "default": False,
+                "description": (
+                    "Set true ONLY when the user explicitly confirmed replacing the existing plan "
+                    "(tapped the replace chip or typed equivalent). "
+                    "When true, force=true is applied without triggering the confirmation gate."
+                ),
+            },
+            "diet_protocol": {
+                "type": "string",
+                "description": (
+                    "Protocol key from ask_diet_protocol_intent. One of: "
+                    "keto | intermittent_fasting | low_carb | high_protein | mediterranean | "
+                    "vegetarian | vegan | calorie_deficit | muscle_gain | iranian_traditional. "
+                    "Omit for a default balanced plan."
                 ),
             },
         },
@@ -168,16 +313,22 @@ class GenerateWeekPlanTool(AgentTool):
     }
 
     def needs_confirmation(self, arguments: dict[str, Any]) -> bool:
+        # replace_confirmed=true means the user already confirmed → skip the gate
+        if arguments.get("replace_confirmed"):
+            return False
         return bool(arguments.get("force"))
 
     def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
         from app.services import calendar_service
 
-        force: bool = arguments.get("force", False)
+        replace_confirmed: bool = arguments.get("replace_confirmed", False)
+        force: bool = arguments.get("force", False) or replace_confirmed
+        diet_protocol: str | None = arguments.get("diet_protocol") or None
+        extra_context = _build_protocol_extra_context(diet_protocol)
 
-        # Defense-in-depth: should never reach here with force=True because the orchestrator
-        # intercepts needs_confirmation=True before calling execute(). Reject anyway.
-        if force:
+        # Defense-in-depth: if force=True without replace_confirmed, reject (needs_confirmation handles this
+        # before execute() is called, but guard here too).
+        if force and not replace_confirmed and arguments.get("force"):
             return AgentToolResult(
                 tool_name=self.name,
                 success=False,
@@ -190,15 +341,22 @@ class GenerateWeekPlanTool(AgentTool):
 
         try:
             result = calendar_service.generate_week(
-                context.db, context.user, context.locale, start_date=None, force=False
+                context.db, context.user, context.locale,
+                start_date=None, force=force,
+                extra_context=extra_context,
             )
-            summary = f"برنامه {result.generated_days} روز آینده ساخته شد."
+            protocol_label = diet_protocol.replace("_", " ") if diet_protocol else ""
+            summary = f"برنامه {protocol_label + ' — ' if protocol_label else ''}{result.generated_days} روز آینده ساخته شد."
             if result.skipped_days:
                 summary += f" ({result.skipped_days} روز قبلاً برنامه داشت و نادیده گرفته شد.)"
             return AgentToolResult(
                 tool_name=self.name, success=True,
                 user_visible_summary=summary,
-                data={"generated_days": result.generated_days, "skipped_days": result.skipped_days},
+                data={
+                    "generated_days": result.generated_days,
+                    "skipped_days": result.skipped_days,
+                    "diet_protocol": diet_protocol,
+                },
             )
         except Exception as exc:
             logger.warning("generate_week_plan failed: %s", exc)
@@ -857,6 +1015,74 @@ class UpdateFoodPreferencesTool(AgentTool):
         )
 
 
+# ─── 14. AskDietProtocolTool ─────────────────────────────────────────────────
+
+class AskDietProtocolTool(AgentTool):
+    name = "ask_diet_protocol_intent"
+    description = (
+        "MANDATORY FIRST STEP for any diet protocol request. "
+        "Call this when the user asks for a named eating style or protocol "
+        "(keto, fasting, low-carb, high-protein, Mediterranean, vegetarian, vegan, "
+        "calorie deficit, muscle gain, Iranian traditional diet, etc.). "
+        "Returns safety status and suggestion chips for the LLM to present to the user. "
+        "NEVER call generate_week_plan in the same turn as this tool."
+    )
+    input_schema = {
+        "type": "object",
+        "properties": {
+            "protocol": {
+                "type": "string",
+                "description": (
+                    "Normalized English key for the protocol. One of: "
+                    "keto | intermittent_fasting | low_carb | high_protein | mediterranean | "
+                    "vegetarian | vegan | calorie_deficit | muscle_gain | iranian_traditional | other"
+                ),
+            },
+            "protocol_label": {
+                "type": "string",
+                "description": "User's exact phrasing in their own language (e.g. 'رژیم کتوژنیک', 'keto diet').",
+            },
+        },
+        "required": ["protocol", "protocol_label"],
+    }
+
+    def execute(self, context: AgentExecutionContext, arguments: dict[str, Any]) -> AgentToolResult:
+        from app.services.agent_tools._diet_protocol_safety import check_protocol_safety
+
+        protocol: str = arguments.get("protocol", "other")
+        protocol_label: str = arguments.get("protocol_label", protocol)
+
+        ctx = context.nutrition_memory
+        safety = check_protocol_safety(protocol, ctx)
+
+        has_active_plan = bool(
+            getattr(ctx, "current_plan_id", None)
+            and getattr(ctx, "active_calendar_summary", None)
+        )
+
+        if safety.blocked:
+            chips: list[str] = []
+        elif has_active_plan:
+            chips = _protocol_chips_replace_or_continue(context.locale)
+        else:
+            chips = _protocol_chips_confirm_create(context.locale, protocol_label)
+
+        return AgentToolResult(
+            tool_name=self.name,
+            success=True,
+            user_visible_summary=None,
+            data={
+                "protocol": protocol,
+                "protocol_label": protocol_label,
+                "has_active_plan": has_active_plan,
+                "safety_blocked": safety.blocked,
+                "safer_protocol": safety.safer_protocol,
+                "safety_reason": safety.reason,
+                "suggestion_chips": chips,
+            },
+        )
+
+
 # ─── Registry factory ─────────────────────────────────────────────────────────
 
 def build_tool_registry() -> dict[str, AgentTool]:
@@ -874,5 +1100,6 @@ def build_tool_registry() -> dict[str, AgentTool]:
         GetUserProfileSummaryTool(),
         QueryUserNutritionDataTool(),
         UpdateFoodPreferencesTool(),
+        AskDietProtocolTool(),
     ]
     return {tool.name: tool for tool in tools}

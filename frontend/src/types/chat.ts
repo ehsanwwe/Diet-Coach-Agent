@@ -7,6 +7,7 @@ export interface ChatMessageResponse {
   created_at: string
   actions_summary?: string[] | null
   tool_calls_executed?: number | null
+  suggestion_chips?: string[] | null
 }
 
 export interface ChatHistoryItem {

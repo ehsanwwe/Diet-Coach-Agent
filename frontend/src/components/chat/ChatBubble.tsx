@@ -7,13 +7,15 @@ interface Props {
   coachLabel: string
   actions?: string[]
   failedLabel: string
+  chips?: string[]
+  onChipPress?: (text: string) => void
 }
 
 function trimChip(text: string): string {
   return text.length > 32 ? text.slice(0, 30) + '…' : text
 }
 
-export default function ChatBubble({ message, coachLabel, actions, failedLabel }: Props) {
+export default function ChatBubble({ message, coachLabel, actions, failedLabel, chips, onChipPress }: Props) {
   const isUser = message.role === 'user'
   const isFailed = message.status === 'failed'
 
@@ -41,7 +43,7 @@ export default function ChatBubble({ message, coachLabel, actions, failedLabel }
         )}
       </div>
 
-      {/* Action chips — assistant only, not for failed messages */}
+      {/* Action chips — read-only informational labels */}
       {!isUser && !isFailed && actions && actions.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-1.5 px-0.5">
           {actions.map((a, i) => (
@@ -51,6 +53,22 @@ export default function ChatBubble({ message, coachLabel, actions, failedLabel }
             >
               {trimChip(a)}
             </span>
+          ))}
+        </div>
+      )}
+
+      {/* Suggestion chips — tappable quick-reply buttons */}
+      {!isUser && !isFailed && chips && chips.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2 px-0.5">
+          {chips.map((chip, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onChipPress?.(chip)}
+              className="text-xs bg-elevated border border-brand/25 text-brand-dark px-3 py-1.5 rounded-full leading-snug active:opacity-60 transition-opacity"
+            >
+              {chip}
+            </button>
           ))}
         </div>
       )}

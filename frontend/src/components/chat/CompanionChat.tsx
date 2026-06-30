@@ -38,7 +38,7 @@ export default function CompanionChat({ dict, locale }: Props) {
   const pathname = usePathname()
 
   const [messages, setMessages] = useState<ChatHistoryItem[]>([])
-  const [messageExtras, setMessageExtras] = useState<Record<string, { actions?: string[] }>>({})
+  const [messageExtras, setMessageExtras] = useState<Record<string, { actions?: string[]; chips?: string[] }>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
@@ -257,10 +257,13 @@ export default function CompanionChat({ dict, locale }: Props) {
         { ...optimistic },
         assistant,
       ])
-      if (resp.actions_summary?.length) {
+      if (resp.actions_summary?.length || resp.suggestion_chips?.length) {
         setMessageExtras((prev) => ({
           ...prev,
-          [resp.message_id]: { actions: resp.actions_summary! },
+          [resp.message_id]: {
+            ...(resp.actions_summary?.length ? { actions: resp.actions_summary! } : {}),
+            ...(resp.suggestion_chips?.length ? { chips: resp.suggestion_chips! } : {}),
+          },
         }))
       }
     } catch (err) {
@@ -397,6 +400,8 @@ export default function CompanionChat({ dict, locale }: Props) {
             coachLabel={dict.companionChat.coach}
             actions={messageExtras[msg.message_id]?.actions}
             failedLabel={dict.companionChat.assistantFailed}
+            chips={messageExtras[msg.message_id]?.chips}
+            onChipPress={handleSend}
           />
         ))}
         {showThinking && (

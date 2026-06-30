@@ -89,8 +89,47 @@ MANDATORY TOOL RULES:
     If no plan exists for today: say 'برنامه‌ای برای امروز ثبت نشده' and offer to generate one.
     NEVER use vague amounts like 'مقدار مناسب', 'کمی', 'کنترل‌شده' in the substitution.
 
-4. WEEK PLAN REQUEST → generate_week_plan
-   When: user asks for a plan for next week or multiple future days.
+4. WEEK PLAN REQUEST (generic) → generate_week_plan
+   When: user asks for a generic balanced plan with NO specific named protocol.
+   Example triggers: 'برنامه هفته بعد بساز', 'یه برنامه ۷ روزه بده', 'build me a meal plan'.
+   If the user mentions a specific diet style (keto, fasting, etc.) → use rule 4b instead.
+
+4b. DIET PROTOCOL REQUEST — MANDATORY 2-TURN FLOW
+    Trigger: user asks for a SPECIFIC named eating style or protocol (not just "make me a plan").
+    Persian keywords: کتو، کتوژنیک، فستینگ، روزه‌داری متناوب، کم کربوهیدرات، پروتئین بالا،
+      مدیترانه‌ای، گیاهخواری، وگان، کاهش وزن با رژیم، افزایش عضله، رژیم ایرانی، کالری منفی
+    English keywords: keto, ketogenic, fasting, intermittent fasting, low carb, high protein,
+      mediterranean, vegetarian, vegan, calorie deficit, muscle gain, Iranian diet
+
+    TURN 1 — ALWAYS call ask_diet_protocol_intent first. NEVER call generate_week_plan this turn.
+    Read the tool result:
+      safety_blocked=true  → Explain empathetically why this protocol is risky for this user.
+                             Suggest safer_protocol if provided. Do NOT generate a plan.
+      has_active_plan=true → Ask replace-or-continue question. Show suggestion_chips. Wait for user.
+      has_active_plan=false → Ask confirmation before creating. Show suggestion_chips. Wait for user.
+
+    TURN 2 — User answers the confirmation question:
+      Replace intent (جایگزین، replace، از اول، ریپلیس، برنامه عوض بشه، بله جایگزین):
+        → generate_week_plan(force=true, replace_confirmed=true, diet_protocol="<key from turn 1>")
+      Continue intent (ادامه، continue، از هفته بعد، برنامه بعدی، نه ادامه):
+        → generate_week_plan(force=false, diet_protocol="<key from turn 1>")
+      Create-new intent (بله، yes، آره، ok، بساز، درسته):
+        → generate_week_plan(diet_protocol="<key from turn 1>")
+      Cancel (نه، بعداً، cancel، later):
+        → Acknowledge. Do NOT generate.
+
+    PROTOCOL SEMANTICS — CRITICAL (never contradict these):
+      Keto ≠ only meat. Keto = net carbs <50g/day, fat 65–75%, moderate protein,
+        LOW-CARB VEGETABLES, eggs, healthy fats. Persian keto: kabab without rice,
+        mirza ghasemi without bread, spinach omelette, cauliflower instead of rice.
+      Intermittent Fasting = TIMING CHANGE ONLY. 16:8 window (eat 12:00–20:00).
+        Food types stay normal. Not a food restriction protocol.
+      Low-carb ≠ keto. 80–130g carbs/day. Smaller rice portions + more protein/veg.
+      High-protein = 1.8–2.2g/kg body weight, 25g+ protein PER MEAL, every meal.
+      Mediterranean = olive oil primary fat, fish 2–3×/week, legumes daily.
+      Vegetarian ≠ vegan. Eggs and dairy are allowed in vegetarian.
+      Vegan: always mention B12 supplementation necessity.
+      Iranian Traditional: rice and bread are ALLOWED — manage portions, do NOT ban.
 
 5. WHAT TO EAT NOW → what_to_eat_now
    When: user asks for meal suggestions or what to eat right now.
@@ -584,6 +623,7 @@ def process_user_message(
     messages.append({"role": "user", "content": message})
 
     actions_summary: list[str] = []
+    suggestion_chips: list[str] = []
     tool_calls_total = 0
     reply_text = ""
     provider_name = "openai"
@@ -633,6 +673,8 @@ def process_user_message(
                         tr = tool.execute(exec_ctx, tc.arguments)
                         if tr.success and tr.user_visible_summary:
                             actions_summary.append(tr.user_visible_summary)
+                        if tr.success and tr.data and tr.data.get("suggestion_chips"):
+                            suggestion_chips = tr.data["suggestion_chips"]
                         # Keep tool result compact: success flag + data only.
                         # Omit user_visible_summary from the LLM context to prevent it
                         # from being copied verbatim into the final response text.
@@ -679,4 +721,5 @@ def process_user_message(
         provider=provider_name, is_mock=False, created_at=am.created_at,
         actions_summary=actions_summary if actions_summary else None,
         tool_calls_executed=tool_calls_total,
+        suggestion_chips=suggestion_chips if suggestion_chips else None,
     )

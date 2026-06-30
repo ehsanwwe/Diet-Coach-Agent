@@ -24,6 +24,7 @@ class ChatMessageResponse(BaseModel):
     created_at: datetime
     actions_summary: list[str] | None = None
     tool_calls_executed: int | None = None
+    suggestion_chips: list[str] | None = None
 
 
 class ChatHistoryItem(BaseModel):

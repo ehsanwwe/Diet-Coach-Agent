@@ -576,6 +576,12 @@ const ar: Dictionary = {
     memoryCleared: 'تم مسح ذاكرة المحادثة',
     assistantFailed: 'تعذّر استلام الرد. يرجى المحاولة مرة أخرى.',
   },
+  dietProtocol: {
+    replaceChip: 'نعم، استبدل البروتوكول الجديد',
+    continueChip: 'لا، استمر في الخطة الحالية',
+    createChip: 'نعم، أنشئ خطة جديدة',
+    laterChip: 'ربما لاحقاً',
+  },
   safety: {
     clinicalTitle: 'تنبيه: يُنصح باستشارة طبية',
     clinicalMessage:

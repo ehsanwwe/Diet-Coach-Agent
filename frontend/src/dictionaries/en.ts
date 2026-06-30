@@ -576,6 +576,12 @@ const en: Dictionary = {
     memoryCleared: 'Chat memory cleared',
     assistantFailed: 'Response could not be delivered. Please try again.',
   },
+  dietProtocol: {
+    replaceChip: 'Yes, replace with new protocol',
+    continueChip: 'No, continue current plan',
+    createChip: 'Yes, create new plan',
+    laterChip: 'Maybe later',
+  },
   safety: {
     clinicalTitle: 'Note: Medical Consultation Recommended',
     clinicalMessage:
