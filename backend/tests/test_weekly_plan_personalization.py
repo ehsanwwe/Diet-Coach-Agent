@@ -7,6 +7,7 @@ from app.services.nutrition_memory_service import NutritionMemoryContext
 from app.services.weekly_plan_personalization_validator import (
     validate_and_sanitize,
     _build_forbidden_terms,
+    _normalize_persian_day_phrases,
     collect_user_visible_text,
     canonical_meal_order_value,
     sort_meals_canonically,
@@ -814,3 +815,66 @@ def test_canonical_meal_order_value_helper():
     assert canonical_meal_order_value("snack")                == 10
     assert canonical_meal_order_value("other")                == 11
     assert canonical_meal_order_value("unknown_slot")         == 11
+
+
+# ── Persian phrasing normalization ────────────────────────────────────────────
+
+def _seven_day_plan_with_summary(summary: str) -> dict:
+    return {
+        "locale": "fa",
+        "days": [
+            {
+                "day_index": i + 1,
+                "title": "روز اول — شروع سبک",
+                "summary": summary,
+                "warnings": [],
+                "meals": [
+                    {
+                        "meal_type": "breakfast",
+                        "meal_slot": "breakfast",
+                        "title": "صبحانه: نان و پنیر",
+                        "description": "نان سبوس‌دار با پنیر",
+                        "alternatives": [],
+                    }
+                ],
+            }
+            for i in range(7)
+        ],
+    }
+
+
+def test_persian_day_phrase_normalize_helper():
+    """_normalize_persian_day_phrases corrects the known awkward phrase."""
+    days = [{"title": "روز اول", "summary": "یک روز شروع آرام با وعده‌های ساده."}]
+    result = _normalize_persian_day_phrases(days)
+    assert result[0]["summary"] == "شروع یک روز آرام با وعده‌های ساده."
+
+
+def test_persian_day_phrase_normalize_with_continuation():
+    """Phrase followed by additional text is also corrected safely."""
+    days = [{"title": "روز اول", "summary": "یک روز شروع آرام و سبک برای هفته."}]
+    result = _normalize_persian_day_phrases(days)
+    assert "یک روز شروع آرام" not in result[0]["summary"]
+    assert result[0]["summary"].startswith("شروع یک روز آرام")
+
+
+def test_persian_day_phrase_not_present_unchanged():
+    """A natural phrase that doesn't match must not be altered."""
+    original = "شروع آرام هفته با وعده‌های مقوی."
+    days = [{"title": "روز اول", "summary": original}]
+    result = _normalize_persian_day_phrases(days)
+    assert result[0]["summary"] == original
+
+
+def test_validate_and_sanitize_normalizes_persian_summary():
+    """validate_and_sanitize must normalize the awkward phrase end-to-end."""
+    ctx = _ctx()
+    plan = _seven_day_plan_with_summary("یک روز شروع آرام با وعده‌های ساده و مقوی.")
+    result = validate_and_sanitize(plan, ctx, locale="fa")
+    for day in result["days"]:
+        assert "یک روز شروع آرام" not in (day.get("summary") or ""), (
+            f"Awkward phrase still present in day {day.get('day_index')} summary: {day.get('summary')}"
+        )
+        assert "شروع یک روز آرام" in (day.get("summary") or ""), (
+            f"Natural phrase missing in day {day.get('day_index')} summary: {day.get('summary')}"
+        )

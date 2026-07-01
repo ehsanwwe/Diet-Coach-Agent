@@ -16,7 +16,7 @@ export default function ChatPage() {
   if (!dict) return null
   return (
     <AuthGuard locale={locale}>
-      <div className="app-container flex flex-col pb-24" style={{ height: '100dvh' }}>
+      <div className="app-container flex flex-col" style={{ height: '100dvh', paddingBottom: 'calc(67px + env(safe-area-inset-bottom, 16px))' }}>
         <div className="px-5 pt-6 pb-3 border-b border-line shrink-0">
           <h1 className="text-xl font-bold text-ink">{dict.companionChat.title}</h1>
           <p className="text-xs text-ink-2 mt-0.5">{dict.companionChat.subtitle}</p>

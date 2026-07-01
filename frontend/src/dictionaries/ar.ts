@@ -55,6 +55,7 @@ const ar: Dictionary = {
     chat: 'المحادثة',
     progress: 'التقدم',
     settings: 'الإعدادات',
+    plan: 'التقويم الغذائي',
   },
   language: {
     select: 'اختر اللغة',

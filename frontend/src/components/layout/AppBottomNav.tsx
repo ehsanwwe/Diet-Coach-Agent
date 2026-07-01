@@ -53,6 +53,13 @@ export default function AppBottomNav({ locale, dict }: Props) {
       active: isActive('settings'),
       disabled: false,
     },
+    {
+      href: `/${locale}/nutrition/plan`,
+      label: dict.nav.plan,
+      icon: 'calendar',
+      active: pathname.includes('/nutrition/plan'),
+      disabled: false,
+    },
   ]
 
   return (

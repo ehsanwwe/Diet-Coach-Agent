@@ -161,6 +161,11 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
     min: { value: 40, message: dict.waistRange },
     max: { value: 200, message: dict.waistRange },
   })
+  const { onChange: onChangeWrist, ...regWrist } = register('wrist_circumference_cm', {
+    valueAsNumber: true,
+    min: { value: 8, message: dict.wristRange },
+    max: { value: 35, message: dict.wristRange },
+  })
   const { onChange: onChangeThigh, ...regThigh } = register('thigh_circumference_cm', {
     valueAsNumber: true,
     min: { value: 30, message: dict.thighRange },
@@ -173,6 +178,7 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
   const cwH     = makeNumericHandlers({ allowDecimal: true,  max: 300 })
   const twH     = makeNumericHandlers({ allowDecimal: true,  max: 300 })
   const waistH  = makeNumericHandlers({ allowDecimal: true,  max: 200 })
+  const wristH  = makeNumericHandlers({ allowDecimal: true,  max: 35  })
   const thighH  = makeNumericHandlers({ allowDecimal: true,  max: 100 })
 
   const selectedGender = watch('gender')
@@ -330,21 +336,18 @@ export default function ProfileStep({ dict, defaultValues, isSubmitting, apiErro
                 />
               </Field>
 
-              {/* Wrist (optional) — unchanged, not in scope */}
+              {/* Wrist (optional) — decimal, max 35 */}
               <Field
                 label={`${dict.wrist} ${dict.optional}`}
                 error={errors.wrist_circumference_cm?.message}
               >
                 <input
-                  {...register('wrist_circumference_cm', {
-                    valueAsNumber: true,
-                    min: { value: 8, message: dict.wristRange },
-                    max: { value: 35, message: dict.wristRange },
-                  })}
-                  type="number"
-                  min={8}
-                  max={35}
-                  step="0.1"
+                  {...regWrist}
+                  type="text"
+                  inputMode="decimal"
+                  onKeyDown={wristH.onKeyDown}
+                  onChange={wristH.makeOnChange(onChangeWrist)}
+                  onPaste={wristH.makeOnPaste(onChangeWrist)}
                   placeholder={dict.wristPlaceholder}
                   className={inputCls(!!errors.wrist_circumference_cm)}
                 />

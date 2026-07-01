@@ -73,6 +73,9 @@ _CULTURE_FOOD_INSTRUCTIONS = {
         "خوراک حبوبات (لوبیا، عدس با پروتئین); ماهی با برنج/سبزیجات.\n"
         "- Rice and bread are ALLOWED in controlled portions — do not ban them.\n"
         "- ماست/دوغ used as side accompaniment, not main protein source.\n"
+        "- DAY TITLE/SUMMARY PHRASING: Use natural Persian sentence order. "
+        "NEVER write «یک روز شروع آرام» or similar noun-first constructions. "
+        "Instead write: «شروع یک روز آرام»، «روزی سبک برای شروع»، «شروع آرام هفته»، or «آغاز آرام برنامه».\n"
     ),
     "ar": (
         "Arabic/Middle Eastern food culture rules (MANDATORY for locale=ar):\n"

@@ -55,6 +55,7 @@ const en: Dictionary = {
     chat: 'Chat',
     progress: 'Progress',
     settings: 'Settings',
+    plan: 'Food Calendar',
   },
   language: {
     select: 'Select Language',

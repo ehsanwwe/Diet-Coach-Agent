@@ -65,6 +65,7 @@ export interface Dictionary {
     chat: string
     progress: string
     settings: string
+    plan: string
   }
   language: {
     select: string
@@ -833,6 +834,7 @@ const fa: Dictionary = {
     chat: 'گفتگو',
     progress: 'پیشرفت',
     settings: 'تنظیمات',
+    plan: 'تقویم غذایی',
   },
   language: {
     select: 'انتخاب زبان',

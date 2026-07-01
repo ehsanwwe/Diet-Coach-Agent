@@ -1712,6 +1712,32 @@ def _inject_cheating_date(days: list[dict], locale: str) -> list[dict]:
     return result
 
 
+# Known awkward Persian day-level phrase patterns → natural replacements.
+# Only exact, well-understood constructions are listed here; no broad regex.
+_PERSIAN_PHRASE_NORMALIZATIONS: list[tuple[str, str]] = [
+    ("یک روز شروع آرام", "شروع یک روز آرام"),
+]
+
+
+def _normalize_persian_day_phrases(days: list[dict]) -> list[dict]:
+    """Replace known unnatural Persian constructions in day title/summary fields."""
+    result = []
+    for day in days:
+        day = dict(day)
+        for field in ("title", "summary"):
+            val = day.get(field)
+            if not val:
+                continue
+            for awkward, natural in _PERSIAN_PHRASE_NORMALIZATIONS:
+                if awkward in val:
+                    day[field] = val.replace(awkward, natural)
+                    logger.info(
+                        "Normalized Persian phrase in day.%s: %r → %r", field, awkward, natural
+                    )
+        result.append(day)
+    return result
+
+
 def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: str = "fa") -> dict:
     """Validate and sanitize a generated week plan dict. Returns cleaned plan."""
     forbidden_terms = _build_forbidden_terms(ctx)
@@ -1825,5 +1851,8 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
     sanitized_days = _final_recursive_repair(
         sanitized_days, forbidden_terms, budget_tier, active_allergens, locale
     )
+
+    # Normalize known unnatural Persian day title/summary phrases (locale-agnostic guard)
+    sanitized_days = _normalize_persian_day_phrases(sanitized_days)
 
     return {**plan_data, "days": sanitized_days}
