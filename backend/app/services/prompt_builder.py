@@ -19,6 +19,9 @@ from app.services.mock_ai_provider import (
     TASK_GENERATE_WEEK_AR,
     TASK_GENERATE_WEEK_EN,
     TASK_GENERATE_WEEK_FA,
+    TASK_REPAIR_WEEK_AR,
+    TASK_REPAIR_WEEK_EN,
+    TASK_REPAIR_WEEK_FA,
     TASK_SLIP_RECOVERY,
     TASK_WEEKLY_REPORT,
     TASK_WHAT_TO_EAT,
@@ -97,6 +100,12 @@ _LOCALE_TASK_MAP = {
     "fa": TASK_GENERATE_WEEK_FA,
     "en": TASK_GENERATE_WEEK_EN,
     "ar": TASK_GENERATE_WEEK_AR,
+}
+
+_LOCALE_REPAIR_TASK_MAP = {
+    "fa": TASK_REPAIR_WEEK_FA,
+    "en": TASK_REPAIR_WEEK_EN,
+    "ar": TASK_REPAIR_WEEK_AR,
 }
 
 
@@ -629,11 +638,21 @@ def _gluten_free_alternatives_section(ctx: NutritionMemoryContext) -> str:
     )
     if not has_gluten:
         return ""
+    disliked_text = " ".join(ctx.disliked_foods).lower()
+    rice_disliked = "برنج" in disliked_text or "rice" in disliked_text
+    lentil_disliked = "عدس" in disliked_text or "lentil" in disliked_text
     budget = ctx.budget_tier if ctx.budget_tier != "unknown" else "standard"
-    if budget == "economic":
+    if rice_disliked:
+        alternatives = (
+            "rotate between: سیب‌زمینی/potato, نان ذرت بدون گلوتن/certified gluten-free corn bread, "
+            "quinoa or buckwheat if appropriate and available, certified gluten-free oats, and other corn-based options. "
+            "Do not suggest rice-derived bread, noodles, flour, or grains because rice is disliked."
+        )
+    elif budget == "economic":
         alternatives = (
             "rotate between: برنج (rice), سیب‌زمینی (potato), نان برنجی/ذرت (rice/corn bread if available), "
-            "lentil soup, bean soup, chickpea soup. Avoid repeating lentils/rice every single day."
+            + ("bean soup and chickpea soup. " if lentil_disliked else "lentil soup, bean soup, chickpea soup. ")
+            + "Avoid repeating one staple every single day."
         )
     else:
         alternatives = (
@@ -649,7 +668,7 @@ def _gluten_free_alternatives_section(ctx: NutritionMemoryContext) -> str:
         "- When Iranian breakfast normally uses bread, actively specify نان بدون گلوتن or a practical safe gluten-free bread/grain alternative; never merely remove bread.\n"
         "- Increase variety of proteins alongside grains: fish, chicken, legumes — ROTATED across days.\n"
         "- Never use wheat, barley, rye, regular pasta, couscous, or standard bread.\n"
-        "- Restaurant guidance must ask about wheat/flour in marinades, sauces, soups and fried coatings; prefer safe grilled protein with rice/potato/salad, avoid breaded foods unless confirmed gluten-free, and mention cross-contamination calmly.\n"
+        "- Restaurant guidance must ask about wheat/flour in marinades, sauces, soups and fried coatings; prefer safe grilled protein with an allowed gluten-free side and salad, avoid breaded foods unless confirmed gluten-free, and mention cross-contamination calmly.\n"
     )
 
 
@@ -856,7 +875,7 @@ def for_repair_week_plan(
 ) -> PromptData:
     """Build a precise LLM repair request from deterministic review findings."""
     effective_locale = _normalize_locale(locale)
-    task_type = f"generate_week_{effective_locale}"
+    task_type = f"repair_week_{effective_locale}"
     issue_data = [
         {
             "code": getattr(issue, "code", "unknown"),
@@ -868,7 +887,7 @@ def for_repair_week_plan(
         for issue in issues
     ]
     gluten_section = _gluten_free_alternatives_section(ctx)
-    system = _base_system(_LOCALE_TASK_MAP[effective_locale], ctx, locale=effective_locale) + (
+    system = _base_system(_LOCALE_REPAIR_TASK_MAP[effective_locale], ctx, locale=effective_locale) + (
         "\nYou are repairing a rejected 7-day nutrition plan. The deterministic reviewer only "
         "reports defects; you are responsible for selecting all foods. Return valid JSON only, "
         "with no markdown or commentary. Preserve safe valid parts when useful, or regenerate the "
@@ -889,6 +908,8 @@ def for_repair_week_plan(
         "- Include exactly one visible meal with meal_type and meal_slot 'cheating_date', title exactly 'Cheating Date', on day 5 or 6, with a clear controlled-flexibility description and time window.\n"
         "- Every meal needs measurable portions and time_window_start/time_window_end.\n"
         "- Never place allergies, intolerances, or disliked foods in any user-visible field.\n"
+        f"- Remove every exact disliked-food term everywhere in visible JSON, including title, description, portion_guidance, food_items, alternatives, shopping_notes, budget_guidance, cheat_meal_guidance, restaurant_party_travel_guidance, notes, and warnings: {json.dumps(ctx.disliked_foods, ensure_ascii=False)}.\n"
+        "- Choose culturally appropriate alternatives yourself; do not merely delete a staple and leave meals incomplete.\n"
         "- Return JSON only; no markdown outside JSON.\n"
         + (f"\n{gluten_section}\nUse نان بدون گلوتن and safe gluten-free grain alternatives where bread/grain is expected. Check sauces, marinades, soups, fried coatings, and cross-contamination in restaurant guidance.\n" if gluten_section else "")
     )

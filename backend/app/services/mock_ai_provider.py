@@ -26,6 +26,9 @@ TASK_CONTEXT_GUIDANCE = "TASK:context_guidance"
 TASK_GENERATE_WEEK_FA = "TASK:generate_week_fa"
 TASK_GENERATE_WEEK_EN = "TASK:generate_week_en"
 TASK_GENERATE_WEEK_AR = "TASK:generate_week_ar"
+TASK_REPAIR_WEEK_FA = "TASK:repair_week_fa"
+TASK_REPAIR_WEEK_EN = "TASK:repair_week_en"
+TASK_REPAIR_WEEK_AR = "TASK:repair_week_ar"
 TASK_WEEKLY_REPORT = "TASK:weekly_report"
 
 
@@ -1285,6 +1288,73 @@ _MOCK_ADAPT_PLAN = {
 }
 
 
+def _make_quality_repair_week(locale: str = "fa") -> dict:
+    """Repair-task fixture for local/dev execution; not used by production providers."""
+    days: list[dict] = []
+    for index in range(7):
+        day_no = index + 1
+        meals = [
+            {
+                "meal_type": "breakfast", "meal_slot": "breakfast",
+                "title": f"صبحانه کامل پروتئینی روز {day_no}",
+                "description": "2 عدد تخم‌مرغ + 120 گرم سیب‌زمینی تنوری + 1 کاسه سبزی تازه",
+                "portion_guidance": "2 عدد تخم‌مرغ، 120 گرم سیب‌زمینی و 1 کاسه سبزی",
+                "time_window_start": "07:00", "time_window_end": "09:00",
+                "alternatives": [], "food_items": [],
+            },
+            {
+                "meal_type": "morning_snack", "meal_slot": "morning_snack",
+                "title": f"میان‌وعده پروتئینی صبح {day_no}",
+                "description": "150 گرم ماست چکیده + 15 گرم گردو",
+                "portion_guidance": "150 گرم ماست چکیده و 15 گرم گردو",
+                "time_window_start": "10:30", "time_window_end": "11:00",
+                "alternatives": [], "food_items": [],
+            },
+            {
+                "meal_type": "lunch", "meal_slot": "lunch",
+                "title": f"ناهار مرغ کبابی با سبزیجات روز {day_no}",
+                "description": "180 گرم مرغ کبابی + 200 گرم سبزیجات تنوری + 150 گرم سیب‌زمینی",
+                "portion_guidance": "180 گرم مرغ، 200 گرم سبزیجات و 150 گرم سیب‌زمینی",
+                "time_window_start": "12:30", "time_window_end": "14:00",
+                "alternatives": [], "food_items": [],
+            },
+            {
+                "meal_type": "afternoon_snack", "meal_slot": "afternoon_snack",
+                "title": f"میان‌وعده عصر مغزها و لبنیات {day_no}",
+                "description": "30 گرم پنیر + 20 گرم مغز گردو + 1 عدد خیار",
+                "portion_guidance": "30 گرم پنیر، 20 گرم گردو و 1 عدد خیار",
+                "time_window_start": "16:00", "time_window_end": "16:30",
+                "alternatives": [], "food_items": [],
+            },
+            {
+                "meal_type": "dinner", "meal_slot": "dinner",
+                "title": f"شام ماهی کبابی و سبزیجات روز {day_no}",
+                "description": "170 گرم ماهی کبابی + 200 گرم سبزیجات بخارپز + 120 گرم سیب‌زمینی تنوری",
+                "portion_guidance": "170 گرم ماهی، 200 گرم سبزیجات و 120 گرم سیب‌زمینی",
+                "time_window_start": "19:00", "time_window_end": "20:30",
+                "alternatives": [], "food_items": [],
+            },
+        ]
+        if day_no == 5:
+            meals.append({
+                "meal_type": "cheating_date", "meal_slot": "cheating_date",
+                "title": "Cheating Date",
+                "description": "انعطاف برنامه‌ریزی‌شده و کنترل‌شده است، نه پرخوری؛ سپس بازگشت به برنامه عادی",
+                "portion_guidance": "1 بشقاب استاندارد",
+                "time_window_start": "20:00", "time_window_end": "22:00",
+                "alternatives": [], "food_items": [],
+            })
+        days.append({
+            "day_index": day_no, "title": f"روز {day_no}", "summary": "برنامه متنوع و پروتئین‌محور",
+            "budget_tier": "premium", "budget_guidance": "خرید مواد تازه و باکیفیت",
+            "shopping_notes": "مرغ، ماهی، تخم‌مرغ، سبزیجات، سیب‌زمینی، لبنیات و مغزها",
+            "hydration_goal": "8 لیوان آب", "hydration_plan": "آب در طول روز تقسیم شود",
+            "training_guidance": "فعالیت مطابق برنامه شخصی", "sleep_wake_guidance": "7 تا 8 ساعت خواب",
+            "meals": meals,
+        })
+    return {"locale": locale, "days": days}
+
+
 def generate_safe_week_mock(ctx: "NutritionMemoryContext", locale: str) -> dict:
     """Return locale mock week data, then apply allergy/dislike sanitization."""
     from app.services.weekly_plan_personalization_validator import validate_and_sanitize
@@ -1329,6 +1399,16 @@ class MockAIProvider(AIProvider):
             content = json.dumps(_MOCK_WEEK_AR, ensure_ascii=False)
         elif task_type == "generate_week_fa":
             content = json.dumps(_MOCK_WEEK_FA, ensure_ascii=False)
+        elif task_type in {"repair_week_fa", "repair_week_en", "repair_week_ar"}:
+            locale = task_type.rsplit("_", 1)[-1]
+            repaired = _make_quality_repair_week(locale)
+            prompt_text = " ".join(message.get("content", "") for message in messages).lower()
+            if "gluten" in prompt_text or "گلوتن" in prompt_text:
+                for day in repaired["days"]:
+                    day["restaurant_party_travel_guidance"] = (
+                        "نان ذرت بدون گلوتن یا سیب‌زمینی؛ درباره آرد در سس و مرینیت سؤال شود و آلودگی متقاطع بررسی شود"
+                    )
+            content = json.dumps(repaired, ensure_ascii=False)
         elif task_type == "weekly_report":
             content = json.dumps(_MOCK_WEEKLY_REPORT, ensure_ascii=False)
         else:
@@ -1346,6 +1426,12 @@ class MockAIProvider(AIProvider):
     def _detect_task(messages: list[dict[str, str]]) -> str:
         for msg in messages:
             content = msg.get("content", "")
+            if TASK_REPAIR_WEEK_EN in content:
+                return "repair_week_en"
+            if TASK_REPAIR_WEEK_AR in content:
+                return "repair_week_ar"
+            if TASK_REPAIR_WEEK_FA in content:
+                return "repair_week_fa"
             if TASK_GENERATE_WEEK_EN in content:
                 return "generate_week_en"
             if TASK_GENERATE_WEEK_AR in content:

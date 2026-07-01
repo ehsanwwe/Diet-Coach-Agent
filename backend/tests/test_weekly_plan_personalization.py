@@ -6,6 +6,7 @@ import json
 
 from app.services.ai_provider import AIProvider, AIProviderResult
 from app.services.nutrition_agent_service import NutritionAgentService
+from app.services.mock_ai_provider import MockAIProvider
 from app.services.nutrition_memory_service import NutritionMemoryContext
 from app.services.prompt_builder import for_repair_week_plan
 from app.services.week_plan_quality_evaluator import evaluate_week_plan_quality
@@ -137,3 +138,54 @@ def test_disliked_food_detected_in_nested_visible_fields():
     plan["days"][1]["meals"][0]["alternatives"] = ["املت قارچ"]
     issues = evaluate_week_plan_quality(plan, ctx, "fa")
     assert sum(i.code == "forbidden_food" for i in issues) >= 2
+
+
+def test_mock_repairs_premium_persian_staple_dislikes():
+    ctx = _ctx(disliked_foods=["بادمجان", "عدس", "برنج"])
+    service = NutritionAgentService()
+    service._provider = MockAIProvider()
+    plan, result = service.generate_week_plan(ctx, "fa")
+    visible = validate_and_sanitize(plan, ctx, "fa")
+    text = json.dumps(visible, ensure_ascii=False)
+    assert result.provider == "mock"
+    assert all(term not in text for term in ctx.disliked_foods)
+    assert evaluate_week_plan_quality(plan, ctx, "fa") == []
+    assert len(plan["days"]) == 7
+    assert all(
+        meal.get("time_window_start") and meal.get("time_window_end")
+        for day in plan["days"] for meal in day["meals"]
+    )
+
+
+def test_gluten_repair_guidance_excludes_rice_options_when_disliked():
+    ctx = _ctx(allergies=["گلوتن"], disliked_foods=["برنج"], bread_frequency="daily")
+    plan = _plan()
+    issues = evaluate_week_plan_quality(plan, ctx, "fa")
+    prompt = for_repair_week_plan(ctx, "fa", plan, issues)
+    guidance = prompt.user.split("GLUTEN-FREE ALTERNATIVES", 1)[-1]
+    assert "نان ذرت بدون گلوتن" in guidance
+    assert "نان برنجی" not in guidance
+    assert "رشته برنجی" not in guidance
+
+    service = NutritionAgentService()
+    service._provider = MockAIProvider()
+    repaired, _ = service.generate_week_plan(ctx, "fa")
+    visible = json.dumps(repaired, ensure_ascii=False)
+    assert "برنج" not in visible
+    assert "نان ذرت بدون گلوتن" in visible
+    assert evaluate_week_plan_quality(repaired, ctx, "fa") == []
+
+
+def test_production_quality_modules_have_no_food_replacement_pools():
+    from pathlib import Path
+
+    services = Path(__file__).parents[1] / "app" / "services"
+    source = "\n".join(
+        (services / name).read_text(encoding="utf-8").lower()
+        for name in ("weekly_plan_personalization_validator.py", "week_plan_quality_evaluator.py")
+    )
+    for forbidden_name in (
+        "premium_persian_lunches", "replacement_candidates",
+        "enforce_premium_persian_meal_quality", "safe_replacement",
+    ):
+        assert forbidden_name not in source

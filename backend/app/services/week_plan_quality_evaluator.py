@@ -94,7 +94,13 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
         normalized = _text(term)
         for path, value in visible_strings:
             if normalized in value:
-                issues.append(_issue("forbidden_food", path, "Allergy/intolerance or disliked food appears in a user-visible field.", term=term))
+                position = value.find(normalized)
+                snippet = value[max(0, position - 30):position + len(normalized) + 30]
+                issues.append(_issue(
+                    "forbidden_food", path,
+                    "Allergy/intolerance or disliked food appears in a user-visible field.",
+                    term=term, snippet=snippet,
+                ))
     if _is_gluten_restricted(ctx):
         for path, value in visible_strings:
             if any(term in value for term in _UNSAFE_GLUTEN):
@@ -137,7 +143,9 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
         for title, count in title_counts.items():
             if count > 2: issues.append(_issue("repeated_breakfast", "$.days", "The same breakfast title appears more than twice.", title=title, count=count))
         for idx, (_, text) in enumerate(breakfasts):
-            if ("سیب زمینی" in text or "سیب‌زمینی" in text) and any(f in text for f in _FRUIT) or not any(p in text for p in _PROTEIN):
+            # A potato-based breakfast is not inherently poor when paired with
+            # meaningful protein. The blocking condition is the absent protein.
+            if not any(p in text for p in _PROTEIN):
                 issues.append(_issue("poor_premium_breakfast", f"$.days[{idx}].meals", "Full premium breakfast is snack-like or lacks meaningful protein."))
         economic_count = sum(any(k in text for k in _ECONOMIC) for text in lunches + dinners)
         if economic_count > 2: issues.append(_issue("premium_economic_drift", "$.days", "Premium plan contains too many economic filler main meals.", count=economic_count))

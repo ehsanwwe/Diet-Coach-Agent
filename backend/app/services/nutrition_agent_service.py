@@ -61,13 +61,18 @@ def _extract_json(text: str) -> dict | None:
     return None
 
 
-def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]:
+def _fallback_mock(
+    task_type: str,
+    reason: str,
+    messages: list[dict[str, str]] | None = None,
+) -> tuple[dict, AIProviderResult]:
     """Return mock data for the given task when real provider JSON is unparseable."""
     mock = MockAIProvider()
     from app.services.mock_ai_provider import (
         TASK_ADAPT_PLAN, TASK_ANALYZE_MEAL, TASK_GENERATE_PLAN, TASK_WHAT_TO_EAT,
         TASK_CHAT, TASK_CONTEXT_GUIDANCE, TASK_CRAVING_SUPPORT, TASK_GENERATE_WEEK_AR,
         TASK_GENERATE_WEEK_EN, TASK_GENERATE_WEEK_FA, TASK_SLIP_RECOVERY, TASK_WEEKLY_REPORT,
+        TASK_REPAIR_WEEK_AR, TASK_REPAIR_WEEK_EN, TASK_REPAIR_WEEK_FA,
     )
     task_tag_map = {
         "generate_plan": TASK_GENERATE_PLAN,
@@ -81,10 +86,15 @@ def _fallback_mock(task_type: str, reason: str) -> tuple[dict, AIProviderResult]
         "generate_week_fa": TASK_GENERATE_WEEK_FA,
         "generate_week_en": TASK_GENERATE_WEEK_EN,
         "generate_week_ar": TASK_GENERATE_WEEK_AR,
+        "repair_week_fa": TASK_REPAIR_WEEK_FA,
+        "repair_week_en": TASK_REPAIR_WEEK_EN,
+        "repair_week_ar": TASK_REPAIR_WEEK_AR,
         "weekly_report": TASK_WEEKLY_REPORT,
     }
     tag = task_tag_map.get(task_type, TASK_GENERATE_PLAN)
-    result = mock.generate_text([{"role": "system", "content": tag}])
+    fallback_messages = list(messages or [])
+    fallback_messages.insert(0, {"role": "system", "content": tag})
+    result = mock.generate_text(fallback_messages)
     data = json.loads(result.content)
     return data, AIProviderResult(
         content=json.dumps(data, ensure_ascii=False),
@@ -128,7 +138,7 @@ class NutritionAgentService:
             )
         except AIProviderError as exc:
             logger.warning("AI provider failed (%s), using mock fallback: %s", task_type, exc)
-            parsed, result = _fallback_mock(task_type, "provider_error")
+            parsed, result = _fallback_mock(task_type, "provider_error", messages)
             return _validate_task_output(task_type, parsed), result
 
         parsed = _extract_json(result.content)
@@ -140,7 +150,7 @@ class NutritionAgentService:
             fallback_reason = "non_object_json"
 
         if fallback_reason is not None:
-            parsed, result = _fallback_mock(task_type, fallback_reason)
+            parsed, result = _fallback_mock(task_type, fallback_reason, messages)
 
         try:
             parsed = _validate_task_output(task_type, parsed)
@@ -150,7 +160,7 @@ class NutritionAgentService:
                 task_type,
                 exc,
             )
-            parsed, result = _fallback_mock(task_type, "schema_validation_failed")
+            parsed, result = _fallback_mock(task_type, "schema_validation_failed", messages)
             parsed = _validate_task_output(task_type, parsed)
 
         return parsed, result

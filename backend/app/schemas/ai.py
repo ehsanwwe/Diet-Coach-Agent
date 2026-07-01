@@ -275,6 +275,9 @@ AI_TASK_SCHEMAS: dict[str, type[_AIBaseModel]] = {
     "generate_week_fa": AIWeekPlanResponse,
     "generate_week_en": AIWeekPlanResponse,
     "generate_week_ar": AIWeekPlanResponse,
+    "repair_week_fa": AIWeekPlanResponse,
+    "repair_week_en": AIWeekPlanResponse,
+    "repair_week_ar": AIWeekPlanResponse,
     "adapt_plan": AIAdaptPlanResponse,
     "weekly_report": AIWeeklyReportResponse,
 }
