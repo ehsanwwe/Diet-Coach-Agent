@@ -194,7 +194,7 @@ def _chat_data(db: Session, user: User) -> dict:
         result.append({
             "session_id": session.id,
             "session_type": session.session_type,
-            "message_count": session.message_count,
+            "message_count": len(messages),
             "summary": session.summary,
             "created_at": _iso(session.created_at),
             "updated_at": _iso(session.updated_at),

@@ -248,6 +248,7 @@ def _make_week_fa() -> dict:
             "hydration_goal": "۸ لیوان آب",
             "notes": "امروز می‌توانید بیشتر استراحت کنید.",
             "warnings": [],
+            "cheat_meal_guidance": "چیتینگ کنترل‌شده: یک وعده دلخواه کنترل‌شده در شب. مثلاً ۲ برش پیتزا یا ۱ کاسه کوچک بستنی یا غذای مورد علاقه با حجم کنترل‌شده. این یک وعده کنترل‌شده است، نه پرخوری. وعده بعدی به برنامه عادی برمی‌گردد. زمان پیشنهادی: ۲۰ تا ۲۲.",
             "meals": [
                 {
                     "meal_type": "breakfast",
@@ -280,6 +281,18 @@ def _make_week_fa() -> dict:
                     "portion_guidance": "۱ مشت کوچک (۲۵ گرم): ۱۵ گرم کشمش + ۱۰ گرم بادام",
                     "alternatives": ["۱ عدد میوه فصلی", "۱ کاسه ماست"],
                     "preparation_notes": None,
+                },
+                {
+                    "meal_type": "controlled_cheating",
+                    "meal_slot": "controlled_cheating",
+                    "title": "چیتینگ کنترل‌شده",
+                    "description": "یک وعده دلخواه کنترل‌شده. مثلاً ۲ برش پیتزا یا ۱ کاسه کوچک بستنی یا غذای مورد علاقه با حجم کنترل‌شده. این یک وعده کنترل‌شده است، نه پرخوری. وعده بعدی به برنامه عادی برمی‌گردد.",
+                    "portion_guidance": "حجم کنترل‌شده: نه بیشتر از ۱ تا ۲ واحد غذای دلخواه",
+                    "alternatives": [],
+                    "preparation_notes": None,
+                    "time_window_start": "20:00",
+                    "time_window_end": "22:00",
+                    "meal_order": 9,
                 },
             ],
         },

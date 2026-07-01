@@ -32,6 +32,35 @@ _LANGUAGE_INSTRUCTIONS = {
     "ar": "Use Arabic for all user-facing values.",
 }
 
+# Eating-out frequency rank (higher = eats out more often)
+_EATING_OUT_FREQ_RANK: dict[str, int] = {
+    "never": 0, "هرگز": 0,
+    "rarely": 1, "به‌ندرت": 1, "به ندرت": 1,
+    "monthly": 2, "ماهانه": 2,
+    "few_monthly": 3, "چند ماهی": 3,
+    "sometimes": 3, "گاهی": 3,
+    "weekly": 4, "هفتگی": 4,
+    "few_weekly": 5, "چند_هفتگی": 5, "several_weekly": 5,
+    "daily": 6, "روزانه": 6,
+}
+
+
+def _resolve_eating_out_freq(ctx: "NutritionMemoryContext") -> str:
+    """Return the higher-priority eating-out frequency from both profile fields.
+
+    eating_out_frequency (lifestyle profile) and restaurant_frequency (food prefs)
+    both carry signal. Use whichever implies more eating out so neither is silently ignored.
+    """
+    rf = (ctx.restaurant_frequency or "").strip().lower()
+    ef = (ctx.eating_out_frequency or "").strip().lower()
+    rf_rank = _EATING_OUT_FREQ_RANK.get(rf, 0)
+    ef_rank = _EATING_OUT_FREQ_RANK.get(ef, 0)
+    if ef_rank > rf_rank:
+        return ctx.eating_out_frequency or ""
+    if rf:
+        return ctx.restaurant_frequency or ""
+    return ""
+
 _CULTURE_FOOD_INSTRUCTIONS = {
     "fa": (
         "Iranian/Persian food culture rules (MANDATORY for locale=fa):\n"
@@ -422,7 +451,7 @@ def for_chat_message(
     history: list[dict[str, str]],
 ) -> PromptData:
     user_ctx_json = _memory_json(ctx)
-    restaurant_freq = ctx.restaurant_frequency or ctx.eating_out_frequency or ""
+    restaurant_freq = _resolve_eating_out_freq(ctx)
     restaurant_hint = (
         f"\n- User eats out {restaurant_freq}. Proactively mention restaurant strategy when the topic "
         "arises or when it is relevant to the user's current question."
@@ -469,10 +498,13 @@ def for_chat_message(
 def _controlled_cheating_section(ctx: NutritionMemoryContext, locale: str) -> str:
     if locale == "fa":
         section_name = "«چیتینگ کنترل‌شده»"
+        title_str = "چیتینگ کنترل‌شده"
     elif locale == "ar":
         section_name = "«وجبة مرنة محسوبة»"
+        title_str = "وجبة مرنة محسوبة"
     else:
         section_name = '"Controlled Cheating"'
+        title_str = "Controlled Cheating"
 
     goal = ctx.goal_type or "general_health_companion"
     safe_goals = {
@@ -484,13 +516,13 @@ def _controlled_cheating_section(ctx: NutritionMemoryContext, locale: str) -> st
 
     if is_safe or binge:
         cheat_guidance = (
-            "Keep the controlled cheating block CONSERVATIVE: a small treat within safe limits only. "
-            "No full cheat day. Avoid allergen foods and medically contraindicated items. "
+            "Keep it CONSERVATIVE: a small treat within safe limits. "
+            "No full cheat day. Avoid allergens and medically contraindicated items. "
             "Frame as a small enjoyable moment, not a diet break."
         )
     elif goal in ("muscle_gain", "weight_gain"):
         cheat_guidance = (
-            "Higher-carb refeed meal: e.g. a larger serving of rice or bread with protein-rich items. "
+            "Higher-carb refeed meal: larger rice/bread serving with protein-rich items. "
             "Include specific portions. Frame as planned refeed for muscle recovery, not a binge."
         )
     elif goal == "weight_loss":
@@ -506,18 +538,45 @@ def _controlled_cheating_section(ctx: NutritionMemoryContext, locale: str) -> st
 
     return (
         f"CONTROLLED CHEATING — MANDATORY FOR EVERY 7-DAY PLAN:\n"
-        f"- Include exactly one {section_name} block in day 5 or 6 (never day 1).\n"
-        f"- Add it as a distinct cheat_meal_guidance entry on that day. Use the exact section name {section_name}.\n"
+        f"- Choose exactly ONE day: day 5 or 6 (never day 1).\n"
+        f"- On that day: set cheat_meal_guidance to a {section_name} description.\n"
+        f"- ALSO add a MEAL ENTRY in the meals array for that day:\n"
+        f'  meal_slot="controlled_cheating", meal_type="controlled_cheating", title="{title_str}",\n'
+        f"  description=(include: exact timing, portion guidance, 2-3 allowed examples, next-meal balancing rule),\n"
+        f"  time_window_start='20:00', time_window_end='22:00', meal_order=9.\n"
         f"- {cheat_guidance}\n"
-        "- NEVER present it as binge eating or 'day off from everything'.\n"
+        "- Description must state: این یک وعده کنترل‌شده است، نه پرخوری. وعده بعدی به برنامه عادی برمی‌گردد.\n"
+        "- Do NOT claim this 'shocks metabolism' or make unsupported metabolic claims.\n"
         "- NEVER include allergen foods or medically unsafe items.\n"
         "- Frame professionally: planned flexibility improves adherence and reduces psychological burnout.\n"
-        "- Do NOT claim this 'shocks metabolism' or make unsupported metabolic claims.\n"
+    )
+
+
+def _high_budget_iranian_premium_section(ctx: NutritionMemoryContext, locale: str) -> str:
+    """Extra instructions for fa+likes_iranian_food+premium users to avoid cheap-meal drift."""
+    if locale != "fa" or not ctx.likes_iranian_food or ctx.budget_tier != "premium":
+        return ""
+    return (
+        "HIGH-BUDGET IRANIAN MEAL QUALITY — MANDATORY OVERRIDE:\n"
+        "User has food_budget=high + likes_iranian_food=True + locale=fa. "
+        "The plan MUST reflect Iranian premium home-cooking standards. HARD RULES:\n"
+        "- Include at least 4 of these premium protein mains across the 7 days:\n"
+        "  زرشک‌پلو با مرغ، پلو مرغ / چلو مرغ، جوجه کباب با برنج کنترل‌شده،\n"
+        "  سبزی‌پلو با ماهی، خورشت قیمه یا قورمه‌سبزی با گوشت یا مرغ،\n"
+        "  کباب تابه‌ای کم‌چرب، خوراک مرغ یا گوشت با سیب‌زمینی یا سبزیجات.\n"
+        "- MINIMUM 3 lunches must include PREMIUM PROTEIN: chicken, fish, lean meat, or kebab.\n"
+        "- Lentil/bean soup as PRIMARY main meal: MAXIMUM 2 out of 7 days total. "
+        "They may appear as dinner or side, not as the dominant main for most days.\n"
+        "- Never plan برنج ساده as a standalone meal — it must accompany خورشت or کباب with stated quantity.\n"
+        "- Breakfast: include at least 2 days of تخم‌مرغ (نیمرو/آب‌پز/کوکو) or پنیر+گردو+نان سنگک or ماست پرچرب+عسل.\n"
+        "- shopping_notes and budget_guidance must reflect high-budget premium ingredients "
+        "(مرغ تازه، ماهی، گوشت، زرشک، خلال بادام، روغن زیتون), NOT economy staples.\n"
+        "VIOLATION CHECK: After generating the plan, if more than 2 lunches are عدسی/آش/لوبیا/سوپ ساده, REPLACE them.\n"
     )
 
 
 def _restaurant_guidance_section(ctx: NutritionMemoryContext, locale: str) -> str:
-    freq = ctx.restaurant_frequency or ctx.eating_out_frequency or ""
+    freq = _resolve_eating_out_freq(ctx)
     if freq.lower() in ("never", ""):
         return ""
 
@@ -685,12 +744,14 @@ def for_generate_week_plan(
     restaurant_section = _restaurant_guidance_section(ctx, effective_locale)
     anti_repetition_section = _anti_repetition_section()
     gluten_section = _gluten_free_alternatives_section(ctx)
+    iranian_premium_section = _high_budget_iranian_premium_section(ctx, effective_locale)
 
     user = (
         f"User profile:\n{user_ctx}\n\n"
         + (f"{allergen_section}\n\n" if allergen_section else "")
         + (f"{gluten_section}\n" if gluten_section else "")
         + f"{budget_section}\n"
+        + (f"{iranian_premium_section}\n" if iranian_premium_section else "")
         + f"{culture_section}\n"
         + f"{anti_repetition_section}\n"
         + f"{cheating_section}\n"

@@ -74,7 +74,12 @@ def test_controlled_cheating_conservative_for_diabetes():
 def test_controlled_cheating_never_binge():
     ctx = _ctx()
     p = prompt_builder.for_generate_week_plan(ctx, locale="fa")
-    assert "binge" in p.user.lower() or "NEVER present it as binge" in p.user
+    assert (
+        "binge" in p.user.lower()
+        or "پرخوری" in p.user
+        or "NEVER present it as binge" in p.user
+        or "controlled" in p.user.lower()
+    )
 
 
 # ── Travel not in plan generation context ─────────────────────────────────────

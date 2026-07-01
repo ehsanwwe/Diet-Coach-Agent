@@ -45,6 +45,11 @@ def create_message(
     )
     db.add(msg)
     db.flush()
+    # Keep session.message_count accurate for admin exports
+    session_obj = db.get(ChatSession, session_id)
+    if session_obj is not None:
+        session_obj.message_count = (session_obj.message_count or 0) + 1
+        db.flush()
     return msg
 
 

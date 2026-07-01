@@ -28,6 +28,15 @@ logger = logging.getLogger(__name__)
 MAX_TOOL_ROUNDS = 3
 MAX_TOOL_CALLS_PER_MESSAGE = 5
 
+# Tools that persist nutrition data → map to a bold Persian status line prepended to reply
+_PERSISTENCE_TOOL_BOLD: dict[str, str] = {
+    "generate_week_plan": "**برنامه ۷ روز آینده ساخته شد.**",
+    "update_tomorrow_plan": "**برنامه فردا به‌روزرسانی شد.**",
+    "substitute_meal": "**برنامه امروز به‌روزرسانی شد.**",
+    "adapt_plan": "**برنامه غذایی به‌روزرسانی شد.**",
+}
+_BOLD_FAILURE = "**تغییر برنامه انجام نشد.**"
+
 _GREETING_RE = re.compile(
     r"^[\s]*(?:سلام|درود|خوبی[؟?]?|چطوری[؟?]?|چطورید[؟?]?|خوب هستی[؟?]?|"
     r"صبح بخیر|عصر بخیر|شب بخیر|وقت بخیر|"
@@ -226,9 +235,8 @@ CRITICAL RULES (non-negotiable):
 - Ask at most 1 follow-up question per turn; 0 questions when MAX_FOLLOWUPS_REACHED=true
 
 RESPONSE FORMAT (strictly enforced):
-- Your final response text must NOT contain action confirmations.
-  Phrases like "برنامه فردا به‌روزرسانی شد" or "ثبت شد" belong in action chips, not in your text.
-  Do not repeat tool result summaries in your conversational response.
+- The system automatically prepends a bold Persian status line to your response when a plan action
+  succeeds or fails — do NOT duplicate it (e.g. do not re-state "برنامه فردا به‌روزرسانی شد").
 - When plan update succeeds: briefly mention WHAT changed (e.g. more fiber/protein, lighter carbs).
 - If plan update fails: say you could not save the update; still give the immediate food recommendation.
 - If a food event was already discussed in recent history, refer to it briefly.
@@ -396,8 +404,7 @@ def _clean_response_reminder(conversation_state: str = "") -> str:
     base = (
         "Now write your final coaching response. "
         "Start fresh — do not continue from or repeat any text from before the tool calls. "
-        "Do not include action confirmations (e.g. 'برنامه فردا به‌روزرسانی شد') in your main text — "
-        "those are shown separately as action chips. "
+        "Do not duplicate the bold status line that the system prepends automatically. "
         "Be concise. Complete every sentence."
     )
     if "MAX_FOLLOWUPS_REACHED" in conversation_state:
@@ -627,6 +634,8 @@ def process_user_message(
     tool_calls_total = 0
     reply_text = ""
     provider_name = "openai"
+    # Track persistence-tool outcomes: (tool_name, success)
+    _persistence_outcomes: list[tuple[str, bool]] = []
 
     try:
         for round_idx in range(MAX_TOOL_ROUNDS):
@@ -675,6 +684,8 @@ def process_user_message(
                             actions_summary.append(tr.user_visible_summary)
                         if tr.success and tr.data and tr.data.get("suggestion_chips"):
                             suggestion_chips = tr.data["suggestion_chips"]
+                        if tc.name in _PERSISTENCE_TOOL_BOLD:
+                            _persistence_outcomes.append((tc.name, tr.success))
                         # Keep tool result compact: success flag + data only.
                         # Omit user_visible_summary from the LLM context to prevent it
                         # from being copied verbatim into the final response text.
@@ -713,6 +724,20 @@ def process_user_message(
     except (AIProviderError, Exception) as exc:
         logger.warning("Agent orchestrator error, falling back: %s", exc)
         return _text_fallback(db, session, user_msg, ctx, message, history, pending_id)
+
+    # Prepend bold Persian status line for persistence-tool outcomes
+    if _persistence_outcomes:
+        any_success = any(ok for _, ok in _persistence_outcomes)
+        any_failure = any(not ok for _, ok in _persistence_outcomes)
+        if any_success:
+            # Use the last successful persistence tool's status line
+            for tool_name, ok in reversed(_persistence_outcomes):
+                if ok:
+                    bold_line = _PERSISTENCE_TOOL_BOLD[tool_name]
+                    break
+            reply_text = bold_line + "\n\n" + reply_text if reply_text else bold_line
+        elif any_failure:
+            reply_text = _BOLD_FAILURE + "\n\n" + reply_text if reply_text else _BOLD_FAILURE
 
     am = _save_assistant_response(db, session.id, reply_text, pending_id)
     db.commit()
