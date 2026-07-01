@@ -11,6 +11,10 @@ import os
 # Must be set before any app imports (Settings validates SECRET_KEY at import time)
 os.environ.setdefault("SECRET_KEY", "test-secret-key-for-pytest-not-for-production")
 os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+# Admin panel credentials for test environment
+os.environ.setdefault("ADMIN_USERNAME", "testadmin")
+os.environ.setdefault("ADMIN_PASSWORD", "testpass123!")
+os.environ.setdefault("ADMIN_SESSION_SECRET", "test-admin-secret-key-for-pytest-only")
 
 from collections.abc import Generator
 

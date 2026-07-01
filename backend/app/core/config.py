@@ -98,6 +98,14 @@ class Settings(BaseSettings):
     OPENCLAW_CONTEXT_MAX_MESSAGES: int = 20
     OPENCLAW_CONTEXT_SUMMARY_ENABLED: bool = False
 
+    # ── Admin Panel ──────────────────────────────────────────────────────────
+    # Credentials are read exclusively from environment; never hard-coded.
+    # Leave empty to disable admin login (returns 503).
+    ADMIN_USERNAME: str = ""
+    ADMIN_PASSWORD: str = ""
+    ADMIN_SESSION_SECRET: str = ""
+    ADMIN_SESSION_EXPIRE_MINUTES: int = 60 * 8  # 8 hours
+
     @field_validator("SECRET_KEY")
     @classmethod
     def secret_key_must_be_set(cls, value: str) -> str:

@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
+from app.api.v1.endpoints.admin_auth import router as admin_auth_router
+from app.api.v1.endpoints.admin_users import router as admin_users_router
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.chat import router as chat_router
 from app.api.v1.endpoints.health import router as health_router
@@ -39,3 +41,9 @@ api_router.include_router(progress_router, prefix="/progress")
 
 # Phase 10: Settings, Polish & Remaining UI
 api_router.include_router(settings_router, prefix="/settings")
+
+# Admin panel (separate auth, hidden from normal users)
+_admin_router = APIRouter(prefix="/admin")
+_admin_router.include_router(admin_auth_router, prefix="/auth")
+_admin_router.include_router(admin_users_router, prefix="/users")
+api_router.include_router(_admin_router)
