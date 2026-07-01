@@ -339,14 +339,6 @@ def generate_week(
     plan_data, result = agent.generate_week_plan(ctx, locale, extra_context=extra_context)
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
-    if ctx.disliked_foods:
-        from app.services.preference_extractor import find_dislike_violations
-        violations = find_dislike_violations(plan_data, ctx.disliked_foods)
-        if violations:
-            logger.warning("Dislike violations in generated week plan: %s", violations)
-            plan_data = _llm_repair_dislike_violations(plan_data, ctx.disliked_foods, None, locale)
-            plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
-
     days_raw: list[dict] = plan_data.get("days") or []
     # Clamp to exactly 7
     days_raw = days_raw[:7]
@@ -439,38 +431,6 @@ def generate_week(
                 drink_guidance=meal_raw.get("drink_guidance"),
             )
 
-        # Inject controlled-cheating meal if day 5 or 6 has guidance but no meal entry yet
-        cheat_guidance_text = day_raw.get("cheat_meal_guidance") or ""
-        day_idx = i + 1
-        has_cheat_meal = any(
-            (m.get("meal_type") or m.get("meal_slot") or "") in ("controlled_cheating", "cheating_date")
-            for m in meals_raw
-        )
-        if day_idx >= 5 and cheat_guidance_text and not has_cheat_meal:
-            calendar_repository.create_plan_day_meal(
-                db,
-                plan_day_id=day.id,
-                locale=locale,
-                meal_type="cheating_date",
-                title="Cheating Date",
-                description=cheat_guidance_text,
-                portion_guidance=cheat_guidance_text[:200] if cheat_guidance_text else None,
-                alternatives=[],
-                preparation_notes=None,
-                meal_slot="cheating_date",
-                meal_order=9,
-                time_window_start="20:00",
-                time_window_end="22:00",
-                calories_estimate=None,
-                protein_g=None,
-                carbs_g=None,
-                fat_g=None,
-                food_items=[],
-                workout_relation="none",
-                rest_day_note=None,
-                drink_guidance=None,
-            )
-
         generated.append(_day_to_schema(db, day))
 
     # Update calendar range
@@ -503,14 +463,6 @@ def regenerate_day(
     agent = NutritionAgentService()
     plan_data, _ = agent.generate_week_plan(ctx, locale, extra_context=reason)
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
-
-    if ctx.disliked_foods:
-        from app.services.preference_extractor import find_dislike_violations
-        violations = find_dislike_violations(plan_data, ctx.disliked_foods)
-        if violations:
-            logger.warning("Dislike violations in regenerated day: %s", violations)
-            plan_data = _llm_repair_dislike_violations(plan_data, ctx.disliked_foods, None, locale)
-            plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     days_raw: list[dict] = plan_data.get("days") or []
     day_raw = days_raw[0] if days_raw else {}

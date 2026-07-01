@@ -27,6 +27,7 @@ from app.services.prompt_builder import (
     for_craving_support,
     for_generate_plan,
     for_generate_week_plan,
+    for_repair_week_plan,
     for_weekly_report,
     for_slip_recovery,
     for_what_to_eat_now,
@@ -222,26 +223,36 @@ class NutritionAgentService:
         locale: str,
         extra_context: str | None = None,
     ) -> tuple[dict, AIProviderResult]:
-        """Generate a 7-day meal plan in the given locale."""
+        """Generate, review, and ask the provider to repair a 7-day plan."""
+        from app.services.week_plan_quality_evaluator import (
+            evaluate_week_plan_quality,
+            has_blocking_quality_issues,
+        )
+        from app.services.weekly_plan_personalization_validator import validate_and_sanitize
+
         prompt = for_generate_week_plan(ctx, locale, extra_context=extra_context)
         parsed, result = self._call(prompt)
-        # Defensive fallback remains for older callers/tests and invalid locale mock data.
-        if not isinstance(parsed.get("days"), list) or len(parsed["days"]) < 7:
+        for repair_attempt in range(3):
+            normalized = validate_and_sanitize(parsed, ctx, locale=locale)
+            issues = evaluate_week_plan_quality(normalized, ctx, locale)
+            if not has_blocking_quality_issues(issues):
+                return normalized, result
+            if repair_attempt == 2:
+                codes = sorted({issue.code for issue in issues if issue.severity == "error"})
+                logger.error("Week plan rejected after two repair attempts: %s", codes)
+                raise AIProviderError(
+                    "Generated week plan did not pass quality and safety review after two repairs: "
+                    + ", ".join(codes)
+                )
             logger.warning(
-                "Week plan response invalid (locale=%s, days=%s), falling back to mock",
-                locale,
-                len(parsed.get("days") or []),
+                "Week plan failed review; requesting LLM repair attempt %d: %s",
+                repair_attempt + 1,
+                [issue.code for issue in issues],
             )
-            from app.services.mock_ai_provider import generate_safe_week_mock
-            parsed = generate_safe_week_mock(ctx, locale)
-            result = AIProviderResult(
-                content=json.dumps(parsed, ensure_ascii=False),
-                provider="mock_fallback",
-                model="mock",
-                raw_metadata={"fallback_reason": "week_plan_shape_invalid"},
-                is_mock=True,
-            )
-        return parsed, result
+            repair_prompt = for_repair_week_plan(ctx, locale, normalized, issues)
+            parsed, result = self._call(repair_prompt)
+
+        raise AIProviderError("Week plan quality review failed")
 
     def weekly_report(
         self,

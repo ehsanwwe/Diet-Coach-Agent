@@ -644,9 +644,12 @@ def _gluten_free_alternatives_section(ctx: NutritionMemoryContext) -> str:
     return (
         "GLUTEN-FREE ALTERNATIVES — MANDATORY (user has gluten restriction):\n"
         "- Every meal must be completely gluten-free.\n"
+        "- Never include normal wheat bread (سنگک، بربری، لواش یا تافتون معمولی), wheat flour, regular pasta/noodles, barley unless certified gluten-free, rye, couscous, رشته or آش رشته.\n"
         f"- For bread/grain/pasta slots: {alternatives}\n"
+        "- When Iranian breakfast normally uses bread, actively specify نان بدون گلوتن or a practical safe gluten-free bread/grain alternative; never merely remove bread.\n"
         "- Increase variety of proteins alongside grains: fish, chicken, legumes — ROTATED across days.\n"
         "- Never use wheat, barley, rye, regular pasta, couscous, or standard bread.\n"
+        "- Restaurant guidance must ask about wheat/flour in marinades, sauces, soups and fried coatings; prefer safe grilled protein with rice/potato/salad, avoid breaded foods unless confirmed gluten-free, and mention cross-contamination calmly.\n"
     )
 
 
@@ -843,6 +846,53 @@ def for_generate_week_plan(
     if extra_context:
         user = f"Special instruction for this request: {extra_context}\n\n" + user
     return PromptData(task_type=f"generate_week_{effective_locale}", system=system, user=user)
+
+
+def for_repair_week_plan(
+    ctx: NutritionMemoryContext,
+    locale: str,
+    original_plan: dict,
+    issues: list[object],
+) -> PromptData:
+    """Build a precise LLM repair request from deterministic review findings."""
+    effective_locale = _normalize_locale(locale)
+    task_type = f"generate_week_{effective_locale}"
+    issue_data = [
+        {
+            "code": getattr(issue, "code", "unknown"),
+            "severity": getattr(issue, "severity", "error"),
+            "path": getattr(issue, "path", "$"),
+            "message": getattr(issue, "message", str(issue)),
+            "details": getattr(issue, "details", {}),
+        }
+        for issue in issues
+    ]
+    gluten_section = _gluten_free_alternatives_section(ctx)
+    system = _base_system(_LOCALE_TASK_MAP[effective_locale], ctx, locale=effective_locale) + (
+        "\nYou are repairing a rejected 7-day nutrition plan. The deterministic reviewer only "
+        "reports defects; you are responsible for selecting all foods. Return valid JSON only, "
+        "with no markdown or commentary. Preserve safe valid parts when useful, or regenerate the "
+        "whole week. Do not omit required sections."
+    )
+    user = (
+        f"LOCALE:\n{effective_locale}\n\n"
+        f"USER MEMORY/PROFILE JSON:\n{json.dumps(ctx.to_prompt_memory(), ensure_ascii=False)}\n\n"
+        f"REJECTED PLAN JSON:\n{json.dumps(original_plan, ensure_ascii=False)}\n\n"
+        f"EXACT REVIEW ISSUES JSON:\n{json.dumps(issue_data, ensure_ascii=False)}\n\n"
+        "REPAIR REQUIREMENTS:\n"
+        "- Return the complete plan object with exactly 7 days and the same output contract as a generated week plan.\n"
+        "- Repair using culture, locale, budget, goal, allergies/intolerances, disliked foods, breakfast habit, and activity pattern.\n"
+        "- Never repeat low-quality economic meals for premium users.\n"
+        "- Do not use سیب‌زمینی آبپز با میوه as a full breakfast.\n"
+        "- Do not repeat عدسی با برنج for high-budget/high-protein users unless explicitly requested.\n"
+        "- Do not repeat soup as the default dinner.\n"
+        "- Include exactly one visible meal with meal_type and meal_slot 'cheating_date', title exactly 'Cheating Date', on day 5 or 6, with a clear controlled-flexibility description and time window.\n"
+        "- Every meal needs measurable portions and time_window_start/time_window_end.\n"
+        "- Never place allergies, intolerances, or disliked foods in any user-visible field.\n"
+        "- Return JSON only; no markdown outside JSON.\n"
+        + (f"\n{gluten_section}\nUse نان بدون گلوتن and safe gluten-free grain alternatives where bread/grain is expected. Check sauces, marinades, soups, fried coatings, and cross-contamination in restaurant guidance.\n" if gluten_section else "")
+    )
+    return PromptData(task_type=task_type, system=system, user=user)
 
 
 def for_weekly_report(
