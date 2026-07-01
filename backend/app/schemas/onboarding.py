@@ -156,7 +156,7 @@ class LifestyleRequest(BaseModel):
     cooking_ability: int = Field(..., ge=1, le=5)
     food_budget: str = Field(..., max_length=50)
     eating_out_frequency: str | None = Field(None, max_length=50)
-    travel_frequency: str = Field(..., max_length=50)
+    travel_frequency: str | None = Field(None, max_length=50)
 
 
 class LifestyleResponse(BaseModel):

@@ -115,7 +115,7 @@ export interface LifestyleRequest {
   cooking_ability: number
   food_budget: string
   eating_out_frequency?: string | null
-  travel_frequency: string
+  travel_frequency?: string | null
 }
 
 export interface LifestyleResponse {

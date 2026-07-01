@@ -29,7 +29,7 @@ def test_base_prompt_includes_safety_tone_culture_and_care_process():
     assert "Never use body-shaming" in system
     assert "Never recommend extreme diets" in system
     assert "Never change medication" in system
-    assert "Iranian/Persian food culture" in system
+    assert "food culture" in system
     assert "household units" in system
     assert "Assessment" in system
     assert "Diagnosis/problem identification" in system

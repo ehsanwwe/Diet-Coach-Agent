@@ -24,7 +24,6 @@ export interface LifestyleFormData {
   exercise_days_per_week: number
   cooking_ability: number
   food_budget: string
-  travel_frequency: string
 }
 
 export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiError, onSubmit }: Props) {
@@ -37,7 +36,6 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
       exercise_days_per_week: defaultValues?.exercise_days_per_week ?? 3,
       cooking_ability: defaultValues?.cooking_ability ?? 3,
       food_budget: defaultValues?.food_budget ?? '',
-      travel_frequency: defaultValues?.travel_frequency ?? '',
     },
   })
 
@@ -155,16 +153,6 @@ export default function LifestyleStep({ dict, defaultValues, isSubmitting, apiEr
           <option value="low">{dict.lifeBudgetLow}</option>
           <option value="medium">{dict.lifeBudgetMedium}</option>
           <option value="high">{dict.lifeBudgetHigh}</option>
-        </SelectField>
-
-        {/* Travel */}
-        <SelectField label={dict.lifeTravel} error={errors.travel_frequency && dict.lifeRequired}
-          {...register('travel_frequency', { required: true })}>
-          <option value="">{dict.lifeRequired}</option>
-          <option value="never">{dict.freqNever}</option>
-          <option value="rarely">{dict.freqRarely}</option>
-          <option value="few_weekly">{dict.freqFewWeekly}</option>
-          <option value="daily">{dict.freqDaily}</option>
         </SelectField>
 
         {apiError && <p className="text-sm text-error bg-error/10 rounded-xl px-4 py-3">{apiError}</p>}

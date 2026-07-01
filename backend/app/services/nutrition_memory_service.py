@@ -269,6 +269,7 @@ class NutritionMemoryContext:
                     "work_schedule": self.work_schedule,
                     "food_budget": self.food_budget,
                     "budget_tier": self.budget_tier,
+                    "eating_out_frequency": self.eating_out_frequency,
                     "budget_access_summary": self.budget_access_summary,
                     "cooking_access_summary": self.cooking_access_summary,
                 }.items()
@@ -424,8 +425,6 @@ def summarize_budget_and_access(lifestyle) -> tuple[str | None, str | None]:
         budget_parts.append(f"budget={lifestyle.food_budget}")
     if lifestyle.eating_out_frequency:
         budget_parts.append(f"eating_out={lifestyle.eating_out_frequency}")
-    if lifestyle.travel_frequency:
-        budget_parts.append(f"travel={lifestyle.travel_frequency}")
 
     cooking_parts = []
     if lifestyle.cooking_ability is not None:

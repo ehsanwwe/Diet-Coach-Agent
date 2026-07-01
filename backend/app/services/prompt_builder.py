@@ -32,6 +32,35 @@ _LANGUAGE_INSTRUCTIONS = {
     "ar": "Use Arabic for all user-facing values.",
 }
 
+_CULTURE_FOOD_INSTRUCTIONS = {
+    "fa": (
+        "Iranian/Persian food culture rules (MANDATORY for locale=fa):\n"
+        "- Breakfast must follow typical Iranian patterns: نان (سنگک/بربری/لواش) + پنیر + سبزی خوردن/خیار/گوجه; "
+        "OR تخم‌مرغ (نیمرو/آب‌پز/کوکو سبزی/اشکنه); OR عدسی/حلیم/فرنی (controlled portion); "
+        "OR ماست + میوه فصلی + نان.\n"
+        "- «ماست چکیده با گردو» is NOT a main Iranian breakfast — use it only as a side or snack, NOT as a standalone breakfast.\n"
+        "- Main meals: Use خورشت‌های ایرانی (قرمه‌سبزی، قیمه، فسنجان، مرغ ترش) with controlled برنج; "
+        "کباب (کوبیده/جوجه/بختیاری) with controlled برنج یا نان; آش‌های ایرانی; "
+        "خوراک حبوبات (لوبیا، عدس با پروتئین); ماهی با برنج/سبزیجات.\n"
+        "- Rice and bread are ALLOWED in controlled portions — do not ban them.\n"
+        "- ماست/دوغ used as side accompaniment, not main protein source.\n"
+    ),
+    "ar": (
+        "Arabic/Middle Eastern food culture rules (MANDATORY for locale=ar):\n"
+        "- Breakfast: فول مدمس، حمص، لبنة، بيض (مسلوق/مقلي/بيض بالطماطم)، خبز عربي، "
+        "جبنة بيضاء، زيتون، خضروات طازجة، شاي.\n"
+        "- Main meals: دجاج مشوي، كباب، أرز بالدجاج (controlled)، شاورما (controlled)، "
+        "شوربة العدس، ملوخية، مسخن، سلطة فتوش، تبولة، مجدرة.\n"
+        "- Accompaniments: لبن/زبادي as side, خبز عربي in controlled portions.\n"
+    ),
+    "en": (
+        "International food culture rules (for locale=en):\n"
+        "- Use globally common healthy meals: oatmeal, eggs, lean proteins, salads, "
+        "grilled meats/fish, whole grain options, vegetables, fruits.\n"
+        "- Still respect all user explicit food preferences.\n"
+    ),
+}
+
 _LOCALE_TASK_MAP = {
     "fa": TASK_GENERATE_WEEK_FA,
     "en": TASK_GENERATE_WEEK_EN,
@@ -94,9 +123,9 @@ def _safety_section() -> str:
 def _real_life_section() -> str:
     return (
         "Cultural and real-life fit:\n"
-        "- Respect Iranian/Persian food culture when suitable: rice, bread, stews, legumes, yogurt, vegetables, halal meats.\n"
+        "- Respect the user's food culture (Iranian/Persian, Arabic, or international) based on the locale and explicit preferences.\n"
         "- Use realistic foods and household units where useful, such as plate, bowl, cup, spoon, palm, handful, slice.\n"
-        "- Consider budget, time, cooking ability, work schedule, family meals, restaurant meals, travel, and food access.\n"
+        "- Consider budget, time, cooking ability, work schedule, family meals, restaurant meals, and food access.\n"
         "- Treat the diet as a living plan that can be monitored and adjusted, not a static file.\n"
     )
 
@@ -182,7 +211,7 @@ def for_generate_plan(ctx: NutritionMemoryContext) -> PromptData:
         + _dislike_constraint(ctx)
         + "\nGenerate a practical initial nutrition plan only if the profile is sufficiently complete.\n"
         "Do not create a complete strict diet based only on height, weight, and goal.\n"
-        "The plan must include realistic meals/snacks WITH EXPLICIT QUANTITIES in both description and notes (e.g. '۲ کف دست نان + ۳۰ گرم پنیر', '۷ قاشق برنج + ۴ قاشق خورش'), alternatives, a quick busy-day option, outside-home/restaurant flexibility where possible, a simple scientific reason.\n"
+        "The plan must include realistic meals/snacks with household portions and EXPLICIT QUANTITIES in both description and notes (e.g. '۲ کف دست نان + ۳۰ گرم پنیر', '۷ قاشق برنج + ۴ قاشق خورش'), alternatives, a quick busy-day option, outside-home/restaurant flexibility where possible, a simple scientific reason.\n"
         "NEVER produce a meal with only a food name — every meal must state measurable household amounts.\n"
         "Do NOT include a 'consult your doctor before starting' warning — the system injects that automatically.\n"
         "Prefer Iranian/Persian foods when culturally appropriate and allow substitutions if the user dislikes or lacks a food.\n"
@@ -393,6 +422,14 @@ def for_chat_message(
     history: list[dict[str, str]],
 ) -> PromptData:
     user_ctx_json = _memory_json(ctx)
+    restaurant_freq = ctx.restaurant_frequency or ctx.eating_out_frequency or ""
+    restaurant_hint = (
+        f"\n- User eats out {restaurant_freq}. Proactively mention restaurant strategy when the topic "
+        "arises or when it is relevant to the user's current question."
+        if restaurant_freq and restaurant_freq.lower() not in ("never", "")
+        else ""
+    )
+
     system = (
         _base_system(TASK_CHAT, ctx)
         + "\nChat behavior:\n"
@@ -400,7 +437,12 @@ def for_chat_message(
         "- Ask one concise follow-up question when key nutrition data is missing and a safe answer needs it.\n"
         "- Do not over-question; give practical guidance when safe.\n"
         "- Mention human review when risk context requires it.\n"
-        "- For Persian users, prefer Iranian food examples and household units.\n"
+        "- Match food examples to locale: Persian patterns for fa users, Arabic patterns for ar users, international for en.\n"
+        "- Never repeat the same medical warning sentence twice in a single response.\n"
+        f"{restaurant_hint}"
+        "\n- If the user asks about flexibility, cravings, or 'getting tired of the diet', proactively introduce the concept of "
+        "controlled cheating (چیتینگ کنترل‌شده / Controlled Cheating / وجبة مرنة محسوبة) as planned flexibility to improve adherence.\n"
+        "- Answers about restaurant, gluten-free, or meal alternatives must reflect the user's current goal, budget, allergies, culture, and eating-out frequency.\n"
     )
 
     clean_history: list[dict[str, str]] = [
@@ -421,6 +463,128 @@ def for_chat_message(
         system=system,
         user=user,
         history_messages=clean_history,
+    )
+
+
+def _controlled_cheating_section(ctx: NutritionMemoryContext, locale: str) -> str:
+    if locale == "fa":
+        section_name = "«چیتینگ کنترل‌شده»"
+    elif locale == "ar":
+        section_name = "«وجبة مرنة محسوبة»"
+    else:
+        section_name = '"Controlled Cheating"'
+
+    goal = ctx.goal_type or "general_health_companion"
+    safe_goals = {
+        "diabetes_support", "kidney_disease", "pregnancy_breastfeeding_caution",
+        "eating_disorder_history", "clinical_review_required",
+    }
+    is_safe = goal in safe_goals or ctx.clinical_review_required or ctx.risk_level in ("high", "clinical_review_required")
+    binge = ctx.binge_history
+
+    if is_safe or binge:
+        cheat_guidance = (
+            "Keep the controlled cheating block CONSERVATIVE: a small treat within safe limits only. "
+            "No full cheat day. Avoid allergen foods and medically contraindicated items. "
+            "Frame as a small enjoyable moment, not a diet break."
+        )
+    elif goal in ("muscle_gain", "weight_gain"):
+        cheat_guidance = (
+            "Higher-carb refeed meal: e.g. a larger serving of rice or bread with protein-rich items. "
+            "Include specific portions. Frame as planned refeed for muscle recovery, not a binge."
+        )
+    elif goal == "weight_loss":
+        cheat_guidance = (
+            "ONE cheat MEAL (not a full cheat day): user's favourite reasonable food with a portion cap. "
+            "Include next-meal guidance to return to plan. No guilt, no extreme compensation."
+        )
+    else:
+        cheat_guidance = (
+            "One flexible meal: the user's favourite food with household-portion guidance. "
+            "Enjoy without guilt. Return to plan at the next meal."
+        )
+
+    return (
+        f"CONTROLLED CHEATING — MANDATORY FOR EVERY 7-DAY PLAN:\n"
+        f"- Include exactly one {section_name} block in day 5 or 6 (never day 1).\n"
+        f"- Add it as a distinct cheat_meal_guidance entry on that day. Use the exact section name {section_name}.\n"
+        f"- {cheat_guidance}\n"
+        "- NEVER present it as binge eating or 'day off from everything'.\n"
+        "- NEVER include allergen foods or medically unsafe items.\n"
+        "- Frame professionally: planned flexibility improves adherence and reduces psychological burnout.\n"
+        "- Do NOT claim this 'shocks metabolism' or make unsupported metabolic claims.\n"
+    )
+
+
+def _restaurant_guidance_section(ctx: NutritionMemoryContext, locale: str) -> str:
+    freq = ctx.restaurant_frequency or ctx.eating_out_frequency or ""
+    if freq.lower() in ("never", ""):
+        return ""
+
+    if locale == "fa":
+        examples = (
+            "رستوران ایرانی: جوجه کباب با نان (بدون برنج یا برنج محدود) + سالاد؛ "
+            "کباب کوبیده یک سیخ با نان سنگک؛ آبگوشت بدون نان اضافه؛ "
+            "ماهی کبابی با سبزی؛ دوری‌کردن از غذاهای سرخ‌کردنی، سس‌های پرکالری، دوغ شیرین."
+        )
+    elif locale == "ar":
+        examples = (
+            "مطعم عربي: دجاج مشوي بدون صلصة كثيرة + سلطة؛ شاورما دجاج (بدون صلصة ثقيلة)؛ "
+            "شوربة عدس + خبز محدود؛ تجنب المقليات والمشروبات المحلاة."
+        )
+    else:
+        examples = (
+            "Restaurant strategy: grilled protein + salad; avoid heavy sauces, fried items, "
+            "sugary drinks; choose grilled over fried; share dessert or skip."
+        )
+
+    return (
+        f"RESTAURANT / EATING-OUT GUIDANCE — REQUIRED (user eats out {freq}):\n"
+        "- Include restaurant_party_travel_guidance field on at least 2 days of the 7-day plan.\n"
+        "- Include: best available restaurant choice, what to avoid, how to balance next meal after eating out.\n"
+        f"- Practical locale-specific examples: {examples}\n"
+        "- Do NOT say 'never eat restaurant food'. Provide practical, non-shaming strategy.\n"
+        "- If user eats out on a cheat day, link the guidance to the controlled cheating block.\n"
+    )
+
+
+def _anti_repetition_section() -> str:
+    return (
+        "ANTI-REPETITION RULE — MANDATORY:\n"
+        "- Do NOT use the same complete main meal (same name) more than twice across the 7 days.\n"
+        "- Do NOT place the same main protein on adjacent days' lunch AND dinner.\n"
+        "- Rotate proteins: chicken, fish/tuna, legumes (lentils, beans, chickpeas), eggs (if allowed), red meat (max once per week).\n"
+        "- Rotate main carbs across days: rice, bread, potato, rice noodles, mixed polo — vary them.\n"
+        "- Exception: user may prefer simple repetition — only repeat if user explicitly asked for it or has very low cooking ability.\n"
+    )
+
+
+def _gluten_free_alternatives_section(ctx: NutritionMemoryContext) -> str:
+    allergies_lower = [a.lower() for a in ctx.allergies]
+    has_gluten = any(
+        "gluten" in a or "wheat" in a or "گندم" in a or "گلوتن" in a
+        for a in allergies_lower
+    )
+    if not has_gluten:
+        return ""
+    budget = ctx.budget_tier if ctx.budget_tier != "unknown" else "standard"
+    if budget == "economic":
+        alternatives = (
+            "rotate between: برنج (rice), سیب‌زمینی (potato), نان برنجی/ذرت (rice/corn bread if available), "
+            "lentil soup, bean soup, chickpea soup. Avoid repeating lentils/rice every single day."
+        )
+    else:
+        alternatives = (
+            "rotate between: برنج/rice, سیب‌زمینی/potato, رشته برنجی/rice noodles, نان برنجی/ذرت/rice-corn bread, "
+            "quinoa or buckwheat (if available), certified GF oats, corn-based options. "
+            "Do NOT default to only lentils and plain rice every day."
+        )
+    return (
+        "GLUTEN-FREE ALTERNATIVES — MANDATORY (user has gluten restriction):\n"
+        "- Every meal must be completely gluten-free.\n"
+        f"- For bread/grain/pasta slots: {alternatives}\n"
+        "- Increase variety of proteins alongside grains: fish, chicken, legumes — ROTATED across days.\n"
+        "- Never use wheat, barley, rye, regular pasta, couscous, or standard bread.\n"
     )
 
 
@@ -516,10 +680,21 @@ def for_generate_week_plan(
         else "User does not exercise regularly. Use day_type=rest_day for all days."
     )
 
+    culture_section = _CULTURE_FOOD_INSTRUCTIONS.get(effective_locale, _CULTURE_FOOD_INSTRUCTIONS["en"])
+    cheating_section = _controlled_cheating_section(ctx, effective_locale)
+    restaurant_section = _restaurant_guidance_section(ctx, effective_locale)
+    anti_repetition_section = _anti_repetition_section()
+    gluten_section = _gluten_free_alternatives_section(ctx)
+
     user = (
         f"User profile:\n{user_ctx}\n\n"
         + (f"{allergen_section}\n\n" if allergen_section else "")
+        + (f"{gluten_section}\n" if gluten_section else "")
         + f"{budget_section}\n"
+        + f"{culture_section}\n"
+        + f"{anti_repetition_section}\n"
+        + f"{cheating_section}\n"
+        + (f"{restaurant_section}\n" if restaurant_section else "")
         + f"Generate exactly 7 days of meal plan in locale={effective_locale}.\n"
         + f"{training_note}\n"
         + "Use household portions. Include time windows for each meal. Provide calories and macros.\n"
