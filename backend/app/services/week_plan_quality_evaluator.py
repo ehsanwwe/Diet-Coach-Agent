@@ -137,7 +137,7 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
             text = _meal_text(meal)
             slot = _slot(meal)
             if not str(meal.get("title") or "").strip() or not str(meal.get("description") or "").strip():
-                issues.append(_issue("missing_meal_content", path, "Every meal needs a non-empty title and description.", severity="safety_blocker"))
+                issues.append(_issue("missing_meals", path, "Every meal needs a non-empty title and description.", severity="safety_blocker"))
             if slot in {"cheating_date", "controlled_cheating"}:
                 cheats.append((di + 1, meal))
             if slot == "breakfast": breakfasts.append((str(meal.get("title") or "").strip().lower(), text))
@@ -155,10 +155,22 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
     else:
         day_no, meal = cheats[0]
         desc = _meal_text(meal)
+        usable_cheat = bool(str(meal.get("title") or "").strip() and str(meal.get("description") or "").strip())
         if day_no not in (5, 6) or meal.get("title") != "Cheating Date" or not meal.get("time_window_start") or not meal.get("time_window_end"):
-            issues.append(_issue("invalid_cheating_date", f"$.days[{day_no - 1}]", "Cheating Date must be on day 5 or 6, use the exact title, and include a time window.", severity="safety_blocker"))
-        if not any(x in desc for x in ("کنترل", "برنامه", "planned", "controlled")) or any(x in desc for x in ("شوک متابولیسم", "metabolism shock")):
-            issues.append(_issue("invalid_cheating_date_guidance", f"$.days[{day_no - 1}]", "Cheating Date must describe planned controlled flexibility without unsupported metabolism claims.", severity="safety_blocker"))
+            issues.append(_issue(
+                "invalid_cheating_date", f"$.days[{day_no - 1}]",
+                "Cheating Date should be on day 5 or 6, use the exact title, and include a time window.",
+                severity="repairable_quality" if usable_cheat else "safety_blocker",
+            ))
+        unsafe_claim = any(x in desc for x in ("شوک متابولیسم", "metabolism shock", "shock metabolism"))
+        controlled_guidance = any(x in desc for x in ("کنترل", "برنامه", "planned", "controlled"))
+        if unsafe_claim or not controlled_guidance:
+            issues.append(_issue(
+                "invalid_cheating_date_guidance", f"$.days[{day_no - 1}]",
+                "Cheating Date must describe planned controlled flexibility without unsupported metabolism claims.",
+                severity="safety_blocker" if unsafe_claim else "repairable_quality",
+                unsafe_claim=unsafe_claim,
+            ))
 
     high_protein_goal = "muscle" in (ctx.goal_type or "").lower() or "عضله" in (ctx.goal_type or "")
     full_breakfast = (ctx.breakfast_habit or "").lower() in {"full", "کامل", "heavy"}

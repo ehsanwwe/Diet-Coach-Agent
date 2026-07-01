@@ -3,8 +3,9 @@ from __future__ import annotations
 
 import copy
 import json
+import pytest
 
-from app.services.ai_provider import AIProvider, AIProviderResult
+from app.services.ai_provider import AIProvider, AIProviderError, AIProviderResult
 from app.services.nutrition_agent_service import NutritionAgentService
 from app.services.mock_ai_provider import MockAIProvider
 from app.services.nutrition_memory_service import NutritionMemoryContext
@@ -124,6 +125,54 @@ def test_only_repairable_quality_does_not_fail_after_two_repairs():
     assert len(provider.calls) == 3
     assert len(result["days"]) == 7
     assert not [i for i in evaluate_week_plan_quality(result, ctx, "fa") if i.severity == "safety_blocker"]
+
+
+def test_vague_portion_missing_time_and_low_protein_snacks_do_not_hard_fail():
+    ctx = _ctx(disliked_foods=[])
+    warnings_only = _plan()
+    for day in warnings_only["days"]:
+        day["meals"].append({
+            "meal_type": "snack", "meal_slot": "afternoon_snack",
+            "title": "میان‌وعده میوه", "description": "مقدار مناسب میوه",
+            "portion_guidance": "مقدار مناسب", "alternatives": [], "food_items": [],
+        })
+    raw_issues = evaluate_week_plan_quality(warnings_only, ctx, "fa")
+    raw_codes = {issue.code for issue in raw_issues}
+    assert {"vague_portion", "missing_time_window", "low_protein_snacks"} <= raw_codes
+    assert all(
+        issue.severity == "repairable_quality"
+        for issue in raw_issues
+        if issue.code in {"vague_portion", "missing_time_window", "low_protein_snacks"}
+    )
+    provider = _SequenceProvider([warnings_only, warnings_only, warnings_only])
+    service = NutritionAgentService()
+    service._provider = provider
+    result, _ = service.generate_week_plan(ctx, "fa")
+    assert len(result["days"]) == 7
+    assert not [i for i in evaluate_week_plan_quality(result, ctx, "fa") if i.severity == "safety_blocker"]
+
+
+def test_forbidden_food_still_hard_fails_after_repairs():
+    ctx = _ctx(disliked_foods=["برنج"])
+    forbidden_plan = _plan(bad=True)
+    provider = _SequenceProvider([forbidden_plan, forbidden_plan, forbidden_plan])
+    service = NutritionAgentService()
+    service._provider = provider
+    with pytest.raises(AIProviderError, match="forbidden_food"):
+        service.generate_week_plan(ctx, "fa")
+    assert len(provider.calls) == 3
+
+
+def test_premium_persian_minor_quality_warnings_generate_successfully():
+    ctx = _ctx(goal_type=None, breakfast_habit="light", disliked_foods=[])
+    minor_quality_plan = _plan(bad=True)
+    provider = _SequenceProvider([minor_quality_plan, minor_quality_plan, minor_quality_plan])
+    service = NutritionAgentService()
+    service._provider = provider
+    result, _ = service.generate_week_plan(ctx, "fa")
+    issues = evaluate_week_plan_quality(result, ctx, "fa")
+    assert issues
+    assert not [issue for issue in issues if issue.severity == "safety_blocker"]
 
 
 def test_missing_cheating_date_triggers_repair_prompt_and_llm_adds_it():
