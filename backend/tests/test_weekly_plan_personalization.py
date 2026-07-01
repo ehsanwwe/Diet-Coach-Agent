@@ -104,6 +104,15 @@ class _SequenceProvider(AIProvider):
         return AIProviderResult(json.dumps(plan, ensure_ascii=False), "fake", "fake")
 
 
+class _InvalidJsonProvider(AIProvider):
+    def __init__(self):
+        self.calls: list[list[dict[str, str]]] = []
+
+    def generate_text(self, messages, temperature=None, max_tokens=None):
+        self.calls.append(messages)
+        return AIProviderResult("provider returned non-JSON text", "fake", "fake")
+
+
 def test_service_retries_and_returns_llm_repaired_plan():
     bad, repaired = _plan(bad=True), _plan()
     provider = _SequenceProvider([bad, repaired])
@@ -313,6 +322,35 @@ def test_mock_repair_task_does_not_reuse_generate_week_static_plan():
     assert initial != repaired
     assert repaired_prompt.task_type == "repair_week_fa"
     assert not [i for i in evaluate_week_plan_quality(repaired, ctx, "fa") if i.severity == "safety_blocker"]
+
+
+def test_invalid_provider_json_routes_repair_fallback_to_repair_week_fa(caplog):
+    ctx = _ctx(
+        goal_type=None, breakfast_habit="light", exercise_days_per_week=3,
+        allergies=[], disliked_foods=["بادمجان", "عدس", "برنج"],
+    )
+    provider = _InvalidJsonProvider()
+    service = NutritionAgentService()
+    service._provider = provider
+
+    plan, result = service.generate_week_plan(ctx, "fa")
+
+    assert len(provider.calls) == 2
+    assert "TASK:generate_week_fa" in provider.calls[0][0]["content"]
+    assert "TASK:repair_week_fa" in provider.calls[1][0]["content"]
+    assert result.provider == "mock_fallback"
+    assert result.raw_metadata["fallback_task"] == "repair_week_fa"
+    assert "Failed to parse provider JSON for task generate_week_fa" in caplog.text
+    assert "Failed to parse provider JSON for task repair_week_fa" in caplog.text
+    assert len(plan["days"]) == 7
+    visible = json.dumps(plan, ensure_ascii=False).lower()
+    forbidden = (
+        "بادمجان", "بادمجون", "کشک بادمجان", "eggplant",
+        "عدس", "عدسی", "خوراک عدس", "سوپ عدس", "lentil",
+        "برنج", "پلو", "چلو", "کته", "زرشکپلو", "سبزیپلو", "عدسپلو", "لوبیاپلو", "rice",
+    )
+    assert all(term not in visible for term in forbidden)
+    assert not [i for i in evaluate_week_plan_quality(plan, ctx, "fa") if i.severity == "safety_blocker"]
 
 
 def test_production_quality_modules_have_no_food_replacement_pools():
