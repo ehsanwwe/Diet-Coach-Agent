@@ -78,7 +78,7 @@ def _seed_lifestyle_and_behavior(db: Session, user: User) -> None:
         binge_history=True,
         diet_history="tried strict low-carb diet",
         previous_failures="gave up when dinners were hard",
-        hunger_pattern="late-night hunger",
+        hunger_patterns=["late-night hunger"],
         motivation_level=3,
     )
     db.flush()
@@ -107,6 +107,29 @@ def test_memory_includes_onboarding_behavior_fields(db_session: Session, test_us
     assert ctx.emotional_eating_pattern == "reported"
     assert ctx.stress_eating_pattern is not None
     assert ctx.sleep_craving_pattern is not None
+
+
+def test_memory_propagates_week_plan_disliked_foods(db_session: Session, test_user: User):
+    _seed_profile(db_session, test_user)
+    onboarding_repository.upsert_lifestyle(
+        db_session, test_user.id, sleep_hours=6, stress_level=4,
+        work_schedule="office", activity_level="light", exercise_days_per_week=3,
+        cooking_ability=3, food_budget="high", eating_out_frequency="weekly",
+        travel_frequency="rare",
+    )
+    onboarding_repository.upsert_food_preference(
+        db_session, test_user.id,
+        likes_iranian_food=True, vegetarian=False, vegan=False, halal=True,
+        disliked_foods=["بادمجان", "عدس", "برنج"], favorite_foods=[],
+        breakfast_habit="light", rice_frequency="daily", bread_frequency="daily",
+        sweets_frequency="medium", tea_frequency="daily", restaurant_frequency="weekly",
+    )
+    db_session.flush()
+
+    ctx = nutrition_memory_service.build(db_session, test_user)
+
+    assert ctx.disliked_foods == ["بادمجان", "عدس", "برنج"]
+    assert ctx.rice_frequency == "daily"
 
 
 def test_memory_includes_recent_checkin_and_progress_summaries(

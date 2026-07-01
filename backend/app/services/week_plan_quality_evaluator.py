@@ -16,7 +16,7 @@ from app.services.nutrition_memory_service import NutritionMemoryContext, normal
 @dataclass(frozen=True)
 class DietPlanQualityIssue:
     code: str
-    severity: Literal["error", "warning"]
+    severity: Literal["safety_blocker", "repairable_quality", "structural_normalization_needed"]
     path: str
     message: str
     details: dict[str, Any] = field(default_factory=dict)
@@ -33,6 +33,11 @@ _UNSAFE_GLUTEN = ("نان معمولی", "سنگک", "بربری", "لواش م�
 _GF_ALTERNATIVES = ("بدون گلوتن", "نان برنجی", "نان ذرت", "برنج", "سیب زمینی", "سیب‌زمینی", "رشته برنجی", "کینوا", "buckwheat", "جو دوسر بدون گلوتن", "gluten-free")
 _VISIBLE_DAY_FIELDS = ("title", "summary", "notes", "shopping_notes", "budget_guidance", "cheat_meal_guidance", "restaurant_party_travel_guidance")
 _VISIBLE_MEAL_FIELDS = ("title", "description", "portion_guidance", "preparation_notes", "drink_guidance")
+_DISLIKE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "برنج": ("برنج", "پلو", "چلو", "کته", "زرشکپلو", "زرشک‌پلو", "سبزیپلو", "سبزی‌پلو", "عدسپلو", "عدس‌پلو", "لوبیاپلو", "لوبیا‌پلو", "rice"),
+    "عدس": ("عدس", "عدسی", "خوراک عدس", "سوپ عدس", "عدسپلو", "عدس‌پلو", "lentil", "lentils"),
+    "بادمجان": ("بادمجان", "بادمجون", "کشک بادمجان", "eggplant"),
+}
 
 
 def _text(value: Any) -> str:
@@ -57,8 +62,25 @@ def _is_gluten_restricted(ctx: NutritionMemoryContext) -> bool:
     return any(any(marker in _text(item) for marker in _GLUTEN_MARKERS) for item in ctx.allergies)
 
 
-def _issue(code: str, path: str, message: str, **details: Any) -> DietPlanQualityIssue:
-    return DietPlanQualityIssue(code, "error", path, message, details)
+def _issue(
+    code: str,
+    path: str,
+    message: str,
+    severity: Literal["safety_blocker", "repairable_quality", "structural_normalization_needed"] = "repairable_quality",
+    **details: Any,
+) -> DietPlanQualityIssue:
+    return DietPlanQualityIssue(code, severity, path, message, details)
+
+
+def _forbidden_variants(ctx: NutritionMemoryContext) -> list[tuple[str, str]]:
+    result: list[tuple[str, str]] = []
+    for raw_term in (*ctx.allergies, *ctx.disliked_foods):
+        term = _text(raw_term).strip()
+        if not term or any(marker in term for marker in _GLUTEN_MARKERS):
+            continue
+        variants = next((values for key, values in _DISLIKE_VARIANTS.items() if key in term), (term,))
+        result.extend((raw_term, _text(variant)) for variant in variants)
+    return list(dict.fromkeys(result))
 
 
 def _string_paths(value: Any, path: str = "$"):
@@ -78,7 +100,7 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
     issues: list[DietPlanQualityIssue] = []
     days = plan_data.get("days")
     if not isinstance(days, list) or len(days) != 7:
-        issues.append(_issue("invalid_day_count", "$.days", "Plan must contain exactly 7 days.", actual=len(days or [])))
+        issues.append(_issue("invalid_day_count", "$.days", "Plan must contain exactly 7 days.", severity="safety_blocker", actual=len(days or [])))
         return issues
 
     premium_fa = locale == "fa" and ctx.likes_iranian_food and normalize_budget_tier(ctx.food_budget or ctx.budget_tier) == "premium"
@@ -88,10 +110,8 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
     snacks: list[str] = []
     cheats: list[tuple[int, dict]] = []
 
-    forbidden = [x for x in (*ctx.allergies, *ctx.disliked_foods) if x and not any(m in _text(x) for m in _GLUTEN_MARKERS)]
     visible_strings = list(_string_paths(plan_data))
-    for term in forbidden:
-        normalized = _text(term)
+    for term, normalized in _forbidden_variants(ctx):
         for path, value in visible_strings:
             if normalized in value:
                 position = value.find(normalized)
@@ -99,23 +119,25 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
                 issues.append(_issue(
                     "forbidden_food", path,
                     "Allergy/intolerance or disliked food appears in a user-visible field.",
-                    term=term, snippet=snippet,
+                    severity="safety_blocker", term=term, matched_variant=normalized, snippet=snippet,
                 ))
     if _is_gluten_restricted(ctx):
         for path, value in visible_strings:
             if any(term in value for term in _UNSAFE_GLUTEN):
-                issues.append(_issue("gluten_violation", path, "Plan contains a wheat/gluten food despite the gluten restriction."))
+                issues.append(_issue("gluten_violation", path, "Plan contains a wheat/gluten food despite the gluten restriction.", severity="safety_blocker"))
 
     for di, day in enumerate(days):
         day_path = f"$.days[{di}]"
         meals = day.get("meals") if isinstance(day, dict) else None
         if not isinstance(meals, list):
-            issues.append(_issue("missing_meals", f"{day_path}.meals", "Day meals must be an array."))
+            issues.append(_issue("missing_meals", f"{day_path}.meals", "Day meals must be an array.", severity="safety_blocker"))
             continue
         for mi, meal in enumerate(meals):
             path = f"{day_path}.meals[{mi}]"
             text = _meal_text(meal)
             slot = _slot(meal)
+            if not str(meal.get("title") or "").strip() or not str(meal.get("description") or "").strip():
+                issues.append(_issue("missing_meal_content", path, "Every meal needs a non-empty title and description.", severity="safety_blocker"))
             if slot in {"cheating_date", "controlled_cheating"}:
                 cheats.append((di + 1, meal))
             if slot == "breakfast": breakfasts.append((str(meal.get("title") or "").strip().lower(), text))
@@ -129,15 +151,17 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
                 issues.append(_issue("missing_time_window", path, "Meal needs a clear time window."))
 
     if len(cheats) != 1:
-        issues.append(_issue("missing_cheating_date" if not cheats else "duplicate_cheating_date", "$.days", "Exactly one visible Cheating Date meal is required.", count=len(cheats)))
+        issues.append(_issue("missing_cheating_date" if not cheats else "duplicate_cheating_date", "$.days", "Exactly one visible Cheating Date meal is required.", severity="safety_blocker", count=len(cheats)))
     else:
         day_no, meal = cheats[0]
         desc = _meal_text(meal)
         if day_no not in (5, 6) or meal.get("title") != "Cheating Date" or not meal.get("time_window_start") or not meal.get("time_window_end"):
-            issues.append(_issue("invalid_cheating_date", f"$.days[{day_no - 1}]", "Cheating Date must be on day 5 or 6, use the exact title, and include a time window."))
+            issues.append(_issue("invalid_cheating_date", f"$.days[{day_no - 1}]", "Cheating Date must be on day 5 or 6, use the exact title, and include a time window.", severity="safety_blocker"))
         if not any(x in desc for x in ("کنترل", "برنامه", "planned", "controlled")) or any(x in desc for x in ("شوک متابولیسم", "metabolism shock")):
-            issues.append(_issue("invalid_cheating_date_guidance", f"$.days[{day_no - 1}]", "Cheating Date must describe planned controlled flexibility without unsupported metabolism claims."))
+            issues.append(_issue("invalid_cheating_date_guidance", f"$.days[{day_no - 1}]", "Cheating Date must describe planned controlled flexibility without unsupported metabolism claims.", severity="safety_blocker"))
 
+    high_protein_goal = "muscle" in (ctx.goal_type or "").lower() or "عضله" in (ctx.goal_type or "")
+    full_breakfast = (ctx.breakfast_habit or "").lower() in {"full", "کامل", "heavy"}
     if premium_fa:
         title_counts = Counter(t for t, _ in breakfasts if t)
         for title, count in title_counts.items():
@@ -145,17 +169,17 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
         for idx, (_, text) in enumerate(breakfasts):
             # A potato-based breakfast is not inherently poor when paired with
             # meaningful protein. The blocking condition is the absent protein.
-            if not any(p in text for p in _PROTEIN):
+            if full_breakfast and high_protein_goal and not any(p in text for p in _PROTEIN):
                 issues.append(_issue("poor_premium_breakfast", f"$.days[{idx}].meals", "Full premium breakfast is snack-like or lacks meaningful protein."))
         economic_count = sum(any(k in text for k in _ECONOMIC) for text in lunches + dinners)
         if economic_count > 2: issues.append(_issue("premium_economic_drift", "$.days", "Premium plan contains too many economic filler main meals.", count=economic_count))
         if any("عدسی" in text and "برنج" in text for text in lunches): issues.append(_issue("premium_lentils_rice_lunch", "$.days", "عدسی با برنج is not appropriate as a premium high-protein lunch unless explicitly requested."))
-        if sum(any(p in text for p in _PROTEIN) for text in lunches) < 5: issues.append(_issue("insufficient_lunch_protein", "$.days", "Fewer than 5 lunches contain meaningful main protein."))
+        if high_protein_goal and sum(any(p in text for p in _PROTEIN) for text in lunches) < 5: issues.append(_issue("insufficient_lunch_protein", "$.days", "Fewer than 5 lunches contain meaningful main protein."))
         soup_dinners = sum(any(k in text for k in _SOUP) for text in dinners)
         if soup_dinners > 1: issues.append(_issue("repeated_light_dinner", "$.days", "Soup/light dinner appears more than once in a premium plan.", count=soup_dinners))
-        if sum(any(p in text for p in _PROTEIN) for text in dinners) < 4: issues.append(_issue("insufficient_dinner_protein", "$.days", "Fewer than 4 dinners contain meaningful protein."))
+        if high_protein_goal and sum(any(p in text for p in _PROTEIN) for text in dinners) < 4: issues.append(_issue("insufficient_dinner_protein", "$.days", "Fewer than 4 dinners contain meaningful protein."))
         fruit_only = sum(any(f in text for f in _FRUIT) and not any(p in text for p in _PROTEIN) for text in snacks)
-        if fruit_only > 2: issues.append(_issue("low_protein_snacks", "$.days", "Too many fruit-only snacks for a premium high-protein plan.", count=fruit_only))
+        if high_protein_goal and fruit_only > 2: issues.append(_issue("low_protein_snacks", "$.days", "Too many fruit-only snacks for a premium high-protein plan.", count=fruit_only))
 
     if _is_gluten_restricted(ctx):
         all_visible = _text(plan_data)
@@ -168,4 +192,8 @@ def evaluate_week_plan_quality(plan_data: dict, ctx: NutritionMemoryContext, loc
 
 
 def has_blocking_quality_issues(issues: list[DietPlanQualityIssue]) -> bool:
-    return any(issue.severity == "error" for issue in issues)
+    return any(issue.severity == "safety_blocker" for issue in issues)
+
+
+def has_repairable_quality_issues(issues: list[DietPlanQualityIssue]) -> bool:
+    return any(issue.severity == "repairable_quality" for issue in issues)

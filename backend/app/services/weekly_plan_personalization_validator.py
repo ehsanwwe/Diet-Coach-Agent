@@ -15,6 +15,19 @@ MEAL_ORDER = [
     "snack", "other",
 ]
 
+_DEFAULT_TIME_WINDOWS: dict[str, tuple[str, str]] = {
+    "breakfast": ("07:00", "09:00"),
+    "morning_snack": ("10:30", "11:00"),
+    "lunch": ("12:30", "14:00"),
+    "pre_workout": ("16:30", "17:30"),
+    "post_workout": ("18:00", "19:00"),
+    "afternoon_snack": ("15:30", "16:30"),
+    "dinner": ("19:00", "20:30"),
+    "optional_evening_snack": ("21:00", "21:30"),
+    "cheating_date": ("20:00", "22:00"),
+    "snack": ("16:00", "16:30"),
+}
+
 
 def _infer_slot_from_time(slot: str, start: str | None) -> str:
     if slot != "snack" or not start:
@@ -91,6 +104,13 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
                 meal.get("time_window_start"),
             )
             meal = _normalize_legacy_cheating(meal)
+            slot = str(meal.get("meal_slot") or meal.get("meal_type") or "other")
+            if slot in _DEFAULT_TIME_WINDOWS:
+                start, end = _DEFAULT_TIME_WINDOWS[slot]
+                if not meal.get("time_window_start"):
+                    meal["time_window_start"] = start
+                if not meal.get("time_window_end"):
+                    meal["time_window_end"] = end
             meals.append(meal)
         meals = sort_meals_canonically(meals)
         for index, meal in enumerate(meals, start=1):

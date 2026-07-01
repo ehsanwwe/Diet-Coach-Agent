@@ -242,18 +242,35 @@ class NutritionAgentService:
 
         prompt = for_generate_week_plan(ctx, locale, extra_context=extra_context)
         parsed, result = self._call(prompt)
+        best_plan: dict | None = None
+        best_result: AIProviderResult | None = None
+        best_issues: list[Any] = []
+        best_score: tuple[int, int] | None = None
         for repair_attempt in range(3):
             normalized = validate_and_sanitize(parsed, ctx, locale=locale)
             issues = evaluate_week_plan_quality(normalized, ctx, locale)
-            if not has_blocking_quality_issues(issues):
+            score = (
+                sum(issue.severity == "safety_blocker" for issue in issues),
+                sum(issue.severity == "repairable_quality" for issue in issues),
+            )
+            if best_score is None or score < best_score:
+                best_plan, best_result, best_issues, best_score = normalized, result, issues, score
+            if not issues:
                 return normalized, result
             if repair_attempt == 2:
-                codes = sorted({issue.code for issue in issues if issue.severity == "error"})
-                logger.error("Week plan rejected after two repair attempts: %s", codes)
-                raise AIProviderError(
-                    "Generated week plan did not pass quality and safety review after two repairs: "
-                    + ", ".join(codes)
+                assert best_plan is not None and best_result is not None
+                if has_blocking_quality_issues(best_issues):
+                    codes = sorted({issue.code for issue in best_issues if issue.severity == "safety_blocker"})
+                    logger.error("Week plan rejected after two repairs; safety blockers: %s", codes)
+                    raise AIProviderError(
+                        "Generated week plan still violates required safety constraints after two repairs: "
+                        + ", ".join(codes)
+                    )
+                logger.warning(
+                    "Accepting safe week plan with remaining repairable quality warnings: %s",
+                    [issue.code for issue in best_issues],
                 )
+                return best_plan, best_result
             logger.warning(
                 "Week plan failed review; requesting LLM repair attempt %d: %s",
                 repair_attempt + 1,

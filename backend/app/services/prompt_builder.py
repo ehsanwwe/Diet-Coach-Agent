@@ -876,10 +876,21 @@ def for_repair_week_plan(
     """Build a precise LLM repair request from deterministic review findings."""
     effective_locale = _normalize_locale(locale)
     task_type = f"repair_week_{effective_locale}"
+    disliked_variant_map = {
+        term: (
+            ["برنج", "پلو", "چلو", "کته", "زرشکپلو", "زرشک‌پلو", "سبزیپلو", "سبزی‌پلو", "عدسپلو", "عدس‌پلو", "لوبیاپلو", "rice"]
+            if "برنج" in term or "rice" in term.lower() else
+            ["عدس", "عدسی", "خوراک عدس", "سوپ عدس", "عدسپلو", "عدس‌پلو", "lentil", "lentils"]
+            if "عدس" in term or "lentil" in term.lower() else
+            ["بادمجان", "بادمجون", "کشک بادمجان", "eggplant"]
+            if "بادمجان" in term or "بادمجون" in term or "eggplant" in term.lower() else [term]
+        )
+        for term in ctx.disliked_foods
+    }
     issue_data = [
         {
             "code": getattr(issue, "code", "unknown"),
-            "severity": getattr(issue, "severity", "error"),
+            "severity": getattr(issue, "severity", "repairable_quality"),
             "path": getattr(issue, "path", "$"),
             "message": getattr(issue, "message", str(issue)),
             "details": getattr(issue, "details", {}),
@@ -898,6 +909,7 @@ def for_repair_week_plan(
         f"USER MEMORY/PROFILE JSON:\n{json.dumps(ctx.to_prompt_memory(), ensure_ascii=False)}\n\n"
         f"REJECTED PLAN JSON:\n{json.dumps(original_plan, ensure_ascii=False)}\n\n"
         f"EXACT REVIEW ISSUES JSON:\n{json.dumps(issue_data, ensure_ascii=False)}\n\n"
+        f"FORBIDDEN DISLIKED-FOOD VARIANTS JSON:\n{json.dumps(disliked_variant_map, ensure_ascii=False)}\n\n"
         "REPAIR REQUIREMENTS:\n"
         "- Return the complete plan object with exactly 7 days and the same output contract as a generated week plan.\n"
         "- Repair using culture, locale, budget, goal, allergies/intolerances, disliked foods, breakfast habit, and activity pattern.\n"
@@ -910,6 +922,7 @@ def for_repair_week_plan(
         "- Never place allergies, intolerances, or disliked foods in any user-visible field.\n"
         f"- Remove every exact disliked-food term everywhere in visible JSON, including title, description, portion_guidance, food_items, alternatives, shopping_notes, budget_guidance, cheat_meal_guidance, restaurant_party_travel_guidance, notes, and warnings: {json.dumps(ctx.disliked_foods, ensure_ascii=False)}.\n"
         "- Choose culturally appropriate alternatives yourself; do not merely delete a staple and leave meals incomplete.\n"
+        "- Explicit disliked foods override stored rice_frequency, bread_frequency, favorites, and historical habits.\n"
         "- Return JSON only; no markdown outside JSON.\n"
         + (f"\n{gluten_section}\nUse نان بدون گلوتن and safe gluten-free grain alternatives where bread/grain is expected. Check sauces, marinades, soups, fried coatings, and cross-contamination in restaurant guidance.\n" if gluten_section else "")
     )
