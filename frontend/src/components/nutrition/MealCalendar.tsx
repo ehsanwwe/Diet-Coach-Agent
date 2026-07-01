@@ -22,8 +22,9 @@ const MEAL_SLOT_ORDER: Record<string, number> = {
   afternoon_snack: 6,
   dinner: 7,
   optional_evening_snack: 8,
-  snack: 9,
-  other: 10,
+  cheating_date: 9,
+  snack: 10,
+  other: 11,
 }
 
 function sortMeals(meals: import('@/types/nutrition').CalendarMeal[]): import('@/types/nutrition').CalendarMeal[] {
@@ -54,6 +55,7 @@ const MEAL_ICONS: Record<string, AppIconName> = {
   morning_snack: 'snack',
   afternoon_snack: 'snack',
   optional_evening_snack: 'snack',
+  cheating_date: 'meal',
   pre_workout: 'activity',
   post_workout: 'activity',
   other: 'meal',

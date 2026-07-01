@@ -26,6 +26,7 @@ MEAL_ORDER = [
     "afternoon_snack",
     "dinner",
     "optional_evening_snack",
+    "cheating_date",
     "snack",  # legacy fallback after dinner
     "other",
 ]
@@ -1541,6 +1542,176 @@ def collect_user_visible_text(plan: dict) -> str:
     return " ".join(parts).lower()
 
 
+# ── Premium Persian lunch pool (used when budget=premium and locale=fa) ──────
+_PREMIUM_PERSIAN_LUNCHES = [
+    {
+        "title": "ناهار: قورمه‌سبزی با گوشت و برنج",
+        "description": "۱۵۰ گرم گوشت گوسفند در قورمه‌سبزی + ۸ قاشق غذاخوری برنج پخته + سبزی‌خوردن آزاد",
+        "portion_guidance": "۱۵۰ گرم گوشت + ۸ قاشق برنج + سبزی‌خوردن آزاد",
+        "alternatives": ["چلوکباب کوبیده با برنج", "خورشت فسنجان با مرغ"],
+    },
+    {
+        "title": "ناهار: چلوکباب کوبیده",
+        "description": "۲ سیخ کباب کوبیده گوشت مخلوط (۲۰۰ گرم) + ۸ قاشق برنج پخته + گوجه کبابی + سبزی‌خوردن",
+        "portion_guidance": "۲ سیخ کباب (۲۰۰ گرم) + ۸ قاشق برنج",
+        "alternatives": ["چلوکباب برگ", "جوجه‌کباب با برنج"],
+    },
+    {
+        "title": "ناهار: جوجه‌کباب با برنج",
+        "description": "۱۸۰ گرم جوجه‌کباب گریل‌شده + ۸ قاشق غذاخوری برنج پخته + سالاد شیرازی + سبزی‌خوردن",
+        "portion_guidance": "۱۸۰ گرم جوجه + ۸ قاشق برنج + سالاد شیرازی",
+        "alternatives": ["زرشک‌پلو با مرغ", "کباب تابه‌ای کم‌روغن با برنج"],
+    },
+    {
+        "title": "ناهار: خورشت فسنجان با مرغ و برنج",
+        "description": "۱۵۰ گرم مرغ در خورشت فسنجان + ۸ قاشق برنج پخته + سبزی‌خوردن",
+        "portion_guidance": "۱۵۰ گرم مرغ + ۸ قاشق برنج",
+        "alternatives": ["قورمه‌سبزی با گوشت", "چلوکباب کوبیده"],
+    },
+    {
+        "title": "ناهار: ماهی سالمون گریل با سبزیجات",
+        "description": "۲۰۰ گرم فیله سالمون گریل‌شده + ۸ قاشق برنج یا سیب‌زمینی پخته + سالاد فصل",
+        "portion_guidance": "۲۰۰ گرم سالمون + ۸ قاشق برنج + سالاد",
+        "alternatives": ["سبزی‌پلو با ماهی سفید", "میگو گریل با سبزیجات"],
+    },
+    {
+        "title": "ناهار: زرشک‌پلو با مرغ",
+        "description": "۱۵۰ گرم مرغ (ران یا سینه) + ۸ قاشق زرشک‌پلو + سالاد شیرازی",
+        "portion_guidance": "۱۵۰ گرم مرغ + ۸ قاشق زرشک‌پلو + سالاد",
+        "alternatives": ["جوجه‌کباب با برنج", "خورشت مرغ با برنج"],
+    },
+    {
+        "title": "ناهار: کباب برگ با برنج",
+        "description": "۲ سیخ کباب برگ (فیله گوسفند ۱۸۰ گرم) + ۸ قاشق برنج پخته + گوجه کبابی",
+        "portion_guidance": "۲ سیخ کباب (۱۸۰ گرم) + ۸ قاشق برنج",
+        "alternatives": ["چلوکباب کوبیده", "جوجه‌کباب با برنج"],
+    },
+]
+
+_PREMIUM_PROTEIN_KEYWORDS = (
+    "جوجه", "مرغ", "گوشت", "کباب", "فسنجان", "قورمه", "ماهی", "سالمون",
+    "زرشک‌پلو", "میگو", "فیله", "گوساله", "گوسفند",
+)
+
+_ECONOMIC_LUNCH_KEYWORDS = ("عدس", "لوبیا", "آش", "سوپ", "کوکو سبزی", "ماش")
+
+
+def _lunch_is_premium_protein(meal: dict) -> bool:
+    title = (meal.get("title") or "").lower()
+    desc = (meal.get("description") or "").lower()
+    text = title + " " + desc
+    return any(kw in text for kw in _PREMIUM_PROTEIN_KEYWORDS)
+
+
+def _enforce_premium_persian_lunches(days: list[dict]) -> list[dict]:
+    """For premium Persian plans: ensure ≥5 of 7 lunches have premium animal protein."""
+    if len(days) < 7:
+        return days
+
+    lunch_indices: list[tuple[int, int]] = []  # (day_idx, meal_idx)
+    premium_count = 0
+    for d_idx, day in enumerate(days):
+        for m_idx, meal in enumerate(day.get("meals") or []):
+            if (meal.get("meal_type") or meal.get("meal_slot") or "") == "lunch":
+                lunch_indices.append((d_idx, m_idx))
+                if _lunch_is_premium_protein(meal):
+                    premium_count += 1
+
+    if premium_count >= 5:
+        return days  # already good
+
+    result = [dict(d) for d in days]
+    pool_idx = 0
+    needed = 5 - premium_count
+
+    for d_idx, m_idx in lunch_indices:
+        if needed <= 0:
+            break
+        day_meals = list(result[d_idx].get("meals") or [])
+        meal = day_meals[m_idx]
+        if _lunch_is_premium_protein(meal):
+            continue
+        replacement = dict(_PREMIUM_PERSIAN_LUNCHES[pool_idx % len(_PREMIUM_PERSIAN_LUNCHES)])
+        replacement["meal_type"] = "lunch"
+        replacement["meal_slot"] = "lunch"
+        replacement["preparation_notes"] = None
+        day_meals[m_idx] = replacement
+        result[d_idx] = {**result[d_idx], "meals": day_meals}
+        pool_idx += 1
+        needed -= 1
+        logger.info("Replaced economic lunch on day %d with premium: %s", d_idx + 1, replacement["title"])
+
+    return result
+
+
+def _inject_cheating_date(days: list[dict], locale: str) -> list[dict]:
+    """Ensure exactly one cheating_date meal exists on day 5 or 6 (1-indexed)."""
+    _CHEAT_DESCRIPTIONS = {
+        "fa": (
+            "یک وعده انعطاف‌پذیر برنامه‌ریزی‌شده — مثلاً جوجه‌کباب یا چلوکباب در رستوران، "
+            "یا غذای مورد علاقه با حجم کنترل‌شده. وعده بعدی به برنامه عادی برمی‌گردد. "
+            "زمان پیشنهادی: ۲۰ تا ۲۲."
+        ),
+        "en": (
+            "A planned flexible meal — e.g. grilled chicken or kebab at a restaurant, "
+            "or a favourite food in a controlled portion. Next meal returns to plan. "
+            "Suggested time: 20:00–22:00."
+        ),
+        "ar": (
+            "وجبة مرنة مخططة — مثلاً دجاج مشوي أو كباب في مطعم، "
+            "أو طعام مفضل بكمية محكومة. الوجبة التالية تعود إلى الخطة. "
+            "الوقت المقترح: 20:00–22:00."
+        ),
+    }
+    cheat_desc = _CHEAT_DESCRIPTIONS.get(locale, _CHEAT_DESCRIPTIONS["fa"])
+    cheat_meal = {
+        "meal_type": "cheating_date",
+        "meal_slot": "cheating_date",
+        "title": "Cheating Date",
+        "description": cheat_desc,
+        "portion_guidance": "حجم کنترل‌شده: نه بیشتر از ۱ تا ۲ واحد غذای دلخواه" if locale == "fa"
+                            else "Controlled portion: no more than 1–2 servings of chosen food",
+        "alternatives": [],
+        "preparation_notes": None,
+        "time_window_start": "20:00",
+        "time_window_end": "22:00",
+        "meal_order": 9,
+    }
+
+    # Check if any day already has a cheating_date meal
+    def _has_cheat(day: dict) -> bool:
+        return any(
+            (m.get("meal_type") or m.get("meal_slot") or "") in ("cheating_date", "controlled_cheating")
+            for m in (day.get("meals") or [])
+        )
+
+    already_has = any(_has_cheat(d) for d in days)
+    if already_has:
+        # Normalise controlled_cheating → cheating_date
+        result = []
+        for day in days:
+            updated_meals = []
+            for m in (day.get("meals") or []):
+                mt = m.get("meal_type") or m.get("meal_slot") or ""
+                if mt == "controlled_cheating":
+                    m = {**m, "meal_type": "cheating_date", "meal_slot": "cheating_date",
+                         "title": "Cheating Date"}
+                updated_meals.append(m)
+            result.append({**day, "meals": updated_meals})
+        return result
+
+    # Prefer day 6 (index 5), fallback to day 5 (index 4)
+    if len(days) < 5:
+        return days
+    target_idx = 5 if len(days) >= 6 else 4
+    result = list(days)
+    day = dict(result[target_idx])
+    day["meals"] = list(day.get("meals") or []) + [cheat_meal]
+    result[target_idx] = day
+    logger.info("Injected Cheating Date meal on day %d", target_idx + 1)
+    return result
+
+
 def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: str = "fa") -> dict:
     """Validate and sanitize a generated week plan dict. Returns cleaned plan."""
     forbidden_terms = _build_forbidden_terms(ctx)
@@ -1642,6 +1813,13 @@ def validate_and_sanitize(plan_data: dict, ctx: NutritionMemoryContext, locale: 
 
     # Apply budget enforcement (economic: replace expensive meals) after allergy pass
     sanitized_days = _enforce_budget_tier(sanitized_days, budget_tier, locale, forbidden_terms)
+
+    # Quality gate A: ensure Cheating Date meal on day 5 or 6 (all plans)
+    sanitized_days = _inject_cheating_date(sanitized_days, locale)
+
+    # Quality gate B: for premium Persian plans, enforce ≥5 premium-protein lunches
+    if budget_tier == "premium" and locale == "fa":
+        sanitized_days = _enforce_premium_persian_lunches(sanitized_days)
 
     # Final recursive repair: scan and fix all user-visible fields across all days
     sanitized_days = _final_recursive_repair(

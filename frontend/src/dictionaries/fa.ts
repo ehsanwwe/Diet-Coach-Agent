@@ -663,6 +663,7 @@ export interface Dictionary {
     eveningSnack: string
     preWorkout: string
     postWorkout: string
+    cheating_date: string
     drinkGuidance: string
     foodItems: string
     budgetTier: string
@@ -1432,6 +1433,7 @@ const fa: Dictionary = {
     eveningSnack: 'میان‌وعده شبانه',
     preWorkout: 'قبل از تمرین',
     postWorkout: 'بعد از تمرین',
+    cheating_date: 'Cheating Date',
     drinkGuidance: 'راهنمای نوشیدنی',
     foodItems: 'مواد غذایی',
     budgetTier: 'سطح بودجه',

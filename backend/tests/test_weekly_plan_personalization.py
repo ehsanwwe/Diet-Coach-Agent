@@ -312,6 +312,9 @@ def test_allergen_replaced_meals_have_non_empty_food_items():
     result = validate_and_sanitize(plan, ctx, locale="fa")
     for day in result["days"]:
         for meal in day.get("meals", []):
+            # cheating_date is a meta-meal (flexible dinner out) — no specific food_items
+            if (meal.get("meal_type") or meal.get("meal_slot") or "") == "cheating_date":
+                continue
             items = meal.get("food_items") or []
             assert len(items) > 0, f"Replaced meal has empty food_items: {meal.get('title')}"
             for item in items:
@@ -325,6 +328,9 @@ def test_budget_replaced_meals_have_non_empty_food_items():
     result = validate_and_sanitize(plan, ctx, locale="fa")
     for day in result["days"]:
         for meal in day.get("meals", []):
+            # cheating_date is a meta-meal (flexible dinner out) — no specific food_items
+            if (meal.get("meal_type") or meal.get("meal_slot") or "") == "cheating_date":
+                continue
             items = meal.get("food_items") or []
             assert len(items) > 0, f"Budget-replaced meal has empty food_items: {meal.get('title')}"
             for item in items:
@@ -468,9 +474,11 @@ def test_meal_level_recursive_repair():
     text = collect_user_visible_text(result)
     for term in ("شیر", "ماست", "پنیر", "yogurt", "milk", "cheese", "dairy", "لبنیات"):
         assert term not in text, f"Dairy term '{term}' remains in meal-level fields"
-    # Replaced meal must still have valid food_items
+    # Replaced meal must still have valid food_items (cheating_date is exempt)
     for day in result["days"]:
         for meal in day.get("meals", []):
+            if (meal.get("meal_type") or meal.get("meal_slot") or "") == "cheating_date":
+                continue
             items = meal.get("food_items") or []
             assert len(items) > 0, "Replaced meal has empty food_items"
             for item in items:
@@ -802,6 +810,7 @@ def test_canonical_meal_order_value_helper():
     assert canonical_meal_order_value("afternoon_snack")      == 6
     assert canonical_meal_order_value("dinner")               == 7
     assert canonical_meal_order_value("optional_evening_snack") == 8
-    assert canonical_meal_order_value("snack")                == 9
-    assert canonical_meal_order_value("other")                == 10
-    assert canonical_meal_order_value("unknown_slot")         == 10
+    assert canonical_meal_order_value("cheating_date")        == 9
+    assert canonical_meal_order_value("snack")                == 10
+    assert canonical_meal_order_value("other")                == 11
+    assert canonical_meal_order_value("unknown_slot")         == 11

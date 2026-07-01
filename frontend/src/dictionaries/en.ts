@@ -645,6 +645,7 @@ const en: Dictionary = {
     eveningSnack: 'Evening snack',
     preWorkout: 'Pre-workout',
     postWorkout: 'Post-workout',
+    cheating_date: 'Cheating Date',
     drinkGuidance: 'Drink guidance',
     foodItems: 'Food items',
     budgetTier: 'Budget tier',

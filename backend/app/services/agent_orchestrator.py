@@ -277,6 +277,14 @@ _PLAN_CHANGE_MOCK_REPLY = (
     "• تغییر بر اساس بودجه یا دسترسی به مواد\n\n"
     "بگو چه تغییری داری در نظر و من کمکت می‌کنم."
 )
+_WEEK_PLAN_KEYWORDS = (
+    "برنامه هفته", "برنامه ۷ روز", "برنامه 7 روز", "برنامه غذایی بساز",
+    "برنامه بساز", "یه برنامه", "یک برنامه", "برنامه جدید بساز",
+    "build me a plan", "make me a plan", "create a meal plan",
+    "generate a plan", "week plan", "7 day plan", "7-day plan",
+    "هفت روز", "هفته‌ام", "هفتم", "برنامه هفتگی",
+)
+
 _CONTEXT_KEYWORDS = (
     "restaurant", "party", "travel", "travelling", "traveling", "fast food",
     "رستوران", "مهمونی", "مهمانی", "سفر", "فست فود", "مسافرت",
@@ -497,6 +505,38 @@ def _build_conversation_state(history: list[dict]) -> str:
     )
 
 
+def _run_week_plan_generation_mock(db, session, user, user_msg, ctx, locale, pending_id=None) -> ChatMessageResponse:
+    """In mock mode, directly call calendar_service.generate_week() so the plan is persisted."""
+    from app.services import calendar_service
+    try:
+        result = calendar_service.generate_week(db, user, locale, ctx)
+        if result and result.generated_days > 0:
+            reply_text = (
+                f"**برنامه {result.generated_days} روز ساخته شد.**\n\n"
+                "برنامه غذایی هفته شما آماده است. می‌توانید از تب تقویم آن را ببینید.\n"
+                "• هر وعده با مقدار مشخص طراحی شده\n"
+                "• روز ششم یک وعده چیتینگ کنترل‌شده دارد\n"
+                "• در صورت نیاز به تغییر بگویید"
+            )
+        else:
+            reply_text = (
+                "برنامه غذایی شما در حال آماده‌سازی است. "
+                "لطفاً چند لحظه صبر کنید و تب تقویم را بررسی کنید."
+            )
+    except Exception as exc:
+        logger.warning("Mock week plan generation failed: %s", exc)
+        reply_text = (
+            "در حال حاضر امکان ساخت برنامه وجود ندارد. "
+            "لطفاً مجدداً تلاش کنید."
+        )
+    am = _save_assistant_response(db, session.id, reply_text, pending_id)
+    db.commit()
+    return ChatMessageResponse(
+        message_id=am.id, role="assistant", content=reply_text,
+        provider="local", is_mock=True, created_at=am.created_at,
+    )
+
+
 def _text_fallback(db, session, user_msg, ctx, message, history, pending_id=None) -> ChatMessageResponse:
     # In mock/no-tool mode, detect plan-change intent and give a contextual reply
     # instead of the generic canned response from the mock chat task.
@@ -607,8 +647,10 @@ def process_user_message(
 
     provider = get_ai_provider()
     if not provider.supports_tools:
-        # Mock/no-tool mode: use behavior intent routing for structured responses,
-        # then fall back to text_fallback. The LLM orchestrator is unavailable here.
+        # Mock/no-tool mode: intercept week-plan requests first so the plan is persisted.
+        if _contains_keyword(message, _WEEK_PLAN_KEYWORDS):
+            return _run_week_plan_generation_mock(db, session, user, user_msg, ctx, locale, pending_id)
+        # Behavior intent routing for structured responses, then text fallback.
         behavior_intent = _detect_behavior_intent(message)
         if behavior_intent is not None:
             return _run_behavior_workflow(db, session, user, message, behavior_intent, pending_id)

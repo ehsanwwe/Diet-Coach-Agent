@@ -645,6 +645,7 @@ const ar: Dictionary = {
     eveningSnack: 'وجبة خفيفة مسائية',
     preWorkout: 'قبل التمرين',
     postWorkout: 'بعد التمرين',
+    cheating_date: 'Cheating Date',
     drinkGuidance: 'إرشادات المشروبات',
     foodItems: 'المواد الغذائية',
     budgetTier: 'مستوى الميزانية',
