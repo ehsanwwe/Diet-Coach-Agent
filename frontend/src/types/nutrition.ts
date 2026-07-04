@@ -357,3 +357,15 @@ export interface GenerateWeekResponse {
   skipped_days: number
   days: PlanDay[]
 }
+
+export interface GenerateWeekJobStatus {
+  job_id: string
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  stage: string
+  current_day_index: number | null
+  total_days: number
+  message: string
+  error: string | null
+  result: GenerateWeekResponse | null
+  updated_at: string
+}

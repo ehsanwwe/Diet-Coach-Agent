@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
 import type { CalendarResponse, NutritionPlanResponse, NutritionProfileResponse } from '@/types/nutrition'
-import { getMealPlanCalendar, generateMealPlanWeek, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
+import { getMealPlanCalendar, getNutritionPlan, getNutritionProfile } from '@/lib/nutrition'
 import ClinicalReviewState from './ClinicalReviewState'
 import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
@@ -105,12 +105,7 @@ export default function NutritionDashboard({ dict, locale }: Props) {
 
   async function handleGenerateNextWeek() {
     setGenerating(true)
-    try {
-      await generateMealPlanWeek({ locale })
-      await reload()
-    } finally {
-      setGenerating(false)
-    }
+    router.push(`/${locale}/nutrition/generating`)
   }
 
   return (

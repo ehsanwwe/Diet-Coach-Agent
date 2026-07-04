@@ -116,6 +116,22 @@ class GenerateWeekResponse(BaseModel):
     days: list[PlanDaySchema] = Field(default_factory=list)
 
 
+class GenerateWeekJobCreated(BaseModel):
+    job_id: str
+    status: str
+    stage: str
+    current_day_index: int | None = None
+    total_days: int = 7
+    message: str
+    error: str | None = None
+    result: GenerateWeekResponse | None = None
+    updated_at: str
+
+
+class GenerateWeekJobStatus(GenerateWeekJobCreated):
+    pass
+
+
 class RegenerateDayRequest(BaseModel):
     plan_date: str = Field(..., description="ISO date YYYY-MM-DD")
     locale: str | None = Field(default=None, description="fa | en | ar")

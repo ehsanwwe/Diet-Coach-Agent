@@ -12,6 +12,7 @@ from app.services.nutrition_memory_service import NutritionMemoryContext
 from app.services.prompt_builder import for_generate_week_plan, for_repair_week_plan
 from app.services.week_plan_quality_evaluator import evaluate_week_plan_quality
 from app.services.weekly_plan_personalization_validator import validate_and_sanitize
+from app.schemas.ai import AIWeekPlanResponse
 
 
 def _ctx(**kwargs) -> NutritionMemoryContext:
@@ -107,10 +108,101 @@ class _SequenceProvider(AIProvider):
 class _InvalidJsonProvider(AIProvider):
     def __init__(self):
         self.calls: list[list[dict[str, str]]] = []
+        self.max_tokens: list[int | None] = []
 
     def generate_text(self, messages, temperature=None, max_tokens=None):
         self.calls.append(messages)
+        self.max_tokens.append(max_tokens)
         return AIProviderResult("provider returned non-JSON text", "fake", "fake")
+
+
+def test_no_restriction_persian_user_generates_schema_valid_week():
+    ctx = _ctx(
+        food_budget="standard", budget_tier="standard", goal_type=None,
+        breakfast_habit="light", allergies=[], disliked_foods=[],
+        exercise_days_per_week=0,
+    )
+    service = NutritionAgentService()
+    service._provider = MockAIProvider()
+
+    plan, _ = service.generate_week_plan(ctx, "fa")
+
+    validated = AIWeekPlanResponse.model_validate(plan)
+    assert len(validated.days) == 7
+    assert all(day.meals for day in validated.days)
+
+
+def test_invalid_json_simple_user_still_generates_schema_valid_week():
+    ctx = _ctx(
+        food_budget="standard", budget_tier="standard", goal_type=None,
+        breakfast_habit="light", allergies=[], disliked_foods=[],
+        exercise_days_per_week=0,
+    )
+    service = NutritionAgentService()
+    service._provider = _InvalidJsonProvider()
+
+    plan, result = service.generate_week_plan(ctx, "fa")
+
+    validated = AIWeekPlanResponse.model_validate(plan)
+    assert len(validated.days) == 7
+    assert all(day.meals for day in validated.days)
+    assert result.provider == "mock_fallback"
+
+
+def test_invalid_week_json_uses_week_token_budget_and_writes_debug_dump(monkeypatch, tmp_path):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "DEBUG_WEEK_PLAN_AI_DUMP", True)
+    monkeypatch.setattr(settings, "WEEK_PLAN_AI_DUMP_PATH", str(tmp_path))
+    monkeypatch.setattr(settings, "OPENAI_WEEK_PLAN_MAX_TOKENS", 7777)
+    provider = _InvalidJsonProvider()
+    service = NutritionAgentService()
+    service._provider = provider
+
+    service.generate_week_plan(_ctx(goal_type=None, breakfast_habit="light"), "fa")
+
+    assert provider.max_tokens and all(value == 7777 for value in provider.max_tokens)
+    dumps = list(tmp_path.glob("*-generate_week_fa.json"))
+    assert dumps
+    payload = json.loads(dumps[0].read_text(encoding="utf-8"))
+    assert payload["task_type"] == "generate_week_fa"
+    assert payload["raw_provider_content"] == "provider returned non-JSON text"
+    assert payload["parse_error"] == "invalid_json"
+    assert payload["system_prompt"] and payload["user_prompt"] and payload["messages"]
+
+
+def test_generate_week_endpoint_smoke_returns_201(client, auth_headers, monkeypatch):
+    monkeypatch.setattr("app.services.nutrition_agent_service.get_ai_provider", lambda: MockAIProvider())
+    response = client.post(
+        "/api/v1/nutrition/calendar/generate-week",
+        json={"locale": "fa", "force": False},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201, response.text
+    body = response.json()
+    assert body["generated_days"] == 7
+    assert len(body["days"]) == 7
+
+
+def test_generate_week_progress_job_completes(client, auth_headers, db_session, monkeypatch):
+    from sqlalchemy.orm import Session
+    from app.services import week_plan_job_service
+
+    monkeypatch.setattr(week_plan_job_service, "SessionLocal", lambda: Session(bind=db_session.get_bind()))
+    monkeypatch.setattr("app.services.nutrition_agent_service.get_ai_provider", lambda: MockAIProvider())
+    created = client.post(
+        "/api/v1/nutrition/calendar/generate-week/jobs",
+        json={"locale": "fa", "force": False},
+        headers=auth_headers,
+    )
+    assert created.status_code == 202, created.text
+    job_id = created.json()["job_id"]
+    status = client.get(
+        f"/api/v1/nutrition/calendar/generate-week/jobs/{job_id}", headers=auth_headers,
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["status"] == "completed"
+    assert status.json()["result"]["generated_days"] == 7
 
 
 def test_service_retries_and_returns_llm_repaired_plan():

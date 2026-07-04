@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import get_current_user
@@ -19,6 +19,8 @@ from app.schemas.calendar import (
     CalendarResponse,
     GenerateWeekRequest,
     GenerateWeekResponse,
+    GenerateWeekJobCreated,
+    GenerateWeekJobStatus,
     RegenerateDayRequest,
     RegenerateDayResponse,
 )
@@ -220,6 +222,39 @@ def generate_calendar_week(
         raise_http_error(exc.message, status_code=exc.status_code)
     except Exception as exc:
         raise_http_error(f"Failed to generate week plan: {exc}", status_code=500)
+
+
+@router.post("/calendar/generate-week/jobs", response_model=GenerateWeekJobCreated, status_code=202)
+def create_generate_week_job(
+    body: GenerateWeekRequest,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> GenerateWeekJobCreated:
+    """Start a process-local week generation job for progress-aware clients."""
+    from app.services import week_plan_job_service
+
+    effective_locale = calendar_service.resolve_locale(db, current_user, body.locale)
+    try:
+        parsed_start = date.fromisoformat(body.start_date) if body.start_date else None
+    except ValueError:
+        raise_http_error("Invalid start_date format. Use YYYY-MM-DD.", status_code=422)
+    job = week_plan_job_service.create(current_user.id, effective_locale, parsed_start, body.force)
+    background_tasks.add_task(week_plan_job_service.run, job["job_id"])
+    return GenerateWeekJobCreated.model_validate(job)
+
+
+@router.get("/calendar/generate-week/jobs/{job_id}", response_model=GenerateWeekJobStatus)
+def get_generate_week_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+) -> GenerateWeekJobStatus:
+    from app.services import week_plan_job_service
+
+    job = week_plan_job_service.get(job_id, current_user.id)
+    if job is None:
+        raise_http_error("Generation job not found.", status_code=404)
+    return GenerateWeekJobStatus.model_validate(job)
 
 
 @router.post("/calendar/regenerate-day", response_model=RegenerateDayResponse, status_code=201)

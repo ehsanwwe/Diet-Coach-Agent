@@ -7,7 +7,7 @@ import AuthGuard from '@/components/auth/AuthGuard'
 import AppBottomNav from '@/components/layout/AppBottomNav'
 import MealCalendar from '@/components/nutrition/MealCalendar'
 import ClinicalReviewState from '@/components/nutrition/ClinicalReviewState'
-import { getMealPlanCalendar, generateMealPlanWeek, getNutritionProfile } from '@/lib/nutrition'
+import { getMealPlanCalendar, getNutritionProfile } from '@/lib/nutrition'
 import type { CalendarResponse, NutritionProfileResponse } from '@/types/nutrition'
 import AppIcon from '@/components/ui/AppIcon'
 
@@ -48,15 +48,8 @@ function PlanScreen({ locale, dict }: { locale: Locale; dict: Dictionary }) {
   const handleGenerate = useCallback(async () => {
     setGenerating(true)
     setGenError(null)
-    try {
-      await generateMealPlanWeek({ locale })
-      await reload()
-    } catch {
-      setGenError(dict.calendar.generationError)
-    } finally {
-      setGenerating(false)
-    }
-  }, [locale, reload, dict.calendar.generationError])
+    router.push(`/${locale}/nutrition/generating?returnTo=plan`)
+  }, [locale, router])
 
   const d = dict.calendar
 

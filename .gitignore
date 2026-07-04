@@ -24,6 +24,7 @@ backend/uploads/
 backend/audio/
 backend/media/
 backend/storage/
+backend/tmp/
 
 # Python caches and build artifacts
 __pycache__/

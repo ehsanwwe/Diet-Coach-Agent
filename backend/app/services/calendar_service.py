@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, timedelta
+from typing import Callable
 
 from sqlalchemy.orm import Session
 
@@ -325,6 +326,7 @@ def generate_week(
     start_date: date | None,
     force: bool,
     extra_context: str | None = None,
+    progress: Callable[[str, str, int | None], None] | None = None,
 ) -> GenerateWeekResponse:
     # Determine start date
     if start_date is None:
@@ -334,9 +336,14 @@ def generate_week(
         else:
             start_date = latest + timedelta(days=1)
 
+    if progress:
+        progress("preparing_profile", "preparing_profile", None)
     ctx = nutrition_memory_service.build(db, user)
     agent = NutritionAgentService()
-    plan_data, result = agent.generate_week_plan(ctx, locale, extra_context=extra_context)
+    plan_data, result = agent.generate_week_plan(
+        ctx, locale, extra_context=extra_context,
+        progress=(lambda stage, message: progress(stage, message, None)) if progress else None,
+    )
     plan_data = validate_and_sanitize(plan_data, ctx, locale=locale)
 
     days_raw: list[dict] = plan_data.get("days") or []
@@ -350,6 +357,8 @@ def generate_week(
     clinical_warning = _CLINICAL_WARNINGS.get(locale, _CLINICAL_WARNING_FA) if ctx.clinical_review_required else None
 
     for i, day_raw in enumerate(days_raw):
+        if progress:
+            progress("saving_day", "saving_day", i + 1)
         plan_date = start_date + timedelta(days=i)
 
         if not force and calendar_repository.day_exists(db, user.id, plan_date, locale):

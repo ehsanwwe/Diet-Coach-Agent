@@ -9,7 +9,9 @@ from __future__ import annotations
 import json
 import logging
 import re
-from typing import Any
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable
 
 from pydantic import ValidationError
 
@@ -34,6 +36,38 @@ from app.services.prompt_builder import (
 )
 
 logger = logging.getLogger(__name__)
+_WEEK_TASK_PREFIXES = ("generate_week_", "repair_week_")
+
+
+def _dump_week_plan_debug(
+    *, prompt_data: Any, messages: list[dict[str, str]], result: AIProviderResult,
+    parse_error: str, extracted_json: Any = None, repair_attempt: int | None = None,
+    issue_codes: list[str] | None = None,
+) -> str | None:
+    if not settings.DEBUG_WEEK_PLAN_AI_DUMP:
+        return None
+    dump_dir = Path(settings.WEEK_PLAN_AI_DUMP_PATH)
+    dump_dir.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S.%fZ")
+    path = dump_dir / f"{stamp}-{prompt_data.task_type}.json"
+    payload = {
+        "task_type": prompt_data.task_type,
+        "provider": result.provider,
+        "model": result.model,
+        "finish_reason": result.finish_reason,
+        "content_length": len(result.content or ""),
+        "raw_provider_content": result.content,
+        "extracted_json": extracted_json,
+        "parse_error": parse_error,
+        "system_prompt": prompt_data.system,
+        "user_prompt": prompt_data.user,
+        "messages": messages,
+        "repair_attempt": repair_attempt,
+        "issue_codes": issue_codes or [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    logger.warning("Week-plan AI debug dump written to %s", path)
+    return str(path)
 
 
 def _extract_json(text: str) -> dict | None:
@@ -123,7 +157,8 @@ class NutritionAgentService:
         )
 
     def _call(
-        self, prompt_data: Any
+        self, prompt_data: Any, *, repair_attempt: int | None = None,
+        issue_codes: list[str] | None = None,
     ) -> tuple[dict, AIProviderResult]:
         """Call the provider and parse JSON. Falls back to mock on failure."""
         messages = self._ctx_manager.prepare(prompt_data)
@@ -131,18 +166,32 @@ class NutritionAgentService:
 
         fallback_reason: str | None = None
         try:
+            max_tokens = (
+                settings.OPENAI_WEEK_PLAN_MAX_TOKENS
+                if task_type.startswith(_WEEK_TASK_PREFIXES)
+                else settings.OPENAI_MAX_TOKENS
+            )
             result = self._provider.generate_text(
                 messages,
                 temperature=settings.OPENAI_TEMPERATURE,
-                max_tokens=settings.OPENAI_MAX_TOKENS,
+                max_tokens=max_tokens,
             )
         except AIProviderError as exc:
             logger.warning("AI provider failed (%s), using mock fallback: %s", task_type, exc)
             parsed, result = _fallback_mock(task_type, "provider_error", messages)
             return _validate_task_output(task_type, parsed), result
 
+        if task_type.startswith(_WEEK_TASK_PREFIXES):
+            logger.info(
+                "Week-plan provider call task_type=%s provider=%s model=%s finish_reason=%s content_length=%d",
+                task_type, result.provider, result.model, result.finish_reason, len(result.content or ""),
+            )
         parsed = _extract_json(result.content)
         if parsed is None:
+            _dump_week_plan_debug(
+                prompt_data=prompt_data, messages=messages, result=result,
+                parse_error="invalid_json", repair_attempt=repair_attempt, issue_codes=issue_codes,
+            )
             logger.warning("Failed to parse provider JSON for task %s, using mock fallback", task_type)
             fallback_reason = "invalid_json"
         elif not isinstance(parsed, dict):
@@ -155,6 +204,12 @@ class NutritionAgentService:
         try:
             parsed = _validate_task_output(task_type, parsed)
         except ValidationError as exc:
+            if task_type.startswith(_WEEK_TASK_PREFIXES):
+                _dump_week_plan_debug(
+                    prompt_data=prompt_data, messages=messages, result=result,
+                    parse_error=f"schema_validation_failed: {exc}", extracted_json=parsed,
+                    repair_attempt=repair_attempt, issue_codes=issue_codes,
+                )
             logger.warning(
                 "Provider JSON schema validation failed for task %s, using mock fallback: %s",
                 task_type,
@@ -232,6 +287,7 @@ class NutritionAgentService:
         ctx: NutritionMemoryContext,
         locale: str,
         extra_context: str | None = None,
+        progress: Callable[[str, str], None] | None = None,
     ) -> tuple[dict, AIProviderResult]:
         """Generate, review, and ask the provider to repair a 7-day plan."""
         from app.services.week_plan_quality_evaluator import (
@@ -241,12 +297,16 @@ class NutritionAgentService:
         from app.services.weekly_plan_personalization_validator import validate_and_sanitize
 
         prompt = for_generate_week_plan(ctx, locale, extra_context=extra_context)
+        if progress:
+            progress("generating_plan", "requesting_week_plan")
         parsed, result = self._call(prompt)
         best_plan: dict | None = None
         best_result: AIProviderResult | None = None
         best_issues: list[Any] = []
         best_score: tuple[int, int] | None = None
         for repair_attempt in range(3):
+            if progress:
+                progress("reviewing_plan", "reviewing_plan")
             normalized = validate_and_sanitize(parsed, ctx, locale=locale)
             issues = evaluate_week_plan_quality(normalized, ctx, locale)
             score = (
@@ -277,7 +337,12 @@ class NutritionAgentService:
                 [issue.code for issue in issues],
             )
             repair_prompt = for_repair_week_plan(ctx, locale, normalized, issues)
-            parsed, result = self._call(repair_prompt)
+            if progress:
+                progress("repairing_plan", f"repairing_plan_{repair_attempt + 1}")
+            parsed, result = self._call(
+                repair_prompt, repair_attempt=repair_attempt + 1,
+                issue_codes=[issue.code for issue in issues],
+            )
 
         raise AIProviderError("Week plan quality review failed")
 

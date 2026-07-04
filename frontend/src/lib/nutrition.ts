@@ -8,6 +8,7 @@ import type {
   CravingSupportRequest,
   CravingSupportResponse,
   GenerateWeekResponse,
+  GenerateWeekJobStatus,
   MealAnalysisResponse,
   MealAnalyzeRequest,
   NutritionPlanResponse,
@@ -156,6 +157,30 @@ export async function generateMealPlanWeek(params?: {
     }),
   })
   return handleResponse<GenerateWeekResponse>(res)
+}
+
+export async function startMealPlanWeekJob(params?: {
+  start_date?: string
+  locale?: string
+  force?: boolean
+}): Promise<GenerateWeekJobStatus> {
+  const res = await fetch(`${BASE_URL}${BASE}/calendar/generate-week/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: JSON.stringify({
+      start_date: params?.start_date ?? null,
+      locale: params?.locale ?? null,
+      force: params?.force ?? false,
+    }),
+  })
+  return handleResponse<GenerateWeekJobStatus>(res)
+}
+
+export async function getMealPlanWeekJob(jobId: string): Promise<GenerateWeekJobStatus> {
+  const res = await fetch(`${BASE_URL}${BASE}/calendar/generate-week/jobs/${jobId}`, {
+    headers: { ...authHeaders() }, cache: 'no-store',
+  })
+  return handleResponse<GenerateWeekJobStatus>(res)
 }
 
 export async function regenerateMealPlanDay(params: {

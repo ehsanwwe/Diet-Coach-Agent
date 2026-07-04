@@ -70,7 +70,10 @@ class Settings(BaseSettings):
     OPENAI_MAX_RETRIES: int = 2
     OPENAI_TEMPERATURE: float = 0.3
     OPENAI_MAX_TOKENS: int = 2048
+    OPENAI_WEEK_PLAN_MAX_TOKENS: int = 8192
     OPENAI_CONTEXT_MAX_MESSAGES: int = 24
+    DEBUG_WEEK_PLAN_AI_DUMP: bool = False
+    WEEK_PLAN_AI_DUMP_PATH: str = "./tmp/week_plan_ai_debug"
 
     # SOCKS5 proxy enforcement.
     # When OPENAI_REQUIRE_PROXY=true (default), OpenAI requests are blocked unless
