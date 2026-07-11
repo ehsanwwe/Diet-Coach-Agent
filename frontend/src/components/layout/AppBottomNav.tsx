@@ -26,6 +26,13 @@ export default function AppBottomNav({ locale, dict }: Props) {
 
   const tabs: NavTab[] = [
     {
+      href: `/${locale}/settings`,
+      label: dict.nav.settings,
+      icon: 'settings',
+      active: isActive('settings'),
+      disabled: false,
+    },
+    {
       href: `/${locale}/dashboard`,
       label: dict.nav.home,
       icon: 'home',
@@ -47,13 +54,6 @@ export default function AppBottomNav({ locale, dict }: Props) {
       disabled: false,
     },
     {
-      href: `/${locale}/settings`,
-      label: dict.nav.settings,
-      icon: 'settings',
-      active: isActive('settings'),
-      disabled: false,
-    },
-    {
       href: `/${locale}/nutrition/plan`,
       label: dict.nav.plan,
       icon: 'calendar',
@@ -64,7 +64,7 @@ export default function AppBottomNav({ locale, dict }: Props) {
 
   return (
     <nav className="fixed bottom-0 left-1/2 z-50 w-full max-w-[var(--app-max-width)] -translate-x-1/2 pb-safe bg-elevated border-t border-line">
-      <div className="w-full flex flex-row items-stretch">
+      <div className="w-full flex flex-row items-stretch" dir="ltr">
         {tabs.map((tab) => {
           const cls = [
             'flex flex-col items-center justify-center gap-1 flex-1 py-3 text-xs font-medium transition-colors',
@@ -76,7 +76,7 @@ export default function AppBottomNav({ locale, dict }: Props) {
             return (
               <span key={tab.label} className={cls} aria-disabled="true">
                 <AppIcon name={tab.icon} size={22} strokeWidth={tab.active ? 2.2 : 1.8} />
-                <span>{tab.label}</span>
+                <span dir="auto">{tab.label}</span>
               </span>
             )
           }
@@ -84,7 +84,7 @@ export default function AppBottomNav({ locale, dict }: Props) {
           return (
             <Link key={tab.label} href={tab.href} className={cls}>
               <AppIcon name={tab.icon} size={22} strokeWidth={tab.active ? 2.2 : 1.8} />
-              <span>{tab.label}</span>
+              <span dir="auto">{tab.label}</span>
             </Link>
           )
         })}
