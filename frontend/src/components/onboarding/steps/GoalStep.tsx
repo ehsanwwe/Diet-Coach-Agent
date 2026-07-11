@@ -1,14 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
-import { ALL_GOALS, type GoalType } from '@/types/onboarding'
+import {
+  ALL_GOALS,
+  filterGoalsForGender,
+  type Gender,
+  type GoalType,
+} from '@/types/onboarding'
 import AppIcon, { type AppIconName } from '@/components/ui/AppIcon'
 
 interface Props {
   dict: Dictionary['onboarding']
   defaultValue: GoalType[]
+  gender: Gender | null | undefined
   isSubmitting: boolean
   apiError: string | null
   onSubmit: (goals: GoalType[]) => void
@@ -43,8 +49,11 @@ const GOAL_ICONS: Record<GoalType, AppIconName> = {
   general_health_companion: 'generalHealth',
 }
 
-export default function GoalStep({ dict, defaultValue, isSubmitting, apiError, onSubmit }: Props) {
-  const [selected, setSelected] = useState<GoalType[]>(defaultValue)
+export default function GoalStep({ dict, defaultValue, gender, isSubmitting, apiError, onSubmit }: Props) {
+  const visibleGoals = useMemo(() => filterGoalsForGender(ALL_GOALS, gender), [gender])
+  const [selected, setSelected] = useState<GoalType[]>(() =>
+    filterGoalsForGender(defaultValue, gender),
+  )
   const [touched, setTouched] = useState(false)
 
   function toggleGoal(goal: GoalType) {
@@ -55,7 +64,8 @@ export default function GoalStep({ dict, defaultValue, isSubmitting, apiError, o
 
   function handleNext() {
     setTouched(true)
-    if (selected.length > 0) onSubmit(selected)
+    const sanitized = filterGoalsForGender(selected, gender)
+    if (sanitized.length > 0) onSubmit(sanitized)
   }
 
   return (
@@ -67,7 +77,7 @@ export default function GoalStep({ dict, defaultValue, isSubmitting, apiError, o
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          {ALL_GOALS.map((goal) => {
+          {visibleGoals.map((goal) => {
             const isActive = selected.includes(goal)
             return (
               <button

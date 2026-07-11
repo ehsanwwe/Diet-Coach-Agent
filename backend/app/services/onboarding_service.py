@@ -15,6 +15,8 @@ from app.core.errors import AppError
 from app.models.user import User
 from app.repositories import onboarding_repository
 from app.schemas.onboarding import (
+    FEMALE_ONLY_GOAL_TYPES,
+    FEMALE_ONLY_MEDICAL_FIELDS,
     ONBOARDING_STEP_ORDER,
     BehaviorRequest,
     BehaviorResponse,
@@ -97,20 +99,48 @@ def get_status(db: Session, user: User) -> OnboardingStatusResponse:
         lifestyle_exists=lifestyle is not None,
         preferences_exists=fp is not None,
         behavior_exists=bp is not None,
+        gender=profile.gender if profile is not None else None,
     )
 
 
 def save_goals(db: Session, user: User, body: GoalRequest) -> GoalResponse:
+    goal_types = _filter_goals_for_gender(
+        body.goal_types, _profile_gender(db, user.id)
+    )
+    if not goal_types:
+        raise AppError("At least one goal must be selected", status_code=400)
     goal = onboarding_repository.upsert_onboarding_goals(
         db,
         user.id,
-        goal_types=body.goal_types,
+        goal_types=goal_types,
     )
     return GoalResponse(
         id=goal.id,
         user_id=goal.user_id,
-        goal_types=body.goal_types,
+        goal_types=goal_types,
     )
+
+
+def _profile_gender(db: Session, user_id: str) -> str | None:
+    profile = onboarding_repository.get_profile(db, user_id)
+    return profile.gender if profile is not None else None
+
+
+def _filter_goals_for_gender(goals: list[str], gender: str | None) -> list[str]:
+    if gender == "female":
+        return list(goals)
+    return [g for g in goals if g not in FEMALE_ONLY_GOAL_TYPES]
+
+
+def _sanitize_medical_flags_for_gender(
+    flags: dict[str, bool], gender: str | None
+) -> dict[str, bool]:
+    if gender == "female":
+        return flags
+    return {
+        code: (False if code in FEMALE_ONLY_MEDICAL_FIELDS else value)
+        for code, value in flags.items()
+    }
 
 
 def save_profile(db: Session, user: User, body: ProfileRequest) -> ProfileResponse:
@@ -135,11 +165,43 @@ def save_profile(db: Session, user: User, body: ProfileRequest) -> ProfileRespon
         wrist_cm=body.wrist_circumference_cm,
         thigh_cm=body.thigh_circumference_cm,
     )
+    if body.gender != "female":
+        _purge_female_only_values(db, user.id)
     return ProfileResponse.model_validate(profile)
 
 
+def _purge_female_only_values(db: Session, user_id: str) -> None:
+    """Scrub any previously stored female-only goals and medical flags."""
+    goal = onboarding_repository.get_nutrition_goal(db, user_id)
+    if goal is not None:
+        current = _read_goal_types(goal)
+        filtered = [g for g in current if g not in FEMALE_ONLY_GOAL_TYPES]
+        if filtered != current and filtered:
+            onboarding_repository.upsert_onboarding_goals(db, user_id, filtered)
+
+    flags = onboarding_repository.get_medical_flags(db, user_id)
+    for flag in flags:
+        if flag.condition_code in FEMALE_ONLY_MEDICAL_FIELDS and flag.has_condition:
+            flag.has_condition = False
+
+
+def _read_goal_types(goal: object) -> list[str]:
+    raw = getattr(goal, "goal_types_json", None)
+    if raw:
+        try:
+            parsed = _json.loads(raw)
+            if isinstance(parsed, list):
+                return [str(g) for g in parsed]
+        except (ValueError, TypeError):
+            pass
+    single = getattr(goal, "goal_type", None)
+    return [single] if single else []
+
+
 def save_medical(db: Session, user: User, body: MedicalRequest) -> MedicalResponse:
-    flags_dict = body.condition_flags()
+    flags_dict = _sanitize_medical_flags_for_gender(
+        body.condition_flags(), _profile_gender(db, user.id)
+    )
     flag_rows = onboarding_repository.replace_medical_flags(db, user.id, flags_dict)
     med_rows = onboarding_repository.replace_medications(db, user.id, body.medications)
     allergy_rows = onboarding_repository.replace_allergies(db, user.id, body.allergies)

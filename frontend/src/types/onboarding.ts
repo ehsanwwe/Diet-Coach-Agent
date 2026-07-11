@@ -42,6 +42,8 @@ export const LEGACY_GOAL_MAP: Partial<Record<string, GoalType>> = {
   lifestyle: 'general_health_companion',
 }
 
+export type Gender = 'male' | 'female' | 'other' | 'prefer_not_to_say'
+
 export interface OnboardingStatusResponse {
   user_id: string
   is_onboarded: boolean
@@ -53,6 +55,27 @@ export interface OnboardingStatusResponse {
   lifestyle_exists: boolean
   preferences_exists: boolean
   behavior_exists: boolean
+  gender?: Gender | null
+}
+
+export const FEMALE_ONLY_GOALS: readonly GoalType[] = [
+  'pcos_support',
+  'pregnancy_breastfeeding_caution',
+] as const
+
+export const FEMALE_ONLY_MEDICAL_KEYS = ['pcos', 'pregnancy_breastfeeding'] as const
+export type FemaleOnlyMedicalKey = (typeof FEMALE_ONLY_MEDICAL_KEYS)[number]
+
+export function isFemale(gender: Gender | null | undefined): boolean {
+  return gender === 'female'
+}
+
+export function filterGoalsForGender(
+  goals: readonly GoalType[],
+  gender: Gender | null | undefined,
+): GoalType[] {
+  if (isFemale(gender)) return [...goals]
+  return goals.filter((g) => !FEMALE_ONLY_GOALS.includes(g))
 }
 
 export interface ProfileRequest {

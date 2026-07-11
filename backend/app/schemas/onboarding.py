@@ -58,6 +58,16 @@ MEDICAL_CONDITION_CODES = [
     "bariatric_surgery",
 ]
 
+FEMALE_ONLY_GOAL_TYPES = frozenset({
+    "pcos_support",
+    "pregnancy_breastfeeding_caution",
+})
+
+FEMALE_ONLY_MEDICAL_FIELDS = frozenset({
+    "pcos",
+    "pregnancy_breastfeeding",
+})
+
 
 # ─── Step 1: Profile ──────────────────────────────────────────────────────────
 
@@ -290,6 +300,7 @@ class OnboardingStatusResponse(BaseModel):
     lifestyle_exists: bool
     preferences_exists: bool
     behavior_exists: bool
+    gender: str | None = None
 
 
 # ─── Complete ─────────────────────────────────────────────────────────────────

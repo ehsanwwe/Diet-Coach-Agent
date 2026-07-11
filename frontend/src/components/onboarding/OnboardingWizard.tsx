@@ -18,7 +18,14 @@ import {
   submitBehavior,
   completeOnboarding,
 } from '@/lib/onboarding'
-import type { GoalType, OnboardingStatusResponse } from '@/types/onboarding'
+import {
+  FEMALE_ONLY_MEDICAL_KEYS,
+  filterGoalsForGender,
+  isFemale,
+  type Gender,
+  type GoalType,
+  type OnboardingStatusResponse,
+} from '@/types/onboarding'
 
 import OnboardingShell from './OnboardingShell'
 import ProfileStep, { type ProfileFormData } from './steps/ProfileStep'
@@ -110,6 +117,13 @@ export default function OnboardingWizard({ dict, locale }: Props) {
   const [lifestyleData, setLifestyleData] = useState<LifestyleFormData | null>(null)
   const [preferencesData, setPreferencesData] = useState<PreferencesFormData | null>(null)
   const [behaviorData, setBehaviorData] = useState<BehaviorFormData | null>(null)
+  // Gender from previously saved profile (used before user resubmits ProfileStep)
+  const [savedGender, setSavedGender] = useState<Gender | null>(null)
+
+  // Effective gender = whatever the user has already selected in ProfileStep,
+  // falling back to the gender stored server-side (available from /status).
+  const effectiveGender: Gender | null =
+    (profileData?.gender as Gender | undefined) ?? savedGender ?? null
 
   // Restore any in-progress draft from sessionStorage on mount
   useEffect(() => {
@@ -132,6 +146,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
           }
           return
         }
+        if (res.data.gender) setSavedGender(res.data.gender as Gender)
         setCurrentStep(getInitialStep(res.data))
         setIsLoading(false)
       })
@@ -143,6 +158,34 @@ export default function OnboardingWizard({ dict, locale }: Props) {
         setIsLoading(false)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const scrubFemaleOnly = useCallback(
+    (draftPatch: Partial<DraftData> = {}) => {
+      const patch: Partial<DraftData> = { ...draftPatch }
+      const filteredGoals = filterGoalsForGender(goalTypes, 'male')
+      if (filteredGoals.length !== goalTypes.length) {
+        setGoalTypes(filteredGoals)
+        patch.goalTypes = filteredGoals
+      }
+      if (medicalData && FEMALE_ONLY_MEDICAL_KEYS.some((k) => medicalData[k])) {
+        const nextMedical = { ...medicalData }
+        for (const k of FEMALE_ONLY_MEDICAL_KEYS) nextMedical[k] = false
+        setMedicalData(nextMedical)
+        patch.medicalData = nextMedical
+      }
+      if (Object.keys(patch).length > 0) saveDraft(patch)
+    },
+    [goalTypes, medicalData],
+  )
+
+  // Restored-from-refresh drafts may still contain female-only values even when
+  // the profile gender is not female. Scrub as soon as we know the gender.
+  useEffect(() => {
+    if (effectiveGender && !isFemale(effectiveGender)) {
+      scrubFemaleOnly()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [effectiveGender])
 
   const goForward = useCallback(() => {
     setDirection('forward')
@@ -178,24 +221,35 @@ export default function OnboardingWizard({ dict, locale }: Props) {
       await submitProfile(data)
       const fd = data as unknown as ProfileFormData
       setProfileData(fd)
-      saveDraft({ profileData: fd })
+      setSavedGender(fd.gender as Gender)
+      if (isFemale(fd.gender)) {
+        saveDraft({ profileData: fd })
+      } else {
+        // Gender no longer female — remove any female-only selections from
+        // state and draft so they don't survive back-nav or refresh.
+        scrubFemaleOnly({ profileData: fd })
+      }
       goForward()
     })
   }
 
   async function handleGoalSubmit(goals: GoalType[]) {
     await withSubmit(async () => {
-      await submitGoals({ goal_types: goals })
-      setGoalTypes(goals)
-      saveDraft({ goalTypes: goals })
+      const sanitized = filterGoalsForGender(goals, effectiveGender)
+      await submitGoals({ goal_types: sanitized })
+      setGoalTypes(sanitized)
+      saveDraft({ goalTypes: sanitized })
       goForward()
     })
   }
 
   async function handleMedicalSubmit(data: MedicalRequest) {
     await withSubmit(async () => {
-      const res = await submitMedical(data)
-      const fd = data as unknown as MedicalFormData
+      const sanitized: MedicalRequest = isFemale(effectiveGender)
+        ? data
+        : { ...data, pcos: false, pregnancy_breastfeeding: false }
+      const res = await submitMedical(sanitized)
+      const fd = sanitized as unknown as MedicalFormData
       setMedicalData(fd)
       saveDraft({ medicalData: fd })
       if (res.data.clinical_review_required) {
@@ -305,6 +359,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
           <GoalStep
             dict={d}
             defaultValue={goalTypes}
+            gender={effectiveGender}
             isSubmitting={isSubmitting}
             apiError={apiError}
             onSubmit={handleGoalSubmit}
@@ -316,6 +371,7 @@ export default function OnboardingWizard({ dict, locale }: Props) {
           <MedicalStep
             dict={d}
             defaultValues={medicalData ?? undefined}
+            gender={effectiveGender}
             isSubmitting={isSubmitting}
             apiError={apiError}
             onSubmit={handleMedicalSubmit}

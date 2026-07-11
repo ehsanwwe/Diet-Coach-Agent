@@ -1,15 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Shield } from 'lucide-react'
 import { cn } from '@/lib/cn'
 import type { Dictionary } from '@/dictionaries/fa'
-import type { MedicalRequest } from '@/types/onboarding'
+import {
+  FEMALE_ONLY_MEDICAL_KEYS,
+  isFemale,
+  type FemaleOnlyMedicalKey,
+  type Gender,
+  type MedicalRequest,
+} from '@/types/onboarding'
 import TagInput from '../TagInput'
 
 interface Props {
   dict: Dictionary['onboarding']
   defaultValues?: Partial<MedicalFormData>
+  gender: Gender | null | undefined
   isSubmitting: boolean
   apiError: string | null
   onSubmit: (data: MedicalRequest) => void
@@ -78,11 +85,38 @@ const defaultMedical: MedicalFormData = {
   warning_symptoms: [],
 }
 
-export default function MedicalStep({ dict, defaultValues, isSubmitting, apiError, onSubmit }: Props) {
-  const [form, setForm] = useState<MedicalFormData>({ ...defaultMedical, ...defaultValues })
+function sanitizeMedicalForGender(
+  data: MedicalFormData,
+  gender: Gender | null | undefined,
+): MedicalFormData {
+  if (isFemale(gender)) return data
+  const cleared: Record<FemaleOnlyMedicalKey, boolean> = {
+    pcos: false,
+    pregnancy_breastfeeding: false,
+  }
+  return { ...data, ...cleared }
+}
+
+const visibleConditions = (gender: Gender | null | undefined) =>
+  isFemale(gender)
+    ? CONDITIONS
+    : CONDITIONS.filter(
+        (c) => !(FEMALE_ONLY_MEDICAL_KEYS as readonly string[]).includes(c.key),
+      )
+
+export default function MedicalStep({ dict, defaultValues, gender, isSubmitting, apiError, onSubmit }: Props) {
+  const [form, setForm] = useState<MedicalFormData>(() =>
+    sanitizeMedicalForGender({ ...defaultMedical, ...defaultValues }, gender),
+  )
   const [hasAllergy, setHasAllergy] = useState(
     (defaultValues?.allergies ?? []).length > 0,
   )
+
+  useEffect(() => {
+    setForm((f) => sanitizeMedicalForGender(f, gender))
+  }, [gender])
+
+  const conditionRows = useMemo(() => visibleConditions(gender), [gender])
 
   function toggleCondition(key: ConditionKey) {
     setForm((f) => ({ ...f, [key]: !f[key] }))
@@ -115,7 +149,7 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
   const customAllergies = form.allergies.filter((a) => !presetValues.includes(a))
 
   function handleSubmit() {
-    onSubmit(form)
+    onSubmit(sanitizeMedicalForGender(form, gender))
   }
 
   return (
@@ -136,12 +170,12 @@ export default function MedicalStep({ dict, defaultValues, isSubmitting, apiErro
         <section>
           <p className="text-sm font-semibold text-ink mb-3">{dict.medConditions}</p>
           <div className="space-y-1 rounded-2xl bg-elevated border border-line overflow-hidden">
-            {CONDITIONS.map(({ key, labelKey }, i) => (
+            {conditionRows.map(({ key, labelKey }, i) => (
               <label
                 key={key}
                 className={cn(
                   'flex items-center justify-between px-4 py-3 cursor-pointer',
-                  i < CONDITIONS.length - 1 && 'border-b border-line',
+                  i < conditionRows.length - 1 && 'border-b border-line',
                 )}
               >
                 <span className="text-sm text-ink">{dict[labelKey] as string}</span>
