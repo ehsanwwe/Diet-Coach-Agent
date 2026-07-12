@@ -33,13 +33,6 @@ export default function AppBottomNav({ locale, dict }: Props) {
       disabled: false,
     },
     {
-      href: `/${locale}/dashboard`,
-      label: dict.nav.home,
-      icon: 'home',
-      active: isActive('dashboard') || pathname === `/${locale}`,
-      disabled: false,
-    },
-    {
       href: `/${locale}/chat`,
       label: dict.nav.chat,
       icon: 'chat',
@@ -58,6 +51,13 @@ export default function AppBottomNav({ locale, dict }: Props) {
       label: dict.nav.plan,
       icon: 'calendar',
       active: pathname.includes('/nutrition/plan'),
+      disabled: false,
+    },
+    {
+      href: `/${locale}/dashboard`,
+      label: dict.nav.home,
+      icon: 'home',
+      active: isActive('dashboard') || pathname === `/${locale}`,
       disabled: false,
     },
   ]

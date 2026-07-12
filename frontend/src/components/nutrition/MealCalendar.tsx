@@ -174,12 +174,6 @@ function DayCard({ day, dict, locale, isExpanded, onToggle }: {
                     {meal.description && (
                       <p className="text-xs text-ink-2 mt-0.5 leading-relaxed">{meal.description}</p>
                     )}
-                    {meal.portion_guidance && (
-                      <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
-                        <AppIcon name="portion" size={13} />
-                        <span>{d.portionGuidance}: {meal.portion_guidance}</span>
-                      </p>
-                    )}
                     {meal.drink_guidance && (
                       <p className="text-xs text-ink-3 mt-1 flex items-center gap-1.5">
                         <AppIcon name="water" size={13} />
