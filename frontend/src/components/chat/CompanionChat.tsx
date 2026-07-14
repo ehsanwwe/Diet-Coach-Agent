@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import type { Dictionary } from '@/dictionaries/fa'
 import type { Locale } from '@/lib/i18n'
 import type { ChatHistoryItem } from '@/types/chat'
-import { getChatHistory, sendChatMessage, clearChatMemory } from '@/lib/chat'
+import { clearChatMemory, editChatMessage, getChatHistory, sendChatMessage } from '@/lib/chat'
+import { ApiRequestError } from '@/lib/api'
 import { getStoredUser } from '@/lib/storage'
 import ChatBubble from './ChatBubble'
 import ChatComposer from './ChatComposer'
@@ -38,6 +39,7 @@ export default function CompanionChat({ dict, locale }: Props) {
   const pathname = usePathname()
 
   const [messages, setMessages] = useState<ChatHistoryItem[]>([])
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [messageExtras, setMessageExtras] = useState<Record<string, { actions?: string[]; chips?: string[] }>>({})
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -48,11 +50,17 @@ export default function CompanionChat({ dict, locale }: Props) {
   const [showClearConfirm, setShowClearConfirm] = useState(false)
   const [clearing, setClearing] = useState(false)
   const [draftText, setDraftText] = useState('')
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editingText, setEditingText] = useState('')
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const mountedRef = useRef(true)
   const userIdRef = useRef<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const messageListRef = useRef<HTMLDivElement>(null)
+  const shouldAutoScrollRef = useRef(true)
 
   // ── Draft helpers ──────────────────────────────────────────────────────────
 
@@ -127,6 +135,7 @@ export default function CompanionChat({ dict, locale }: Props) {
         const hasPending = data.messages.some(
           (m) => m.role === 'assistant' && m.status === 'pending'
         )
+        setSessionId(data.session_id)
         setMessages(data.messages.filter((m) => m.status !== 'pending'))
         if (!hasPending) {
           stopPolling()
@@ -180,6 +189,7 @@ export default function CompanionChat({ dict, locale }: Props) {
         const hasPending = data.messages.some(
           (m) => m.role === 'assistant' && m.status === 'pending'
         )
+        setSessionId(data.session_id)
         const visible = data.messages.filter((m) => m.status !== 'pending')
         setMessages(visible)
         if (visible.length > 0) setStarted(true)
@@ -209,8 +219,16 @@ export default function CompanionChat({ dict, locale }: Props) {
   }, [locale])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (shouldAutoScrollRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages, typing, pendingRecovery])
+
+  function handleMessageListScroll() {
+    const list = messageListRef.current
+    if (!list) return
+    shouldAutoScrollRef.current = list.scrollHeight - list.scrollTop - list.clientHeight < 120
+  }
 
   // ── Send ───────────────────────────────────────────────────────────────────
 
@@ -234,6 +252,7 @@ export default function CompanionChat({ dict, locale }: Props) {
       status: 'completed',
     }
     setMessages((prev) => [...prev, optimistic])
+    shouldAutoScrollRef.current = true
     setTyping(true)
     setStarted(true)
 
@@ -252,11 +271,18 @@ export default function CompanionChat({ dict, locale }: Props) {
         created_at: resp.created_at,
         status: 'completed',
       }
-      setMessages((prev) => [
-        ...prev.filter((m) => m.message_id !== optimistic.message_id),
-        { ...optimistic },
-        assistant,
-      ])
+      try {
+        const history = await getChatHistory()
+        if (!mountedRef.current) return
+        setSessionId(history.session_id)
+        setMessages(history.messages.filter((item) => item.status !== 'pending'))
+      } catch {
+        setMessages((prev) => [
+          ...prev.filter((item) => item.message_id !== optimistic.message_id),
+          optimistic,
+          assistant,
+        ])
+      }
       if (resp.actions_summary?.length || resp.suggestion_chips?.length) {
         setMessageExtras((prev) => ({
           ...prev,
@@ -282,6 +308,105 @@ export default function CompanionChat({ dict, locale }: Props) {
     }
   }
 
+  function handleStartEdit(message: ChatHistoryItem) {
+    if (typing || pendingRecovery || editSubmitting || message.message_id.startsWith('tmp-')) return
+    setEditingMessageId(message.message_id)
+    setEditingText(message.content)
+    setEditError(null)
+  }
+
+  function handleCancelEdit() {
+    if (editSubmitting) return
+    setEditingMessageId(null)
+    setEditingText('')
+    setEditError(null)
+  }
+
+  async function handleEditSend() {
+    if (!sessionId || !editingMessageId || !editingText.trim() || editSubmitting) return
+
+    const targetIndex = messages.findIndex((message) => message.message_id === editingMessageId)
+    if (targetIndex < 0) {
+      setEditError(dict.companionChat.messageCannotBeEdited)
+      return
+    }
+
+    const content = editingText
+    const retainedMessages = messages.slice(0, targetIndex + 1).map((message) =>
+      message.message_id === editingMessageId ? { ...message, content } : message,
+    )
+    const retainedIds = new Set(retainedMessages.map((message) => message.message_id))
+
+    stopPolling()
+    setPendingRecovery(false)
+    setSendError(null)
+    setEditError(null)
+    setEditSubmitting(true)
+    setMessages(retainedMessages)
+    setMessageExtras((previous) => Object.fromEntries(
+      Object.entries(previous).filter(([messageId]) => retainedIds.has(messageId)),
+    ))
+    setTyping(true)
+
+    try {
+      const response = await editChatMessage(sessionId, editingMessageId, content)
+      if (!mountedRef.current) return
+
+      const assistant: ChatHistoryItem = {
+        message_id: response.message_id,
+        role: response.role,
+        content: response.content,
+        created_at: response.created_at,
+        status: 'completed',
+      }
+      try {
+        const history = await getChatHistory()
+        if (!mountedRef.current) return
+        setSessionId(history.session_id)
+        setMessages(history.messages.filter((message) => message.status !== 'pending'))
+      } catch {
+        setMessages([...retainedMessages, assistant])
+      }
+      if (response.actions_summary?.length || response.suggestion_chips?.length) {
+        setMessageExtras((previous) => ({
+          ...previous,
+          [response.message_id]: {
+            ...(response.actions_summary?.length ? { actions: response.actions_summary } : {}),
+            ...(response.suggestion_chips?.length ? { chips: response.suggestion_chips } : {}),
+          },
+        }))
+      }
+      setEditingMessageId(null)
+      setEditingText('')
+      setEditError(null)
+    } catch (error) {
+      if (error instanceof Error && error.message === 'UNAUTHORIZED') {
+        const loginPath = `/${locale}/login`
+        if (pathname !== loginPath) routerRef.current.replace(loginPath)
+        return
+      }
+      try {
+        const history = await getChatHistory()
+        if (mountedRef.current) {
+          setSessionId(history.session_id)
+          setMessages(history.messages.filter((message) => message.status !== 'pending'))
+        }
+      } catch {
+        // Keep the already-truncated optimistic branch until the next history load.
+      }
+      setEditError(
+        error instanceof ApiRequestError && error.status === 422
+          ? dict.companionChat.messageCannotBeEdited
+          : dict.companionChat.editFailed,
+      )
+    } finally {
+      if (mountedRef.current) {
+        setTyping(false)
+        setEditSubmitting(false)
+      }
+    }
+  }
+
   // ── Clear ──────────────────────────────────────────────────────────────────
 
   async function handleClear() {
@@ -289,10 +414,12 @@ export default function CompanionChat({ dict, locale }: Props) {
     try {
       await clearChatMemory()
       setMessages([])
+      setSessionId(null)
       setStarted(false)
       setShowClearConfirm(false)
       stopPolling()
       setPendingRecovery(false)
+      handleCancelEdit()
     } catch {
       setShowClearConfirm(false)
     } finally {
@@ -386,7 +513,11 @@ export default function CompanionChat({ dict, locale }: Props) {
       )}
 
       {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div
+        ref={messageListRef}
+        onScroll={handleMessageListScroll}
+        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+      >
         {messages.length === 0 && started && (
           <div className="text-center py-6">
             <p className="text-sm text-ink-3">{dict.companionChat.emptyDesc}</p>
@@ -396,12 +527,21 @@ export default function CompanionChat({ dict, locale }: Props) {
           <ChatBubble
             key={msg.message_id}
             message={msg}
-            youLabel={dict.companionChat.you}
             coachLabel={dict.companionChat.coach}
             actions={messageExtras[msg.message_id]?.actions}
             failedLabel={dict.companionChat.assistantFailed}
             chips={messageExtras[msg.message_id]?.chips}
+            actionLabels={dict.companionChat}
+            isEditing={editingMessageId === msg.message_id}
+            editText={editingMessageId === msg.message_id ? editingText : undefined}
+            editSubmitting={editingMessageId === msg.message_id && editSubmitting}
+            editError={editingMessageId === msg.message_id ? editError : null}
+            canEdit={!showThinking && !editSubmitting && !msg.message_id.startsWith('tmp-')}
             onChipPress={handleSend}
+            onEdit={handleStartEdit}
+            onEditTextChange={setEditingText}
+            onEditSend={handleEditSend}
+            onEditCancel={handleCancelEdit}
           />
         ))}
         {showThinking && (
@@ -422,6 +562,7 @@ export default function CompanionChat({ dict, locale }: Props) {
         onSend={handleSend}
         value={draftText}
         onChange={handleDraftChange}
+        disabled={showThinking || editSubmitting || editingMessageId !== null}
       />
     </div>
   )

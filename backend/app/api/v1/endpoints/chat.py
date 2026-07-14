@@ -15,11 +15,43 @@ from app.api.dependencies import get_current_user
 from app.core.database import get_session
 from app.core.errors import AppError, raise_http_error
 from app.models.user import User
-from app.schemas.chat import ChatHistoryResponse, ChatMessageRequest, ChatMessageResponse
+from app.schemas.chat import (
+    ChatHistoryResponse,
+    ChatMessageEditRequest,
+    ChatMessageRequest,
+    ChatMessageResponse,
+)
 from app.schemas.common import MessageResponse, SuccessResponse
 from app.services import chat_service
 
 router = APIRouter(tags=["chat"])
+
+
+@router.patch(
+    "/sessions/{session_id}/messages/{message_id}",
+    response_model=SuccessResponse[ChatMessageResponse],
+)
+def edit_message(
+    session_id: str,
+    message_id: str,
+    body: ChatMessageEditRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_session),
+) -> SuccessResponse[ChatMessageResponse]:
+    """Edit a user message, discard its later branch, and regenerate a response."""
+    try:
+        result = chat_service.edit_message(
+            db,
+            current_user,
+            session_id,
+            message_id,
+            body.content,
+        )
+    except AppError as exc:
+        raise_http_error(exc.message, status_code=exc.status_code, detail=exc.detail)
+    except Exception as exc:
+        raise_http_error(f"Chat service error: {exc}", status_code=500)
+    return SuccessResponse(data=result)
 
 
 @router.post("/message", response_model=SuccessResponse[ChatMessageResponse], status_code=201)

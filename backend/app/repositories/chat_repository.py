@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import delete, select
+from sqlalchemy import and_, delete, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.chat import ChatMessage, ChatSession
@@ -101,6 +101,19 @@ def get_last_assistant_message(db: Session, session_id: str) -> ChatMessage | No
     return db.execute(stmt).scalar_one_or_none()
 
 
+def has_pending_assistant_message(db: Session, session_id: str) -> bool:
+    stmt = (
+        select(ChatMessage.id)
+        .where(
+            ChatMessage.session_id == session_id,
+            ChatMessage.role == "assistant",
+            ChatMessage.status == "pending",
+        )
+        .limit(1)
+    )
+    return db.execute(stmt).scalar_one_or_none() is not None
+
+
 def get_recent_messages(
     db: Session,
     session_id: str,
@@ -120,9 +133,65 @@ def get_all_messages(db: Session, session_id: str) -> list[ChatMessage]:
     stmt = (
         select(ChatMessage)
         .where(ChatMessage.session_id == session_id)
-        .order_by(ChatMessage.created_at.asc())
+        .order_by(ChatMessage.created_at.asc(), ChatMessage.id.asc())
     )
     return list(db.execute(stmt).scalars().all())
+
+
+def get_owned_companion_session(
+    db: Session,
+    user_id: str,
+    session_id: str,
+) -> ChatSession | None:
+    stmt = select(ChatSession).where(
+        ChatSession.id == session_id,
+        ChatSession.user_id == user_id,
+        ChatSession.session_type == "companion",
+    )
+    return db.execute(stmt).scalar_one_or_none()
+
+
+def get_message_in_session(
+    db: Session,
+    session_id: str,
+    message_id: str,
+) -> ChatMessage | None:
+    stmt = select(ChatMessage).where(
+        ChatMessage.id == message_id,
+        ChatMessage.session_id == session_id,
+    )
+    return db.execute(stmt).scalar_one_or_none()
+
+
+def truncate_after_message(
+    db: Session,
+    session: ChatSession,
+    message: ChatMessage,
+) -> int:
+    """Delete every message ordered after ``message`` and reset derived metadata."""
+    later = or_(
+        ChatMessage.created_at > message.created_at,
+        and_(
+            ChatMessage.created_at == message.created_at,
+            ChatMessage.id > message.id,
+        ),
+    )
+    later_ids = list(
+        db.execute(
+            select(ChatMessage.id).where(
+                ChatMessage.session_id == session.id,
+                later,
+            )
+        ).scalars().all()
+    )
+    if later_ids:
+        db.execute(delete(ChatMessage).where(ChatMessage.id.in_(later_ids)))
+
+    session.message_count = max(0, (session.message_count or 0) - len(later_ids))
+    session.summary = None
+    session.summary_generated_at = None
+    db.flush()
+    return len(later_ids)
 
 
 def clear_companion_session(db: Session, user_id: str) -> None:

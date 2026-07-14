@@ -597,6 +597,15 @@ export interface Dictionary {
     clearMemoryCancel: string
     memoryCleared: string
     assistantFailed: string
+    copy: string
+    copied: string
+    edit: string
+    cancel: string
+    editingMessage: string
+    copyFailed: string
+    editFailed: string
+    messageCannotBeEdited: string
+    retry: string
   }
   dietProtocol: {
     replaceChip: string
@@ -1365,6 +1374,15 @@ const fa: Dictionary = {
     clearMemoryCancel: 'لغو',
     memoryCleared: 'حافظه گفتگو پاک شد',
     assistantFailed: 'پاسخ دریافت نشد. لطفاً دوباره تلاش کنید.',
+    copy: 'کپی',
+    copied: 'کپی شد',
+    edit: 'ویرایش',
+    cancel: 'لغو',
+    editingMessage: 'ویرایش پیام',
+    copyFailed: 'کپی ناموفق بود',
+    editFailed: 'ویرایش پیام ناموفق بود',
+    messageCannotBeEdited: 'این پیام قابل ویرایش نیست',
+    retry: 'تلاش دوباره',
   },
   dietProtocol: {
     replaceChip: 'بله، برنامه رو با رژیم جدید جایگزین کن',

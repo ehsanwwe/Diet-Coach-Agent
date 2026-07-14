@@ -7,12 +7,23 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ChatMessageRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=4000)
     client_message_id: str | None = Field(None, max_length=64)
+
+
+class ChatMessageEditRequest(BaseModel):
+    content: str = Field(..., min_length=1, max_length=4000)
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Message content cannot be empty")
+        return value
 
 
 class ChatMessageResponse(BaseModel):

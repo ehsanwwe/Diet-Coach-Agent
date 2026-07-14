@@ -5,10 +5,15 @@ If provider supports tools (OpenAI), runs multi-step tool loop.
 Falls back to text-based chat if provider is mock or tool calling fails.
 """
 from __future__ import annotations
+
 import json
 import logging
 import re
+
 from sqlalchemy.orm import Session
+
+from app.core.errors import AppError
+from app.models.chat import ChatMessage, ChatSession
 from app.models.user import User
 from app.repositories import chat_repository
 from app.schemas.chat import ChatMessageResponse
@@ -572,11 +577,15 @@ def process_user_message(
     user: User,
     message: str,
     client_message_id: str | None = None,
+    *,
+    existing_session: ChatSession | None = None,
+    existing_user_message: ChatMessage | None = None,
+    existing_pending_message: ChatMessage | None = None,
 ) -> ChatMessageResponse:
-    session = chat_repository.get_or_create_companion_session(db, user.id)
+    session = existing_session or chat_repository.get_or_create_companion_session(db, user.id)
 
-    # Idempotency: if client already sent this message, return the existing response.
-    if client_message_id:
+    # Idempotency applies only to new messages. Edited messages already have a stable row.
+    if existing_user_message is None and client_message_id:
         existing = chat_repository.get_message_by_client_id(db, session.id, client_message_id)
         if existing:
             last_assistant = chat_repository.get_last_assistant_message(db, session.id)
@@ -590,19 +599,31 @@ def process_user_message(
                     created_at=last_assistant.created_at,
                 )
 
-    # Save user message immediately.
-    user_msg = chat_repository.create_message(
-        db, session.id, "user", message,
-        status="completed",
-        client_message_id=client_message_id,
-    )
-    # Create pending assistant placeholder so GET /history immediately shows a
-    # thinking state even if the user navigates away while AI is generating.
-    pending_msg = chat_repository.create_message(
-        db, session.id, "assistant", "",
-        status="pending",
-    )
-    db.commit()
+    if (
+        existing_user_message is None
+        and chat_repository.has_pending_assistant_message(db, session.id)
+    ):
+        raise AppError("A chat response is already being generated", status_code=409)
+
+    if existing_user_message is None:
+        # Save user message immediately.
+        user_msg = chat_repository.create_message(
+            db, session.id, "user", message,
+            status="completed",
+            client_message_id=client_message_id,
+        )
+        # Create pending assistant placeholder so GET /history immediately shows a
+        # thinking state even if the user navigates away while AI is generating.
+        pending_msg = chat_repository.create_message(
+            db, session.id, "assistant", "",
+            status="pending",
+        )
+        db.commit()
+    else:
+        user_msg = existing_user_message
+        pending_msg = existing_pending_message
+        if pending_msg is None:
+            raise ValueError("Edited message generation requires a pending message")
     pending_id = pending_msg.id
 
     if _is_greeting(message):
